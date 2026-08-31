@@ -91,9 +91,13 @@ export function EmailCaptureForm({ source = 'site' }: { source?: string }) {
         </p>
       )}
 
+      {/* Ne promettre que ce qui est réellement implémenté. La désinscription
+          en un clic n'existe pas encore : on donne l'adresse de contact plutôt
+          que d'annoncer une fonctionnalité absente. */}
       <p className="mt-3 font-mono text-[0.6875rem] leading-[1.5] text-fg-dim">
-        Une seule adresse, aucun partage à des tiers, désinscription en un clic. Rien d’autre n’est
-        collecté.
+        Seule votre adresse est enregistrée, avec la page d’où vous vous inscrivez. Aucun partage à
+        des tiers. Pour être retiré de la liste, écrivez à contact@moonfish.fish : la suppression
+        est manuelle tant que le produit n’est pas lancé.
       </p>
     </form>
   );
