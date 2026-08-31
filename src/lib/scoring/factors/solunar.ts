@@ -1,4 +1,4 @@
-import { clamp, ramp, round1 } from '../math';
+import { clamp, fr, ramp, round1 } from '../math';
 import type { FactorResult, SolunarInput } from '../types';
 import { FACTOR_WEIGHTS } from '../types';
 
@@ -56,7 +56,7 @@ export function scoreSolunar(input: SolunarInput): FactorResult {
     ? 'en pleine période majeure'
     : inMinor
       ? 'en période mineure'
-      : `à ${round1(Math.min(Math.abs(input.hoursToMajorPeriod), Math.abs(input.hoursToMinorPeriod)))} h de la prochaine période`;
+      : `à ${fr(Math.min(Math.abs(input.hoursToMajorPeriod), Math.abs(input.hoursToMinorPeriod)))} h de la prochaine période`;
 
   const note =
     syzygy > 0.5

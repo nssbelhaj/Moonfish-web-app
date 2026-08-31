@@ -1,4 +1,4 @@
-import { round1 } from './math';
+import { fr } from './math';
 import { WIND_BAD_KMH, WIND_DANGER_KMH } from './factors/wind';
 import { SWELL_CAUTION_M, SWELL_DANGER_M } from './factors/swell';
 import type { SafetyLevel, ScoreInput } from './types';
@@ -28,7 +28,7 @@ export function evaluateSafety(input: ScoreInput): SafetyVerdict {
 
   if (swellDanger || windDanger) {
     const causes: string[] = [];
-    if (swellDanger) causes.push(`houle de ${round1(swell)} m`);
+    if (swellDanger) causes.push(`houle de ${fr(swell)} m`);
     if (windDanger) causes.push(`vent de ${Math.round(wind)} km/h`);
     return {
       level: 'danger',
@@ -41,7 +41,7 @@ export function evaluateSafety(input: ScoreInput): SafetyVerdict {
 
   if (swellCaution || windCaution) {
     const causes: string[] = [];
-    if (swellCaution) causes.push(`houle de ${round1(swell)} m`);
+    if (swellCaution) causes.push(`houle de ${fr(swell)} m`);
     if (windCaution) causes.push(`vent de ${Math.round(wind)} km/h`);
     return {
       level: 'prudence',

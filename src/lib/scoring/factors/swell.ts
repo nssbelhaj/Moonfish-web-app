@@ -1,4 +1,4 @@
-import { clamp, ramp, round1, trapezoid } from '../math';
+import { clamp, fr, ramp, round1, trapezoid } from '../math';
 import type { FactorResult, SwellInput } from '../types';
 import { FACTOR_WEIGHTS } from '../types';
 
@@ -24,7 +24,7 @@ export function scoreSwell(input: SwellInput): FactorResult {
 
   if (h > SWELL_DANGER_M) score = Math.min(score, 1.2);
 
-  const hm = round1(h);
+  const hm = fr(h);
   const note =
     h > SWELL_DANGER_M
       ? `${hm} m — au-delà du seuil de sécurité, le bord n'est plus tenable`

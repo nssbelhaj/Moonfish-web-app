@@ -34,3 +34,8 @@ export function angleDelta(a: number, b: number): number {
 export function round1(value: number): number {
   return Math.round(value * 10) / 10 + 0;
 }
+
+/** Formate un nombre à la française : virgule décimale. */
+export function fr(value: number, decimals = 1): string {
+  return value.toFixed(decimals).replace('.', ',');
+}

@@ -66,3 +66,28 @@ describe('computeScore — le créneau de référence', () => {
     expect(result.safety.message).toBeUndefined();
   });
 });
+
+describe('formatage français', () => {
+  it('n’écrit jamais de point décimal dans une note ou une raison', () => {
+    const inputs = [
+      IDEAL,
+      withInput({ swell: { heightM: 2.7, periodS: 11 } }),
+      withInput({ tide: { hoursFromHighTide: 3.4, coefficient: 118, state: 'falling' } }),
+      withInput({ solunar: { ...IDEAL.solunar, hoursToMajorPeriod: 3.7, hoursToMinorPeriod: 4.2 } }),
+      withInput({ wind: { speedKmh: 55.5, fromDeg: 90 } }),
+    ];
+
+    for (const input of inputs) {
+      const result = computeScore(input);
+      const texts = [
+        ...result.reasons,
+        ...Object.values(result.breakdown).map((entry) => entry.note),
+        result.safety.message ?? '',
+      ];
+      for (const text of texts) {
+        // Un chiffre suivi d'un point puis d'un chiffre = séparateur anglo-saxon.
+        expect(text).not.toMatch(/\d\.\d/);
+      }
+    }
+  });
+});

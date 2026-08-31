@@ -1,4 +1,4 @@
-import { clamp, ramp, round1, trapezoid } from '../math';
+import { clamp, fr, ramp, round1, trapezoid } from '../math';
 import type { FactorResult, TideInput } from '../types';
 import { FACTOR_WEIGHTS } from '../types';
 
@@ -72,7 +72,7 @@ function buildNote(input: TideInput, positional: number, slack: number): string 
           ? 'montante établie'
           : 'abords de la basse mer';
 
-  const parts: string[] = [`${when} (${h >= 0 ? '+' : ''}${round1(h)} h / PM)`];
+  const parts: string[] = [`${when} (${h >= 0 ? '+' : ''}${fr(h)} h / PM)`];
   if (slack < 0.9) parts.push('étale, le courant ne porte plus');
 
   const c = Math.round(input.coefficient);

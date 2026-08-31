@@ -38,6 +38,12 @@
 .theme-light {
   color-scheme: light;
 
+  /* Indispensable : les descendants héritent de la couleur CALCULÉE sur <body>,
+     où --fg valait encore la valeur sombre. Sans ces deux lignes, les guides
+     affichent du texte clair sur fond clair. */
+  color: var(--fg);
+  background-color: var(--page);
+
   --page: #fbf8f1;
   --card: #f4efe4;
   --card-raised: #e7e0ce;
@@ -122,5 +128,58 @@
   *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+@layer components {
+  /* Corps des guides : Spectral, mesure courte, rythme vertical généreux.
+     Seul endroit du site où la serif est utilisée. */
+  .guide-prose h2 {
+    font-family: var(--font-archivo), system-ui, sans-serif;
+    font-size: 1.5rem;
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+    font-weight: 600;
+    margin-top: 2.5rem;
+  }
+
+  .guide-prose h3 {
+    font-family: var(--font-archivo), system-ui, sans-serif;
+    font-size: 1.0625rem;
+    line-height: 1.3;
+    font-weight: 600;
+    margin-top: 2rem;
+  }
+
+  .guide-prose p {
+    margin-top: 1.25rem;
+  }
+
+  .guide-prose ul {
+    margin-top: 1.25rem;
+    padding-left: 1.25rem;
+    list-style: disc;
+  }
+
+  .guide-prose li {
+    margin-top: 0.5rem;
+  }
+
+  .guide-prose blockquote {
+    margin-top: 1.5rem;
+    border-left: 2px solid var(--edge-strong);
+    padding-left: 1rem;
+    color: var(--fg-muted);
+    font-style: italic;
+  }
+
+  .guide-prose a {
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 4px;
+  }
+
+  .guide-prose strong {
+    font-weight: 600;
   }
 }
