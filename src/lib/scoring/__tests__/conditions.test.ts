@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { computeScore } from '../compute';
 import { classifyWind, scoreWind } from '../factors/wind';
 import { scoreSwell } from '../factors/swell';
-import { IDEAL, withInput } from './fixtures';
+import { withInput } from './fixtures';
 
 // Le spot de référence regarde plein ouest (270°).
 const FACING = 270;
