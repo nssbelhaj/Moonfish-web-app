@@ -1,0 +1,126 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Le sombre n'est pas un thème : c'est le défaut (handoff §5).
+ * Le clair est opt-in via .theme-light, posé sur les guides et le mode jour.
+ * Ce fichier + tailwind.config.ts sont les DEUX seuls points d'entrée du design.
+ */
+:root {
+  color-scheme: dark;
+
+  --page: #05100f;
+  --card: #0a1a19;
+  --card-raised: #102624;
+  --edge: #1e3439;
+  --edge-strong: #2c4a4c;
+
+  --fg: #e8f2f0;
+  --fg-muted: #9fb4b3;
+  --fg-dim: #7e9494;
+
+  --score-bad: #ff5a52;
+  --score-mid: #ffb020;
+  --score-good: #4fc3e8;
+  --score-best: #2fe39a;
+
+  --alert-bg: #2a0f0d;
+  --alert-ink: #ffd9d6;
+  --vigil-bg: #241a05;
+  --vigil-ink: #ffd9a0;
+  --ok-bg: #0d2620;
+  --ok-line: #1e5c4a;
+
+  --focus: #2fe39a;
+}
+
+.theme-light {
+  color-scheme: light;
+
+  --page: #fbf8f1;
+  --card: #f4efe4;
+  --card-raised: #e7e0ce;
+  --edge: #c9c0ac;
+  --edge-strong: #5c6b66;
+
+  --fg: #10201f;
+  --fg-muted: #3c4a46;
+  --fg-dim: #5c6b66;
+
+  --score-bad: #b3251c;
+  --score-mid: #8a5300;
+  --score-good: #0b5e80;
+  --score-best: #04695a;
+
+  --alert-bg: #f7e2e0;
+  --alert-ink: #6b1410;
+  --vigil-bg: #f6ecd6;
+  --vigil-ink: #573600;
+  --ok-bg: #e3efe7;
+  --ok-line: #04695a;
+
+  /* Le vert #2FE39A tombe sous 4.5:1 sur #FBF8F1 : en clair, le focus prend
+     l'accent clair du handoff pour tenir la garantie AA de la §1. */
+  --focus: #04695a;
+}
+
+@layer base {
+  * {
+    border-color: var(--edge);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--page);
+    color: var(--fg);
+    font-size: 1rem; /* plancher 16px ; jamais sous 14px */
+    line-height: 1.55;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Toute donnée chiffrée est en mono et alignée en colonnes (handoff §1). */
+  .font-mono,
+  [data-numeric] {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Le focus n'est jamais retiré, y compris sur les cartes (handoff §1). */
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background: var(--score-best);
+    color: #05100f;
+  }
+}
+
+@layer components {
+  /* Loading = skeleton en line, sans pulsation ni spinner (handoff §6). */
+  .skeleton {
+    background-color: var(--edge);
+    border-radius: 2px;
+  }
+
+  /* Bloc de données simulées : bordure 1px dashed + tag (handoff §5).
+     Même gabarit que le futur DataSourceTag réel. */
+  .demo-frame {
+    border: 1px dashed var(--edge-strong);
+    border-radius: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
