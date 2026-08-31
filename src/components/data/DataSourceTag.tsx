@@ -2,6 +2,7 @@ import type { SourceMeta } from '@/lib/providers';
 
 const KIND_LABEL = {
   measured: 'Relevé',
+  forecast: 'Prévision',
   computed: 'Calculé',
   simulated: 'Simulé',
 } as const;

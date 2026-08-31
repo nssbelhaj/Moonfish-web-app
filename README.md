@@ -3,9 +3,17 @@
 Score de pêche du bord sur 7 jours, spot par spot. Marée, vent, houle, périodes
 solunaires et lumière, pondérés et expliqués.
 
-**Toutes les données de marée, de vent et de houle de cette version sont
-simulées.** Le site le dit sur chaque page qui en affiche. Le lever et le
-coucher du Soleil ainsi que la phase de Lune, eux, sont réellement calculés.
+État des données, à jour :
+
+| Donnée | Source | Nature |
+| --- | --- | --- |
+| Vent, houle, températures, pression | Open-Meteo (modèles Marine & Forecast) | **Prévision réelle** |
+| Lever/coucher du Soleil, phase de Lune | Calcul local (NOAA + lunaison) | **Calculé** |
+| Marées et coefficients | Modèle de démonstration Moonfish | **Simulé** |
+
+Les marées restent inventées, et le site le dit sur chaque page qui en affiche.
+Les avertissements sont pilotés par la source : ils disparaîtront d'eux-mêmes
+quand le fournisseur de marées passera au réel — il n'y a rien à retirer à la main.
 
 ---
 
@@ -23,6 +31,10 @@ Node 20 ou plus. Aucune variable d'environnement n'est requise pour démarrer.
 | Variable | Requise | Par défaut | Rôle |
 | --- | --- | --- | --- |
 | `NEXT_PUBLIC_SITE_URL` | non | `https://moonfish.fish` | Base des URL canoniques, du sitemap et des balises Open Graph. À définir avant toute mise en ligne. |
+| `WEATHER_PROVIDER` | non | Open-Meteo | `mock` force les données simulées : build hors ligne, démonstration sans réseau, tests. |
+| `OPEN_METEO_MARINE_URL` | non | API publique | Redirige vers une instance Open-Meteo auto-hébergée ou le stub local. |
+| `OPEN_METEO_FORECAST_URL` | non | API publique | Idem pour le modèle atmosphérique. |
+| `WAITLIST_FILE` | non | `var/waitlist.jsonl` | Chemin du fichier d'inscriptions. Bascule automatiquement dans le répertoire temporaire sur Vercel. |
 
 ## Scripts
 
@@ -33,7 +45,7 @@ Node 20 ou plus. Aucune variable d'environnement n'est requise pour démarrer.
 | `npm start` | Sert le build de production |
 | `npm run typecheck` | `tsc --noEmit` en mode strict renforcé |
 | `npm run lint` | ESLint (config `next/core-web-vitals` + `next/typescript`) |
-| `npm test` | 71 tests unitaires (Vitest) |
+| `npm test` | 95 tests unitaires (Vitest), hermétiques — aucun accès réseau |
 | `npm run test:watch` | Tests en mode surveillance |
 
 ---
@@ -127,26 +139,42 @@ reconstruit déjà l'heure relative à la pleine mer, le coefficient et l'état 
 marée **à partir des seuls extremums**, exactement la forme que renvoie
 Stormglass. C'est le point d'architecture le plus important du projet.
 
-### 2. Météo marine → Open-Meteo
+### 2. Météo marine → Open-Meteo ✅ FAIT
 
-| | |
-| --- | --- |
-| **Interface** | `WeatherProvider` |
-| **À implémenter** | `getMarineSeries(spot, range): Promise<Sourced<MarinePoint[]>>` |
-| **Mock à remplacer** | `src/lib/providers/mock/weather.ts` |
-| **Nouveau fichier** | `src/lib/providers/open-meteo/weather.ts` |
-| **Ligne à changer** | `export const weather: WeatherProvider = new OpenMeteoWeatherProvider()` |
-
-Deux appels à combiner :
+Implémenté dans `src/lib/providers/open-meteo/weather.ts`. Deux modèles
+distincts, appelés en parallèle et fusionnés **sur l'horodatage** (jamais sur
+l'indice : rien ne garantit que les deux séries démarrent à la même heure) :
 
 - `https://marine-api.open-meteo.com/v1/marine` → `wave_height`, `wave_period`,
-  `wave_direction`
+  `wave_direction`, `sea_surface_temperature`
 - `https://api.open-meteo.com/v1/forecast` → `wind_speed_10m`, `wind_gusts_10m`,
   `wind_direction_10m`, `temperature_2m`, `cloud_cover`, `pressure_msl`
 
-Open-Meteo répond en tableaux parallèles indexés par `hourly.time` ; il faut les
-recomposer en objets `MarinePoint`. Attention aux unités : demander `km/h`
-(`wind_speed_unit=kmh`), le score raisonne en kilomètres-heure.
+Choix qui méritent d'être connus avant d'y toucher :
+
+- `cell_selection=sea` — on veut la maille marine, pas la plus proche. Sur un
+  spot de bord, la maille terrestre donne un vent freiné par le relief.
+- `timeformat=unixtime` — supprime toute ambiguïté de fuseau à l'analyse.
+- `wind_speed_unit=kmh` — le score raisonne en km/h ; ne pas s'en remettre au défaut.
+- **Aucune clé d'API n'est nécessaire.** Open-Meteo est libre d'usage non
+  commercial jusqu'à 10 000 appels par jour ; on en fait 24 par build.
+
+Dégradation : `WeatherProviderWithFallback` rattrape toute panne et repasse la
+source en `simulated`, ce qui **rallume** l'avertissement de démonstration. Un
+mode dégradé qui se ferait passer pour un mode normal serait pire que la panne.
+
+Robustesse : un champ d'affichage hors bornes physiques devient `null`
+(« Indispo. ») ; seule une grandeur dont dépend le score fait écarter l'heure.
+Une rafale aberrante ne doit pas coûter sept jours de vraie prévision.
+
+Tester sans réseau : `node scripts/open-meteo-stub.mjs 4000` sert des réponses
+à la forme exacte de l'API, puis
+
+```bash
+OPEN_METEO_MARINE_URL=http://127.0.0.1:4000/v1/marine \
+OPEN_METEO_FORECAST_URL=http://127.0.0.1:4000/v1/forecast \
+npm run build
+```
 
 ### 3. Spots → Supabase
 
@@ -183,16 +211,16 @@ handler `src/app/api/waitlist/route.ts` ne change pas d'une ligne.
 est en mémoire de processus. Il ne protège rien dès qu'il y a plusieurs
 instances ou du serverless. Le remplacer par un compteur Redis.
 
-### 5. Retirer les avertissements de démonstration
+### 5. Les avertissements de démonstration se retirent seuls
 
-Une fois marées et météo réelles branchées :
+Rien à faire à la main. `DemoDataNotice` et la bordure pointillée `demo-frame`
+sont pilotés par le `kind` des sources réellement utilisées : dès qu'un
+fournisseur cesse de renvoyer `'simulated'`, l'avertissement correspondant
+disparaît et `DataSourceTag` occupe le même emplacement, au même gabarit.
 
-1. Passer `source.kind` à `'measured'` dans les nouveaux providers.
-2. Retirer `<DemoDataNotice />` des pages `/`, `/spots` et du détail spot,
-   ainsi que du `SiteFooter`. `DataSourceTag` occupe déjà le même emplacement,
-   au même gabarit — c'était le but.
-3. Retirer la classe `demo-frame` (bordure pointillée) des blocs concernés
-   dans `src/app/spots/[country]/[region]/[slug]/page.tsx`.
+C'est déjà visible aujourd'hui : sur une page de spot, le bloc « Vent et état de
+mer » est en bordure pleine et étiqueté *Prévision*, tandis que le bloc
+« Marées du jour » garde son cadre pointillé et son étiquette *Simulé*.
 
 ---
 
@@ -248,4 +276,12 @@ Lighthouse mobile, build de production, 8 URL couvrant les 5 pages :
 | Toutes les pages | 97–98 | 100 | 100 | 100 |
 
 `npm run build`, `npm run typecheck` et `npm run lint` passent sans erreur ni
-avertissement. 71 tests unitaires. Aucun débordement horizontal à 375 px.
+avertissement. 95 tests unitaires. Aucun débordement horizontal à 375 px.
+
+## Déploiement
+
+Aucune base de données n'est nécessaire à ce stade. Sur Vercel : importer le
+dépôt, définir `NEXT_PUBLIC_SITE_URL`, déployer. Open-Meteo ne demande pas de
+clé. Les inscriptions à la liste d'attente atterrissent dans le répertoire
+temporaire de l'instance et **n'y survivent pas** — c'est acceptable pour une
+démonstration, pas pour une collecte réelle, d'où l'étape Supabase.

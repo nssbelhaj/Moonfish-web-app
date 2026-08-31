@@ -1,7 +1,9 @@
+import { WeatherProviderWithFallback } from './fallback';
 import { MockSpotRepository } from './mock/spots';
 import { MockTideProvider } from './mock/tide';
 import { MockWeatherProvider } from './mock/weather';
 import { FileWaitlistRepository } from './mock/waitlist';
+import { OpenMeteoWeatherProvider } from './open-meteo/weather';
 import type { SpotRepository, TideProvider, WaitlistRepository, WeatherProvider } from './types';
 
 /**
@@ -14,21 +16,45 @@ import type { SpotRepository, TideProvider, WaitlistRepository, WeatherProvider 
  * module de scoring n'importe une implémentation directement : tous passent
  * par les interfaces exportées ici.
  *
- * Exemple de bascule complète :
+ * Reste à brancher :
  *
  *   import { StormglassTideProvider } from './stormglass/tide';
- *   import { OpenMeteoWeatherProvider } from './open-meteo/weather';
  *   import { SupabaseSpotRepository } from './supabase/spots';
  *   import { SupabaseWaitlistRepository } from './supabase/waitlist';
  *
  *   export const tides: TideProvider = new StormglassTideProvider(process.env.STORMGLASS_KEY!);
- *   export const weather: WeatherProvider = new OpenMeteoWeatherProvider();
  *   export const spots: SpotRepository = new SupabaseSpotRepository();
  *   export const waitlist: WaitlistRepository = new SupabaseWaitlistRepository();
  */
 
 export const tides: TideProvider = new MockTideProvider();
-export const weather: WeatherProvider = new MockWeatherProvider();
+
+/**
+ * Météo marine : Open-Meteo est branché.
+ *
+ * `WEATHER_PROVIDER=mock` force les données simulées — utile pour les tests,
+ * une démonstration hors ligne, ou un build sans accès réseau sortant.
+ * Toute autre valeur, y compris l'absence de variable, utilise Open-Meteo avec
+ * repli explicite sur le mock en cas de panne.
+ */
+export const weather: WeatherProvider =
+  process.env.WEATHER_PROVIDER === 'mock'
+    ? new MockWeatherProvider()
+    : new WeatherProviderWithFallback(
+        new OpenMeteoWeatherProvider({
+          // Redirigeables vers une instance Open-Meteo auto-hébergée, ou vers un
+          // serveur local pour une démonstration hors ligne. Absents, les points
+          // d'accès publics sont utilisés.
+          ...(process.env.OPEN_METEO_MARINE_URL
+            ? { marineUrl: process.env.OPEN_METEO_MARINE_URL }
+            : {}),
+          ...(process.env.OPEN_METEO_FORECAST_URL
+            ? { forecastUrl: process.env.OPEN_METEO_FORECAST_URL }
+            : {}),
+        }),
+        new MockWeatherProvider(),
+      );
+
 export const spots: SpotRepository = new MockSpotRepository();
 export const waitlist: WaitlistRepository = new FileWaitlistRepository();
 

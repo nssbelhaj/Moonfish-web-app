@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { DemoDataNotice } from '@/components/data/DemoDataNotice';
 import { SpotFilters, type FilterOption } from '@/components/forms/SpotFilters';
 import { SpotResults, SpotResultsSkeleton } from '@/components/spot/SpotResults';
 import { Section } from '@/components/ui/Section';
@@ -121,10 +120,6 @@ export default async function SpotsPage({
           bottoms={toOptions(countBy(all, (spot) => spot.bottom), (value) => BOTTOM_LABELS[value as Spot['bottom']] ?? value)}
           total={matching.length}
         />
-
-        <div className="mt-6">
-          <DemoDataNotice />
-        </div>
 
         {matching.length === 0 ? (
           <div className="mt-6 rounded-card border border-edge bg-card px-4 py-8">

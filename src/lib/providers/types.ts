@@ -9,11 +9,17 @@ export interface DateRange {
 /**
  * Nature de la donnée, affichée telle quelle par `DataSourceTag`.
  *
- * La distinction n'est pas décorative : `simulated` déclenche le cadre pointillé
- * et l'avertissement, `computed` ne le déclenche pas. Publier une heure de marée
- * inventée sans le dire est le seul vrai risque produit de cette version.
+ * La distinction n'est pas décorative : seul `simulated` déclenche le cadre
+ * pointillé et l'avertissement. Publier une heure de marée inventée sans le dire
+ * est le seul vrai risque produit de cette version.
+ *
+ *  - `measured`   relevé ou contenu éditorial vérifié ;
+ *  - `forecast`   sortie d'un modèle météo réel — vraie donnée, mais dont la
+ *                 fiabilité décroît avec l'échéance, ce qu'il faut dire ;
+ *  - `computed`   calculé localement par une formule déterministe (astronomie) ;
+ *  - `simulated`  inventé.
  */
-export type DataKind = 'measured' | 'computed' | 'simulated';
+export type DataKind = 'measured' | 'forecast' | 'computed' | 'simulated';
 
 export interface SourceMeta {
   /** Nom lisible de la source, tel qu'affiché à l'utilisateur. */

@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { DataSourceTag } from '@/components/data/DataSourceTag';
-import { DemoDataNotice } from '@/components/data/DemoDataNotice';
+import { DemoDataNotice, simulatedSources } from '@/components/data/DemoDataNotice';
 import { EmailCaptureForm } from '@/components/forms/EmailCaptureForm';
 import { MoonPhase } from '@/components/marine/MoonPhase';
 import { TideChart } from '@/components/marine/TideChart';
@@ -95,6 +95,12 @@ export default async function SpotPage({ params }: { params: Promise<RouteParams
 
   const isDanger = current?.score.safety.level === 'danger';
 
+  // Le cadre pointillé suit la source du BLOC, pas la page : depuis le
+  // branchement d'Open-Meteo, la marée est encore simulée alors que le vent et
+  // la houle sont réels. Encadrer les deux à l'identique serait faux.
+  const tideIsSimulated = simulatedSources([forecast.sources.tide]).length > 0;
+  const weatherIsSimulated = simulatedSources([forecast.sources.weather]).length > 0;
+
   // Handoff §5 : variante 1a (score en tête) en conditions normales, 1b
   // (créneau praticable en tête) dès qu'une alerte de sécurité est active.
   // Le produit bascule seul, ce n'est pas un choix utilisateur.
@@ -185,6 +191,10 @@ export default async function SpotPage({ params }: { params: Promise<RouteParams
 
         <h1 className="mt-3 text-h1 font-700">{spot.name}</h1>
         <p className="mt-3 max-w-measure text-body text-fg-muted">{spot.summary}</p>
+
+        <div className="mt-6">
+          <DemoDataNotice sources={Object.values(forecast.sources)} />
+        </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
           <Tag>{SPOT_TYPE_LABELS[spot.type]}</Tag>
@@ -294,8 +304,11 @@ export default async function SpotPage({ params }: { params: Promise<RouteParams
         </div>
 
         <aside className="mt-10 xl:mt-0">
-          <section aria-labelledby="marees" className="demo-frame p-4">
-            <DemoDataNotice compact />
+          <section
+            aria-labelledby="marees"
+            className={tideIsSimulated ? 'demo-frame p-4' : 'rounded-card border border-edge p-4'}
+          >
+            <DemoDataNotice sources={[forecast.sources.tide]} compact />
             <h2 id="marees" className="mt-2 text-h2 font-600">
               Marées du jour
             </h2>
@@ -321,8 +334,13 @@ export default async function SpotPage({ params }: { params: Promise<RouteParams
             />
           </section>
 
-          <section aria-labelledby="meteo" className="demo-frame mt-6 p-4">
-            <DemoDataNotice compact />
+          <section
+            aria-labelledby="meteo"
+            className={
+              weatherIsSimulated ? 'demo-frame mt-6 p-4' : 'mt-6 rounded-card border border-edge p-4'
+            }
+          >
+            <DemoDataNotice sources={[forecast.sources.weather]} compact />
             <h2 id="meteo" className="mt-2 text-h2 font-600">
               Vent et état de mer
             </h2>

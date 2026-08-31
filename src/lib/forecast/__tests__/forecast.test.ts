@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SPOTS } from '@/data/spots';
 import { generateMarineSeries } from '@/data/generators/marine';
-import { generateTideEvents, tideCoefficientFor } from '@/data/generators/tide';
+import { generateTideEvents, tidalRangeFor, tideCoefficientFor } from '@/data/generators/tide';
 import { getSpotForecast, referenceNow } from '@/lib/forecast';
 import { tideContextAt } from '../tide-context';
 
@@ -145,5 +145,39 @@ describe('prévision assemblée', () => {
     const a = await getSpotForecast(spot, NOW);
     const b = await getSpotForecast(spot, NOW);
     expect(a).toStrictEqual(b);
+  });
+});
+
+describe('hauteurs d’eau simulées', () => {
+  /**
+   * Les cotes françaises sont référencées au zéro hydrographique : une hauteur
+   * négative n'existe pratiquement jamais. L'échelonnement linéaire initial du
+   * marnage produisait des basses mers à −1,12 m sur les gros coefficients.
+   */
+  it('ne descend jamais sous le zéro des cartes, quel que soit le coefficient', () => {
+    for (const s of SPOTS) {
+      const events = generateTideEvents(s, new Date('2026-01-01T00:00:00Z'), new Date('2026-03-01T00:00:00Z'));
+      for (const event of events) {
+        expect(event.heightM).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('garde la pleine mer dans un ordre de grandeur crédible pour le marnage du spot', () => {
+    for (const s of SPOTS) {
+      const events = generateTideEvents(s, new Date('2026-01-01T00:00:00Z'), new Date('2026-03-01T00:00:00Z'));
+      const highest = Math.max(...events.map((event) => event.heightM));
+      // Jamais plus de 1,6 fois le marnage moyen au-dessus du zéro.
+      expect(highest).toBeLessThan(s.meanTideRangeM * 1.6 + 1.5);
+    }
+  });
+
+  it('creuse le marnage avec le coefficient, sans le rendre proportionnel', () => {
+    const spring = tidalRangeFor(spot, 115);
+    const neap = tidalRangeFor(spot, 40);
+    expect(spring).toBeGreaterThan(neap);
+    // Proportionnel donnerait un rapport de 2,9 ; la réalité est bien plus plate.
+    expect(spring / neap).toBeLessThan(2);
+    expect(tidalRangeFor(spot, 70)).toBeCloseTo(spot.meanTideRangeM, 6);
   });
 });

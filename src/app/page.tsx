@@ -7,7 +7,7 @@ import { SpotCard } from '@/components/spot/SpotCard';
 import { ButtonLink } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Section } from '@/components/ui/Section';
-import { getAllSpotSummaries, referenceNow } from '@/lib/forecast';
+import { collectSources, getAllSpotSummaries, referenceNow } from '@/lib/forecast';
 import { absoluteUrl, spotPath } from '@/lib/routes';
 import { formatDateTime } from '@/lib/time';
 
@@ -36,7 +36,7 @@ const FAQ = [
   {
     question: 'Les données affichées sont-elles réelles ?',
     answer:
-      'Non. Dans cette version, les marées, le vent et la houle sont simulés et clairement signalés comme tels sur chaque page. Le lever et le coucher du Soleil ainsi que la phase de Lune sont, eux, réellement calculés.',
+      'En partie. Le vent et la houle viennent des modèles Open-Meteo : ce sont de vraies prévisions. Le lever et le coucher du Soleil ainsi que la phase de Lune sont calculés localement. Les marées, en revanche, sont encore simulées, et chaque bloc indique sa provenance et sa fraîcheur.',
   },
   {
     question: 'Un score élevé garantit-il une prise ?',
@@ -54,6 +54,7 @@ export default async function HomePage() {
   const now = referenceNow();
   const summaries = await getAllSpotSummaries(now);
   const featured = summaries.slice(0, 3);
+  const sources = collectSources(summaries);
 
   const searchable: SearchableSpot[] = summaries.map((summary) => ({
     slug: summary.spot.slug,
@@ -96,7 +97,7 @@ export default async function HomePage() {
         </div>
 
         <div className="mt-6">
-          <DemoDataNotice />
+          <DemoDataNotice sources={sources} />
         </div>
       </div>
 
@@ -183,8 +184,8 @@ export default async function HomePage() {
 
       <Section
         id="waitlist"
-        title="Être prévenu quand les données deviennent réelles"
-        lead="Stormglass pour les marées, Open-Meteo Marine pour le vent et la houle. Une seule adresse suffit, et vous ne recevrez rien d’autre."
+        title="Être prévenu quand les marées deviennent réelles"
+        lead="Le vent et la houle sont déjà réels. Reste les marées, via le SHOM ou Stormglass. Une seule adresse suffit, et vous ne recevrez rien d’autre."
       >
         <div className="max-w-[42rem]">
           <EmailCaptureForm source="accueil" />

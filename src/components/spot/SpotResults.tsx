@@ -1,5 +1,6 @@
+import { DemoDataNotice } from '@/components/data/DemoDataNotice';
 import type { Spot } from '@/data/schemas';
-import { getSpotSummary, referenceNow } from '@/lib/forecast';
+import { collectSources, getSpotSummary, referenceNow } from '@/lib/forecast';
 import { SpotCard } from './SpotCard';
 
 /**
@@ -17,13 +18,18 @@ export async function SpotResults({ spots }: { spots: readonly Spot[] }) {
   summaries.sort((a, b) => (b.current?.score.value ?? 0) - (a.current?.score.value ?? 0));
 
   return (
-    <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {summaries.map((summary) => (
-        <li key={summary.spot.slug}>
-          <SpotCard summary={summary} />
-        </li>
-      ))}
-    </ul>
+    <>
+      <div className="mt-4">
+        <DemoDataNotice sources={collectSources(summaries)} />
+      </div>
+      <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {summaries.map((summary) => (
+          <li key={summary.spot.slug}>
+            <SpotCard summary={summary} />
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }
 

@@ -24,7 +24,8 @@ export function WindCompass({
 }: {
   fromDeg: number;
   speedKmh: number;
-  gustKmh: number;
+  /** Les rafales manquent sur certaines mailles : l'absence se dit. */
+  gustKmh: number | null;
   spotFacingDeg: number;
   size?: number;
 }) {
@@ -45,7 +46,7 @@ export function WindCompass({
         height={size}
         viewBox="0 0 120 120"
         role="img"
-        aria-label={`Vent de ${Math.round(speedKmh)} kilomètres par heure venant du secteur ${cardinal(fromDeg)}, soit un ${label}. Rafales à ${Math.round(gustKmh)}.`}
+        aria-label={`Vent de ${Math.round(speedKmh)} kilomètres par heure venant du secteur ${cardinal(fromDeg)}, soit un ${label}.${gustKmh === null ? '' : ` Rafales à ${Math.round(gustKmh)}.`}`}
       >
         <circle cx={center} cy={center} r={radius} fill="none" stroke="var(--edge)" strokeWidth="1" />
         <circle cx={center} cy={center} r={radius / 2} fill="none" stroke="var(--edge)" strokeWidth="1" />
@@ -85,7 +86,7 @@ export function WindCompass({
           <span className="text-h3 font-500 text-fg-dim"> km/h</span>
         </p>
         <p className="mt-1 font-mono text-data text-fg-muted" data-numeric="">
-          rafales {Math.round(gustKmh)} km/h
+          {gustKmh === null ? 'rafales indispo.' : `rafales ${Math.round(gustKmh)} km/h`}
         </p>
         <p className="mt-1 font-mono text-data text-fg-muted">
           {label} · secteur {cardinal(fromDeg)} ({Math.round(fromDeg)}°)

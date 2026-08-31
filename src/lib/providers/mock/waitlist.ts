@@ -1,4 +1,5 @@
 import { appendFile, mkdir, readFile } from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 
@@ -6,8 +7,28 @@ import { waitlistEntrySchema, waitlistInputSchema, type WaitlistEntry, type Wait
 import { SlidingWindowRateLimiter } from '@/lib/rate-limit';
 import type { WaitlistRepository, WaitlistResult } from '../types';
 
-const STORAGE_DIR = path.join(process.cwd(), 'var');
-const STORAGE_FILE = path.join(STORAGE_DIR, 'waitlist.jsonl');
+/**
+ * Emplacement du fichier.
+ *
+ * `WAITLIST_FILE` prime. À défaut, `var/` à la racine du projet en local — et
+ * le répertoire temporaire du système sur un hébergeur serverless, dont le
+ * système de fichiers applicatif est en lecture seule. Sans ce repli, le
+ * formulaire renverrait 503 sur Vercel et la démonstration serait cassée là où
+ * on la montre.
+ *
+ * Ça ne rend pas le stockage durable pour autant : `/tmp` disparaît avec
+ * l'instance. C'est exactement pourquoi Supabase reste la prochaine étape avant
+ * toute collecte réelle.
+ */
+const RUNS_SERVERLESS = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+
+const STORAGE_FILE =
+  process.env.WAITLIST_FILE ??
+  (RUNS_SERVERLESS
+    ? path.join(os.tmpdir(), 'moonfish-waitlist.jsonl')
+    : path.join(process.cwd(), 'var', 'waitlist.jsonl'));
+
+const STORAGE_DIR = path.dirname(STORAGE_FILE);
 
 /** 5 inscriptions par adresse IP et par quart d'heure : large pour un humain, étroit pour un script. */
 const limiter = new SlidingWindowRateLimiter(5, 15 * 60 * 1000);

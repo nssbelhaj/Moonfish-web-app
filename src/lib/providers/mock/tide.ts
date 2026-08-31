@@ -14,7 +14,7 @@ import type { DateRange, Sourced, TideProvider } from '../types';
  */
 export class MockTideProvider implements TideProvider {
   readonly source = {
-    name: 'Modèle de démonstration Moonfish',
+    name: 'Marées — modèle de démonstration Moonfish',
     kind: 'simulated' as const,
     precision:
       'Onde semi-diurne M2 pure, sans harmoniques locales. Les horaires peuvent s’écarter de plusieurs dizaines de minutes de la réalité.',

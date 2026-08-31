@@ -61,19 +61,31 @@ export const tideEventSchema = z.object({
 
 export type TideEvent = z.infer<typeof tideEventSchema>;
 
+/**
+ * Une heure de conditions marines.
+ *
+ * Les cinq champs d'affichage sont NULLABLES parce qu'une vraie API en renvoie
+ * des trous : Open-Meteo ne couvre pas la température de surface partout, et
+ * les rafales manquent sur certaines mailles. L'interface affiche alors
+ * « Indispo. » — jamais 0, qui serait une valeur (handoff §5).
+ *
+ * Les cinq champs dont le score dépend, eux, restent obligatoires : une heure
+ * sans vent ni houle n'est pas une heure dégradée, c'est une heure absente, et
+ * elle est écartée en amont plutôt que comblée.
+ */
 export const marinePointSchema = z.object({
   time: isoDateTime,
   windSpeedKmh: z.number().min(0),
-  windGustKmh: z.number().min(0),
   /** Direction D'OÙ VIENT le vent (convention marine). */
   windFromDeg: z.number().min(0).max(360),
   swellHeightM: z.number().min(0),
   swellPeriodS: z.number().min(0),
   swellFromDeg: z.number().min(0).max(360),
-  airTempC: z.number(),
-  waterTempC: z.number(),
-  cloudCoverPct: z.number().min(0).max(100),
-  pressureHpa: z.number().min(870).max(1090),
+  windGustKmh: z.number().min(0).nullable(),
+  airTempC: z.number().nullable(),
+  waterTempC: z.number().nullable(),
+  cloudCoverPct: z.number().min(0).max(100).nullable(),
+  pressureHpa: z.number().min(870).max(1090).nullable(),
 });
 
 export type MarinePoint = z.infer<typeof marinePointSchema>;

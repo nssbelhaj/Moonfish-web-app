@@ -24,6 +24,31 @@ export function tideCoefficientFor(date: Date): number {
 }
 
 /**
+ * Marnage du jour, en mètres.
+ *
+ * Le marnage ne varie PAS proportionnellement au coefficient : un coefficient
+ * de 120 ne double pas le marnage d'un coefficient de 60. La relation réelle
+ * est affine, et l'ignorer produisait des pleines mers de dix mètres à Crozon
+ * et des basses mers négatives — or les cotes françaises sont référencées au
+ * zéro hydrographique, sous lequel on ne descend pratiquement jamais.
+ *
+ * `meanTideRangeM` est le marnage au coefficient 70, d'où le point fixe.
+ */
+export function tidalRangeFor(spot: Spot, coefficient: number): number {
+  return spot.meanTideRangeM * (0.45 + (0.55 * coefficient) / 70);
+}
+
+/**
+ * Niveau moyen au-dessus du zéro des cartes.
+ *
+ * Posé juste assez haut pour que la basse mer de vive-eau extrême reste au-dessus
+ * du zéro, avec une marge d'un demi-mètre.
+ */
+export function meanSeaLevelFor(spot: Spot): number {
+  return tidalRangeFor(spot, 120) / 2 + 0.5;
+}
+
+/**
  * Décalage horaire de la pleine mer propre au spot — l'« établissement du port ».
  * Tiré du slug, donc stable d'un build à l'autre.
  */
@@ -72,9 +97,8 @@ export function generateTideEvents(spot: Spot, from: Date, to: Date): TideEvent[
     const time = new Date(timeMs);
     const coefficient = tideCoefficientFor(time);
     const isHigh = ((i % 2) + 2) % 2 === 0;
-    // Le marnage du jour s'écarte du marnage moyen dans le rapport du coefficient à 70.
-    const amplitude = (spot.meanTideRangeM * (coefficient / 70)) / 2;
-    const meanLevel = spot.meanTideRangeM / 2 + 0.6;
+    const amplitude = tidalRangeFor(spot, coefficient) / 2;
+    const meanLevel = meanSeaLevelFor(spot);
 
     events.push({
       time: time.toISOString(),

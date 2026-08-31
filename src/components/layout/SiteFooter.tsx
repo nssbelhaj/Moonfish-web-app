@@ -1,36 +1,69 @@
 import Link from 'next/link';
+import { ASTRO_SOURCE, tides, weather } from '@/lib/providers';
+
+const KIND_LABEL = {
+  measured: 'Relevé',
+  forecast: 'Prévision',
+  computed: 'Calculé',
+  simulated: 'Simulé',
+} as const;
+
+const SOURCES = [
+  { label: 'Marées', source: tides.source },
+  { label: 'Vent et houle', source: weather.source },
+  { label: 'Soleil et Lune', source: ASTRO_SOURCE },
+] as const;
 
 export function SiteFooter() {
+  const anySimulated = SOURCES.some((entry) => entry.source.kind === 'simulated');
+
   return (
     <footer className="mt-12 border-t border-edge">
       <div className="mx-auto max-w-shell px-4 py-8 md:px-8">
-        <div className="demo-frame px-4 py-3">
-          <p className="font-mono text-label uppercase tracking-[0.14em] text-score-mid">
-            Données de démonstration
+        {/*
+          Décrit l'état RÉEL des fournisseurs déclarés plutôt qu'une phrase figée.
+          Depuis le branchement d'Open-Meteo, dire « tout est simulé » serait
+          devenu faux — et une mention fausse, même prudente, use la confiance
+          aussi sûrement qu'une mention absente.
+        */}
+        <div className={anySimulated ? 'demo-frame px-4 py-3' : 'rounded-card border border-edge px-4 py-3'}>
+          <p className="font-mono text-label uppercase tracking-[0.14em] text-fg-muted">
+            D’où viennent les données
           </p>
-          <p className="mt-2 max-w-measure text-body text-fg-muted">
-            Marées, vent et houle sont simulés sur l’ensemble du site. Ne les utilisez pas pour
-            planifier une sortie réelle. Pour des données officielles : horaires de marée sur{' '}
-            <a
-              href="https://maree.shom.fr"
-              className="underline decoration-dotted underline-offset-4"
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              maree.shom.fr
-            </a>{' '}
-            et bulletin marine sur{' '}
-            <a
-              href="https://meteofrance.com/meteo-marine"
-              className="underline decoration-dotted underline-offset-4"
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              meteofrance.com
-            </a>
-            . Le lever et le coucher du Soleil ainsi que la phase de Lune, eux, sont calculés et
-            exacts.
-          </p>
+          <ul className="mt-3 max-w-measure space-y-2">
+            {SOURCES.map(({ label, source }) => (
+              <li key={label} className="text-body text-fg-muted">
+                <span className="font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-fg-dim">
+                  {KIND_LABEL[source.kind]}
+                </span>{' '}
+                — <strong className="font-600 text-fg">{label}</strong> : {source.name}.
+              </li>
+            ))}
+          </ul>
+          {anySimulated && (
+            <p className="mt-3 max-w-measure text-body text-fg-muted">
+              Ce qui est marqué <em>simulé</em> est inventé : ne vous en servez pas pour planifier
+              une sortie. Horaires officiels sur{' '}
+              <a
+                href="https://maree.shom.fr"
+                className="underline decoration-dotted underline-offset-4"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                maree.shom.fr
+              </a>{' '}
+              et bulletin marine sur{' '}
+              <a
+                href="https://meteofrance.com/meteo-marine"
+                className="underline decoration-dotted underline-offset-4"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                meteofrance.com
+              </a>
+              .
+            </p>
+          )}
         </div>
 
         <nav aria-label="Pied de page" className="mt-6">

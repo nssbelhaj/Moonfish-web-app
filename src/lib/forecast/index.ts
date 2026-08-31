@@ -87,6 +87,12 @@ export interface SpotSummary {
   current: ForecastSlot | null;
   nextGood: ForecastSlot | null;
   best: ForecastSlot | null;
+  /**
+   * Sources RÉELLEMENT utilisées pour ce spot, pas celles déclarées par les
+   * fournisseurs : si Open-Meteo est tombé sur ce spot précis, c'est ici qu'on
+   * le voit, et c'est ce qui rallume l'avertissement de démonstration.
+   */
+  sources: ForecastSources;
 }
 
 export async function getSpotSummary(spot: Spot, now: Date = referenceNow()): Promise<SpotSummary> {
@@ -96,7 +102,19 @@ export async function getSpotSummary(spot: Spot, now: Date = referenceNow()): Pr
     current: forecast.current,
     nextGood: forecast.nextGood,
     best: forecast.best,
+    sources: forecast.sources,
   };
+}
+
+/** Aplatit les sources d'un lot de spots, sans doublon, pour l'avertissement de page. */
+export function collectSources(summaries: readonly SpotSummary[]): SourceMeta[] {
+  const seen = new Map<string, SourceMeta>();
+  for (const summary of summaries) {
+    for (const source of Object.values(summary.sources)) {
+      if (!seen.has(source.name)) seen.set(source.name, source);
+    }
+  }
+  return [...seen.values()];
 }
 
 /** Résumés de tous les spots, triés du meilleur score courant au moins bon. */
