@@ -3,24 +3,57 @@ import type { TideEvent } from '@/data/schemas';
 import { sampleTideCurve, tideBounds } from '@/lib/forecast/tide-curve';
 import { ACTIVITY_LABELS, activityLevel, tierForOrNull } from '@/lib/score-display';
 import { formatTime } from '@/lib/time';
-import { FishGlyph } from '@/components/marine/FishGlyph';
 import { UI_TEXT_PROPS, WATER_TEXT_PROPS } from './WaterValue';
 
-/** Cadre du handoff : 340 de large, texte SVG jamais sous 9,5 px. */
-const W = 340;
-const CURVE_TOP = 30;
-const CURVE_BOTTOM = 118;
 /**
- * Hauteur totale. L'écart entre le bas de la courbe et l'axe des heures n'est
- * pas décoratif : les libellés de BASSE MER se posent sous leur point, or ce
- * point touche le bas du tracé. Sans cette réserve, « BM 10:16 » se superposait
- * à la ligne de base et aux heures.
+ * Deux cadres, un par largeur d'écran.
  *
- * Il n'y a d'ailleurs plus de ligne de base tracée : le bord inférieur de
- * l'aplat d'eau la dessine déjà, et le trait supplémentaire ne faisait que
- * barrer les libellés de basse mer.
+ * Un SVG à `width: 100%` étire son viewBox : le cadre de 340 px du handoff,
+ * affiché dans une colonne de 1 100 px, est agrandi 3,3 fois — les traits de
+ * 1 px deviennent 3,3 px et le texte de 9,5 px monte à 31 px. C'est
+ * exactement ce qui rendait le graphe « grossier » sur le web alors qu'il était
+ * net sur mobile : ce n'était pas le dessin, c'était le facteur d'échelle.
+ *
+ * Le cadre large n'est donc pas le même dessin étiré, c'est un dessin PLUS
+ * LARGE dans lequel les mêmes épaisseurs gardent leur valeur d'origine.
  */
-const H = 156;
+const COMPACT = {
+  W: 340,
+  H: 186,
+  top: 30,
+  bottom: 116,
+  band: 138,
+  font: 9.5,
+  /**
+   * Deux fenêtres seulement en mobile.
+   *
+   * Quatre pastilles de deux heures dans 340 px se recouvrent, et leurs quatre
+   * libellés « 14:00–16:00 » se chevauchent au point d'être illisibles. Le
+   * cadre étroit ne porte donc que les deux meilleures : c'est de toute façon
+   * la question qu'on se pose sur un téléphone, au bord de l'eau.
+   */
+  maxWindows: 2,
+  shortLabel: true,
+} as const;
+
+const WIDE = {
+  W: 760,
+  H: 292,
+  top: 46,
+  bottom: 196,
+  band: 224,
+  font: 11,
+  maxWindows: 4,
+  shortLabel: false,
+} as const;
+
+type Frame = typeof COMPACT | typeof WIDE;
+
+/** Le poisson du `FishGlyph`, en chemin, pour être posé dans un SVG parent. */
+const FISH_PATHS = [
+  'M2 6 C 5 1, 13 1, 17 6 C 13 11, 5 11, 2 6 Z',
+  'M16.5 6 L 22 2 L 22 10 Z',
+] as const;
 
 function smooth(points: readonly [number, number][]): string {
   if (points.length < 2) return '';
@@ -42,24 +75,74 @@ function smooth(points: readonly [number, number][]): string {
 }
 
 /**
- * La journée : hauteur d'eau, jour et nuit, et l'activité par créneau de 2 h.
+ * Créneaux porteurs de la journée : au plus quatre, jamais moins de deux
+ * poissons.
  *
- * ─────────────────────────────────────────────────────────────────────────
- *  CE QUI A CHANGÉ, ET POURQUOI.
+ * Douze créneaux affichés côte à côte redevenaient un tableau. Ce qui intéresse
+ * le pêcheur, ce n'est pas la note de chacune des douze tranches, c'est
+ * lesquelles valent le déplacement — et s'il n'y en a aucune, la réponse est
+ * « aucune », pas une rangée de créneaux médiocres.
+ */
+export interface CarryingWindow {
+  start: string;
+  end: string;
+  /** Nombre de poissons : le meilleur palier atteint dans la fenêtre. */
+  level: 2 | 3;
+  /** Meilleur score de la fenêtre, pour la couleur. */
+  value: number;
+}
+
+/**
+ * Fenêtres porteuses de la journée.
  *
- *  Le graphe portait une « bande d'activité » continue, lissée sous la marée.
- *  Deux défauts : elle suggérait une mesure continue là où nous n'avons que
- *  douze notes discrètes, et elle empilait deux courbes dans la même hauteur,
- *  ce qui rendait les deux illisibles.
+ * Deux choses à la fois :
  *
- *  L'activité est donc désormais une RANGÉE DE CRÉNEAUX de deux heures, chacun
- *  codé de zéro à trois poissons. Ce n'est pas une seconde information à
- *  apprendre : le nombre de poissons EST le palier du score, lu autrement.
- * ─────────────────────────────────────────────────────────────────────────
+ *  — on ne garde que les créneaux au palier « Bon » ou mieux. Douze tranches
+ *    affichées côte à côte redevenaient un tableau ; ce qui intéresse le
+ *    pêcheur, c'est lesquelles valent le déplacement, et s'il n'y en a aucune,
+ *    la réponse est « aucune », pas une rangée de créneaux médiocres ;
  *
- * Le ruban jour/nuit est en fond plutôt qu'en ligne : le lever et le coucher ne
- * sont pas des événements ponctuels comme une pleine mer, ce sont des bornes
- * entre deux régimes de lumière — et c'est ce que le pêcheur lit.
+ *  — les tranches CONTIGUËS sont fusionnées. Deux créneaux de deux heures qui
+ *    se suivent ne sont pas deux sorties, c'est une fenêtre de quatre heures.
+ *    Les afficher séparément collait deux pastilles bord à bord et écrivait
+ *    « 14–16h16–18h » sans espace : le découpage technique fuyait dans
+ *    l'interface.
+ */
+export function carryingWindows(day: ForecastDay, max = 4): CarryingWindow[] {
+  const carrying = day.slots
+    .filter((slot) => slot.score.safety.level !== 'danger')
+    .filter((slot) => activityLevel(slot.score.value) >= 2);
+
+  const merged: CarryingWindow[] = [];
+  for (const slot of carrying) {
+    const level = activityLevel(slot.score.value) as 2 | 3;
+    const value = slot.score.value ?? 0;
+    const last = merged[merged.length - 1];
+
+    if (last && new Date(last.end).getTime() === new Date(slot.start).getTime()) {
+      last.end = slot.end;
+      // La fenêtre porte le MEILLEUR de ses créneaux : c'est ce qu'on va y
+      // chercher, pas la moyenne de ce qu'on y traverse.
+      if (level > last.level) last.level = level;
+      if (value > last.value) last.value = value;
+      continue;
+    }
+    merged.push({ start: slot.start, end: slot.end, level, value });
+  }
+
+  return merged
+    .sort((a, b) => b.value - a.value)
+    .slice(0, max)
+    .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+}
+
+/**
+ * La journée : hauteur d'eau, jour et nuit, et les créneaux porteurs.
+ *
+ * L'activité vit DANS le graphe, sous la courbe, sur le même axe de temps —
+ * c'est tout l'intérêt : on voit d'un coup que la fenêtre tombe sur la
+ * montante. En rangée séparée sous la figure, elle redevenait un tableau qu'il
+ * fallait relire de gauche à droite pour le rapporter à la marée.
  */
 export function TideActivityChart({
   day,
@@ -74,40 +157,7 @@ export function TideActivityChart({
   now: string;
   coefficient: number | null;
 }) {
-  const startMs = new Date(day.date).getTime();
-  const endMs = startMs + 24 * 3_600_000;
-  const x = (ms: number) => ((ms - startMs) / (endMs - startMs)) * W;
-  const clampX = (v: number) => Math.max(0, Math.min(W, v));
-
-  const relevant = tideEvents.filter((e) => {
-    const t = new Date(e.time).getTime();
-    return t >= startMs - 8 * 3_600_000 && t <= endMs + 8 * 3_600_000;
-  });
-
-  const bounds = tideBounds(relevant);
-  const y = (h: number) =>
-    bounds && bounds.max > bounds.min
-      ? CURVE_TOP + (1 - (h - bounds.min) / (bounds.max - bounds.min)) * (CURVE_BOTTOM - CURVE_TOP)
-      : (CURVE_TOP + CURVE_BOTTOM) / 2;
-
-  const samples = bounds
-    ? sampleTideCurve(relevant, new Date(startMs), new Date(endMs), 120).map(
-        (s) => [x(new Date(s.time).getTime()), y(s.heightM)] as [number, number],
-      )
-    : [];
-  const curve = smooth(samples);
-  const area = curve ? `${curve} L${W},${CURVE_BOTTOM} L0,${CURVE_BOTTOM} Z` : '';
-
-  const sunrise = day.sunrise ? clampX(x(new Date(day.sunrise).getTime())) : null;
-  const sunset = day.sunset ? clampX(x(new Date(day.sunset).getTime())) : null;
-
-  const nowMs = new Date(now).getTime();
-  const nowX = nowMs >= startMs && nowMs < endMs ? x(nowMs) : null;
-
-  const events = relevant.filter((e) => {
-    const t = new Date(e.time).getTime();
-    return t >= startMs && t <= endMs;
-  });
+  const hasCarrying = carryingWindows(day, 1).length > 0;
 
   return (
     <figure className="surface p-[14px]">
@@ -118,177 +168,17 @@ export function TideActivityChart({
         )}
       </figcaption>
 
-      <svg viewBox={`0 0 ${W} ${H}`} className="mt-3 block h-auto w-full" aria-hidden="true">
-        <defs>
-          <linearGradient id="mf-eau" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="var(--water)" stopOpacity="0.7" />
-            <stop offset="1" stopColor="var(--water)" stopOpacity="0.08" />
-          </linearGradient>
-        </defs>
-
-        {/* Ruban de nuit, en fond : deux régimes de lumière, pas deux instants. */}
-        {sunrise !== null && sunset !== null && (
-          <g fill="var(--fg)" opacity="0.06">
-            <rect x="0" y={CURVE_TOP - 8} width={sunrise} height={CURVE_BOTTOM - CURVE_TOP + 8} />
-            <rect
-              x={sunset}
-              y={CURVE_TOP - 8}
-              width={W - sunset}
-              height={CURVE_BOTTOM - CURVE_TOP + 8}
-            />
-          </g>
-        )}
-
-        {/* Deux repères seulement : trois lignes encombraient un cadre de 100 px. */}
-        <g stroke="var(--edge)" strokeWidth="1" strokeDasharray="2 5" opacity="0.7">
-          <line x1="0" y1={CURVE_TOP + 26} x2={W} y2={CURVE_TOP + 26} />
-          <line x1="0" y1={CURVE_TOP + 68} x2={W} y2={CURVE_TOP + 68} />
-        </g>
-
-        {area && <path d={area} fill="url(#mf-eau)" />}
-        {curve && (
-          <path
-            d={curve}
-            fill="none"
-            stroke="var(--accent)"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-        )}
-
-        {/* Lever et coucher : un trait fin et sobre, la mention au-dessus. */}
-        {sunrise !== null && (
-          <g>
-            <line
-              x1={sunrise}
-              y1={CURVE_TOP - 8}
-              x2={sunrise}
-              y2={CURVE_BOTTOM}
-              stroke="var(--edge-strong)"
-              strokeWidth="1"
-              strokeDasharray="1 3"
-            />
-            <text x={sunrise + 4} y={CURVE_TOP - 12} fontSize="9.5" fill="var(--fg-muted)" {...UI_TEXT_PROPS}>
-              ↑ {formatTime(new Date(day.sunrise as string), timeZone)}
-            </text>
-          </g>
-        )}
-        {sunset !== null && (
-          <g>
-            <line
-              x1={sunset}
-              y1={CURVE_TOP - 8}
-              x2={sunset}
-              y2={CURVE_BOTTOM}
-              stroke="var(--edge-strong)"
-              strokeWidth="1"
-              strokeDasharray="1 3"
-            />
-            <text
-              x={sunset - 4}
-              y={CURVE_TOP - 12}
-              textAnchor="end"
-              fontSize="9.5"
-              fill="var(--fg-muted)"
-              {...UI_TEXT_PROPS}
-            >
-              ↓ {formatTime(new Date(day.sunset as string), timeZone)}
-            </text>
-          </g>
-        )}
-
-        {/* Extrêmes : un point sur le tracé, l'heure dessous en grandeur d'eau. */}
-        {events.map((event) => {
-          const px = x(new Date(event.time).getTime());
-          const py = y(event.heightM);
-          const anchorEnd = px > W - 46;
-          const anchorStart = px < 46;
-          return (
-            <g key={event.time}>
-              <circle cx={px} cy={py} r="2.6" fill="var(--accent)" />
-              <text
-                x={anchorEnd ? px - 3 : anchorStart ? px + 3 : px}
-                y={event.type === 'high' ? py - 9 : py + 14}
-                textAnchor={anchorEnd ? 'end' : anchorStart ? 'start' : 'middle'}
-                fontSize="9.5"
-                {...WATER_TEXT_PROPS}
-              >
-                {event.type === 'high' ? 'PM' : 'BM'} {formatTime(new Date(event.time), timeZone)}
-              </text>
-            </g>
-          );
-        })}
-
-        {nowX !== null && (
-          <>
-            <line
-              x1={nowX}
-              y1={CURVE_TOP - 18}
-              x2={nowX}
-              y2={CURVE_BOTTOM}
-              stroke="var(--fg)"
-              strokeWidth="1.4"
-            />
-            <circle cx={nowX} cy={CURVE_TOP - 18} r="3" fill="var(--fg)" />
-          </>
-        )}
-
-
-        <g fontSize="9.5" fill="var(--fg-muted)" {...UI_TEXT_PROPS}>
-          {[0, 6, 12, 18, 24].map((hour) => (
-            <text
-              key={hour}
-              x={clampX((hour / 24) * W)}
-              y={H - 2}
-              textAnchor={hour === 0 ? 'start' : hour === 24 ? 'end' : 'middle'}
-            >
-              {hour === 24 ? '24h' : `${String(hour).padStart(2, '0')}h`}
-            </text>
-          ))}
-        </g>
-      </svg>
-
-      {/* L'activité, hors du SVG : douze créneaux de 2 h codés en poissons. */}
-      <ul className="mt-3 grid grid-cols-6 gap-[3px]" aria-hidden="true">
-        {day.slots.map((slot) => {
-          const danger = slot.score.safety.level === 'danger';
-          // Un créneau dangereux ne porte AUCUN poisson, quel que soit son score.
-          // Des poissons en rouge se liraient comme une activité intense ; or le
-          // rouge appartient à la sécurité, et ce créneau n'est pas pêchable.
-          const level = danger ? 0 : activityLevel(slot.score.value);
-          const tier = tierForOrNull(slot.score.value);
-          const color = danger ? 'var(--danger)' : (tier?.colorVar ?? 'var(--edge-strong)');
-          const isNow = new Date(slot.start).getTime() <= nowMs && new Date(slot.end).getTime() > nowMs;
-
-          return (
-            <li
-              key={slot.start}
-              className={`flex flex-col items-center gap-1 rounded-[6px] py-[5px] ${isNow ? 'bg-surface-2' : ''}`}
-            >
-              <span className="text-[9.5px] nums text-fg-muted" data-numeric="">
-                {formatTime(new Date(slot.start), timeZone).slice(0, 2)}
-              </span>
-              <span className="flex h-[10px] items-center gap-[2px]">
-                {level === 0 ? (
-                  <span
-                    className={`block rounded-full ${danger ? 'h-[3px] w-4' : 'h-[2px] w-3'}`}
-                    style={{ backgroundColor: color }}
-                  />
-                ) : (
-                  Array.from({ length: level }, (_, i) => (
-                    <FishGlyph key={i} color={color} size={8} />
-                  ))
-                )}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
+      <div className="mt-3 md:hidden">
+        <ChartBody {...{ day, tideEvents, timeZone, now }} frame={COMPACT} />
+      </div>
+      <div className="mt-3 hidden md:block">
+        <ChartBody {...{ day, tideEvents, timeZone, now }} frame={WIDE} />
+      </div>
 
       <p className="card-source mt-3">
-        Un à trois poissons = le palier du score, lu autrement. Aucun poisson : activité faible,
-        ou créneau dangereux — le trait passe alors au rouge de la sécurité. Marée, vent, houle,
-        solunaire et lumière ; jamais une promesse de prise.
+        {!hasCarrying
+          ? 'Aucun créneau porteur aujourd’hui : le score reste sous le palier « Bon » sur les douze tranches de deux heures.'
+          : 'Deux ou trois poissons = le palier du score, lu autrement. Marée, vent, houle, solunaire et lumière ; jamais une promesse de prise.'}
       </p>
 
       <p className="sr-only">
@@ -305,5 +195,229 @@ export function TideActivityChart({
         .
       </p>
     </figure>
+  );
+}
+
+function ChartBody({
+  day,
+  tideEvents,
+  timeZone,
+  now,
+  frame,
+}: {
+  day: ForecastDay;
+  tideEvents: readonly TideEvent[];
+  timeZone: string;
+  now: string;
+  frame: Frame;
+}) {
+  const { W, H, top, bottom, band, font, maxWindows, shortLabel } = frame;
+  const carrying = carryingWindows(day, maxWindows);
+
+  const startMs = new Date(day.date).getTime();
+  const endMs = startMs + 24 * 3_600_000;
+  const x = (ms: number) => ((ms - startMs) / (endMs - startMs)) * W;
+  const clampX = (v: number) => Math.max(0, Math.min(W, v));
+
+  const relevant = tideEvents.filter((e) => {
+    const t = new Date(e.time).getTime();
+    return t >= startMs - 8 * 3_600_000 && t <= endMs + 8 * 3_600_000;
+  });
+
+  const bounds = tideBounds(relevant);
+  const y = (h: number) =>
+    bounds && bounds.max > bounds.min
+      ? top + (1 - (h - bounds.min) / (bounds.max - bounds.min)) * (bottom - top)
+      : (top + bottom) / 2;
+
+  const samples = bounds
+    ? sampleTideCurve(relevant, new Date(startMs), new Date(endMs), 144).map(
+        (s) => [x(new Date(s.time).getTime()), y(s.heightM)] as [number, number],
+      )
+    : [];
+  const curve = smooth(samples);
+  const area = curve ? `${curve} L${W},${bottom} L0,${bottom} Z` : '';
+
+  const sunrise = day.sunrise ? clampX(x(new Date(day.sunrise).getTime())) : null;
+  const sunset = day.sunset ? clampX(x(new Date(day.sunset).getTime())) : null;
+
+  const nowMs = new Date(now).getTime();
+  const nowX = nowMs >= startMs && nowMs < endMs ? x(nowMs) : null;
+
+  const events = relevant.filter((e) => {
+    const t = new Date(e.time).getTime();
+    return t >= startMs && t <= endMs;
+  });
+
+  const gradientId = `mf-eau-${W}`;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="block h-auto w-full" aria-hidden="true">
+      <defs>
+        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="var(--water)" stopOpacity="0.7" />
+          <stop offset="1" stopColor="var(--water)" stopOpacity="0.08" />
+        </linearGradient>
+      </defs>
+
+      {/* Ruban de nuit : deux régimes de lumière, pas deux instants. */}
+      {sunrise !== null && sunset !== null && (
+        <g fill="var(--fg)" opacity="0.06">
+          <rect x="0" y={top - 8} width={sunrise} height={bottom - top + 8} />
+          <rect x={sunset} y={top - 8} width={W - sunset} height={bottom - top + 8} />
+        </g>
+      )}
+
+      <g stroke="var(--edge)" strokeWidth="1" strokeDasharray="2 5" opacity="0.7">
+        <line x1="0" y1={top + (bottom - top) * 0.3} x2={W} y2={top + (bottom - top) * 0.3} />
+        <line x1="0" y1={top + (bottom - top) * 0.7} x2={W} y2={top + (bottom - top) * 0.7} />
+      </g>
+
+      {area && <path d={area} fill={`url(#${gradientId})`} />}
+      {curve && (
+        <path d={curve} fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" />
+      )}
+
+      {sunrise !== null && (
+        <SunMark x={sunrise} top={top} bottom={bottom} font={font} label={`↑ ${formatTime(new Date(day.sunrise as string), timeZone)}`} />
+      )}
+      {sunset !== null && (
+        <SunMark x={sunset} top={top} bottom={bottom} font={font} align="end" label={`↓ ${formatTime(new Date(day.sunset as string), timeZone)}`} />
+      )}
+
+      {events.map((event) => {
+        const px = x(new Date(event.time).getTime());
+        const py = y(event.heightM);
+        const end = px > W - font * 5;
+        const start = px < font * 5;
+        return (
+          <g key={event.time}>
+            <circle cx={px} cy={py} r={font / 3.6} fill="var(--accent)" />
+            <text
+              x={end ? px - 3 : start ? px + 3 : px}
+              y={event.type === 'high' ? py - font : py + font * 1.5}
+              textAnchor={end ? 'end' : start ? 'start' : 'middle'}
+              fontSize={font}
+              {...WATER_TEXT_PROPS}
+            >
+              {event.type === 'high' ? 'PM' : 'BM'} {formatTime(new Date(event.time), timeZone)}
+            </text>
+          </g>
+        );
+      })}
+
+      {nowX !== null && (
+        <>
+          <line x1={nowX} y1={top - 18} x2={nowX} y2={bottom} stroke="var(--fg)" strokeWidth="1.4" />
+          <circle cx={nowX} cy={top - 18} r="3" fill="var(--fg)" />
+        </>
+      )}
+
+      {/*
+        Les créneaux porteurs, SOUS la courbe et sur le même axe : un aplat très
+        doux pour la durée, les poissons au centre, l'heure dessous. Pas de
+        contour — c'est une zone, pas un objet à cliquer.
+      */}
+      {carrying.map((window) => {
+        const x1 = clampX(x(new Date(window.start).getTime()));
+        const x2 = clampX(x(new Date(window.end).getTime()));
+        const cx = (x1 + x2) / 2;
+        const level = window.level;
+        const color = tierForOrNull(window.value)?.colorVar ?? 'var(--edge-strong)';
+        // Les poissons ne débordent jamais de leur pastille : à fenêtre étroite,
+        // c'est le glyphe qui rétrécit, pas la pastille qui s'élargit.
+        const fishW = Math.min(font * 1.5, (x2 - x1 - 8) / level);
+        const totalW = level * fishW + (level - 1) * 2;
+
+        return (
+          <g key={window.start}>
+            <rect
+              x={x1}
+              y={band - font * 1.1}
+              width={Math.max(x2 - x1, 4)}
+              height={font * 2.4}
+              rx={font}
+              fill={color}
+              fillOpacity="0.13"
+            />
+            <g fill={color} transform={`translate(${cx - totalW / 2}, ${band - font * 0.32})`}>
+              {Array.from({ length: level }, (_, i) => (
+                <g key={i} transform={`translate(${i * (fishW + 2)}, 0) scale(${fishW / 24})`}>
+                  {FISH_PATHS.map((d) => (
+                    <path key={d} d={d} />
+                  ))}
+                </g>
+              ))}
+            </g>
+            <text
+              x={cx}
+              y={band + font * 2.4}
+              textAnchor="middle"
+              fontSize={font - 0.5}
+              fill="var(--fg-muted)"
+              {...UI_TEXT_PROPS}
+            >
+              {shortLabel
+                ? `${formatTime(new Date(window.start), timeZone).slice(0, 2)}–${formatTime(new Date(window.end), timeZone).slice(0, 2)}h`
+                : `${formatTime(new Date(window.start), timeZone)}–${formatTime(new Date(window.end), timeZone)}`}
+            </text>
+          </g>
+        );
+      })}
+
+      <g fontSize={font} fill="var(--fg-muted)" opacity="0.6" {...UI_TEXT_PROPS}>
+        {[0, 6, 12, 18, 24].map((hour) => (
+          <text
+            key={hour}
+            x={clampX((hour / 24) * W)}
+            y={H - 2}
+            textAnchor={hour === 0 ? 'start' : hour === 24 ? 'end' : 'middle'}
+          >
+            {hour === 24 ? '24h' : `${String(hour).padStart(2, '0')}h`}
+          </text>
+        ))}
+      </g>
+    </svg>
+  );
+}
+
+function SunMark({
+  x,
+  top,
+  bottom,
+  font,
+  label,
+  align = 'start',
+}: {
+  x: number;
+  top: number;
+  bottom: number;
+  font: number;
+  label: string;
+  align?: 'start' | 'end';
+}) {
+  return (
+    <g>
+      <line
+        x1={x}
+        y1={top - 8}
+        x2={x}
+        y2={bottom}
+        stroke="var(--edge-strong)"
+        strokeWidth="1"
+        strokeDasharray="1 3"
+      />
+      <text
+        x={align === 'end' ? x - 4 : x + 4}
+        y={top - 12}
+        textAnchor={align}
+        fontSize={font}
+        fill="var(--fg-muted)"
+        fontFamily="var(--font-archivo), Archivo, system-ui, sans-serif"
+        style={{ fontVariantNumeric: 'tabular-nums' }}
+      >
+        {label}
+      </text>
+    </g>
   );
 }
