@@ -18,12 +18,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: absoluteUrl('/pricing'), lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
   ];
 
-  const spotPages: MetadataRoute.Sitemap = allSpots.map((spot) => ({
-    url: absoluteUrl(spotPath(spot)),
-    lastModified: now,
-    changeFrequency: 'daily',
-    priority: 0.8,
-  }));
+  // Chaque spot expose trois pages réelles, pas trois onglets commutés : elles
+  // répondent à des recherches distinctes (« conditions à X », « prévision 7
+  // jours X », « techniques de pêche à X ») et méritent chacune leur entrée.
+  const spotPages: MetadataRoute.Sitemap = allSpots.flatMap((spot) => [
+    {
+      url: absoluteUrl(spotPath(spot)),
+      lastModified: now,
+      changeFrequency: 'hourly' as const,
+      priority: 0.9,
+    },
+    {
+      url: absoluteUrl(`${spotPath(spot)}/prevision`),
+      lastModified: now,
+      changeFrequency: 'daily' as const,
+      priority: 0.8,
+    },
+    {
+      url: absoluteUrl(`${spotPath(spot)}/analyse`),
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    },
+  ]);
 
   // Les combinaisons de filtres réellement peuplées sont indexables : ce sont
   // des pages de destination utiles (« spots de surfcasting en Bretagne »).

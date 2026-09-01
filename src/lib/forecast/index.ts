@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import type { Spot, TideEvent } from '@/data/schemas';
 import { ASTRO_SOURCE, spots as spotRepository, tides, weather, type SourceMeta } from '@/lib/providers';
 import { addHours, startOfLocalDay } from '@/lib/time';
@@ -52,7 +53,7 @@ export interface SpotForecast {
  * Elle ne touche que des interfaces (`tides`, `weather`), jamais les mocks.
  * Le jour du branchement, cette fonction ne change pas.
  */
-export async function getSpotForecast(spot: Spot, now: Date = referenceNow()): Promise<SpotForecast> {
+async function computeSpotForecast(spot: Spot, now: Date): Promise<SpotForecast> {
   const start = startOfLocalDay(now, spot.timezone);
   // Marge de 8 h de part et d'autre : chaque instant doit avoir une pleine mer
   // avant et après lui, sinon le contexte de marée serait tronqué aux bords.
@@ -79,6 +80,35 @@ export async function getSpotForecast(spot: Spot, now: Date = referenceNow()): P
       astro: ASTRO_SOURCE,
     },
   };
+}
+
+/**
+ * Mémoïsation pour la durée d'une requête, clefée sur des PRIMITIVES.
+ *
+ * `cache` de React compare ses arguments par référence. Lui passer directement
+ * `(spot, now)` ne mémoïserait rien : `referenceNow()` rend un nouvel objet
+ * `Date` à chaque appel, donc chaque appel manquerait le cache sans que rien ne
+ * le signale. Le slug et l'horodatage en millisecondes, eux, se comparent par
+ * valeur.
+ */
+const forecastCache = cache(async (slug: string, nowMs: number): Promise<SpotForecast> => {
+  const spot = await spotRepository.findBySlug(slug);
+  if (!spot) throw new Error(`Spot inconnu : ${slug}`);
+  return computeSpotForecast(spot, new Date(nowMs));
+});
+
+/**
+ * Prévision complète d'un spot.
+ *
+ * Depuis le passage en onglets, le layout du spot et la page active en ont tous
+ * deux besoin — le layout pour le bandeau de sécurité et l'avertissement de
+ * source, la page pour son contenu. Sans mémoïsation, chaque rendu déclencherait
+ * deux fois l'assemblage complet et, avec un fournisseur réel, deux fois les
+ * appels réseau. Ce cache ne vit que le temps d'une requête : il ne remplace pas
+ * celui des `fetch`, il évite le travail redondant à l'intérieur d'un rendu.
+ */
+export function getSpotForecast(spot: Spot, now: Date = referenceNow()): Promise<SpotForecast> {
+  return forecastCache(spot.slug, now.getTime());
 }
 
 /** Vue compacte d'un spot, telle qu'affichée sur une carte de liste. */

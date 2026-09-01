@@ -212,3 +212,22 @@ describe('créneaux favorables', () => {
     expect(favourableSlots(slots, 8)).toHaveLength(1);
   });
 });
+
+describe('mémoïsation par requête', () => {
+  /**
+   * Régression : `cache` de React compare ses arguments par RÉFÉRENCE. Clefer
+   * sur `(spot, now)` ne mémoïsait rien, puisque `referenceNow()` rend un nouvel
+   * objet Date à chaque appel — un cache silencieusement inopérant.
+   */
+  it('rend le même résultat pour deux instants égaux mais distincts', async () => {
+    const a = await getSpotForecast(spot, new Date('2026-09-01T09:00:00Z'));
+    const b = await getSpotForecast(spot, new Date('2026-09-01T09:00:00Z'));
+    expect(a).toStrictEqual(b);
+  });
+
+  it('distingue bien deux instants différents', async () => {
+    const a = await getSpotForecast(spot, new Date('2026-09-01T09:00:00Z'));
+    const b = await getSpotForecast(spot, new Date('2026-09-02T09:00:00Z'));
+    expect(a.generatedAt).not.toBe(b.generatedAt);
+  });
+});

@@ -46,7 +46,7 @@ Node 20 ou plus. Aucune variable d'environnement n'est requise pour démarrer.
 | `npm start` | Sert le build de production |
 | `npm run typecheck` | `tsc --noEmit` en mode strict renforcé |
 | `npm run lint` | ESLint (config `next/core-web-vitals` + `next/typescript`) |
-| `npm test` | 148 tests unitaires (Vitest), hermétiques — aucun accès réseau |
+| `npm test` | 150 tests unitaires (Vitest), hermétiques — aucun accès réseau |
 | `npm run test:watch` | Tests en mode surveillance |
 
 ---
@@ -60,7 +60,11 @@ src/
 │   ├── spots/
 │   │   ├── page.tsx              Liste + filtres pilotés par searchParams
 │   │   └── [country]/[region]/[slug]/
-│   │       ├── page.tsx          Détail spot — generateStaticParams sur les 12
+│   │       ├── layout.tsx        Coquille : sécurité, fil d'Ariane, titre, JSON-LD
+│   │       ├── page.tsx          Onglet Live — score, graphique du jour, conditions
+│   │       ├── prevision/        Onglet Prévision — 7 jours, meilleurs créneaux
+│   │       ├── analyse/          Onglet Analyse — détail du calcul, techniques, accès
+│   │       ├── spot-page-data.ts Résolution partagée par le layout et les onglets
 │   │       └── opengraph-image.tsx  Image OG dynamique, pré-rendue au build
 │   ├── guides/                   Index + article ([slug])
 │   ├── pricing/                  Gratuit vs Pro, aucun paiement branché
@@ -312,7 +316,7 @@ Lighthouse mobile, build de production, 8 URL couvrant les 5 pages :
 | Toutes les pages | 94–98 | 100 | 100 | 100 |
 
 `npm run build`, `npm run typecheck` et `npm run lint` passent sans erreur ni
-avertissement. 148 tests unitaires. Aucun débordement horizontal à 375 px.
+avertissement. 150 tests unitaires. Aucun débordement horizontal à 375 px.
 
 ## Déploiement
 
