@@ -19,7 +19,20 @@ export interface OpenMeteoOptions {
   forecastUrl?: string;
   /** Durée de mise en cache par Next, en secondes. */
   revalidateSeconds?: number;
+  /** Délai maximal d'un appel, en millisecondes. */
+  timeoutMs?: number;
 }
+
+/**
+ * Délai maximal par appel.
+ *
+ * `fetch` sans signal attend indéfiniment. Au build, un fournisseur qui ne
+ * répond pas — sans refuser la connexion — bloque la génération des pages
+ * jusqu'à ce que la plateforme tue le processus : le build échoue sans qu'aucune
+ * erreur ne désigne la cause. Huit secondes laissent largement le temps à une
+ * réponse normale (~300 ms) et transforment une panne muette en repli propre.
+ */
+const DEFAULT_TIMEOUT_MS = 8000;
 
 export class OpenMeteoError extends Error {
   constructor(message: string, options?: { cause?: unknown }) {
@@ -92,6 +105,7 @@ export class OpenMeteoWeatherProvider implements WeatherProvider {
       marineUrl: options.marineUrl ?? MARINE_URL,
       forecastUrl: options.forecastUrl ?? FORECAST_URL,
       revalidateSeconds: options.revalidateSeconds ?? 3600,
+      timeoutMs: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     };
   }
 
@@ -217,9 +231,16 @@ export class OpenMeteoWeatherProvider implements WeatherProvider {
         // à chaque requête. Sans réseau au build, l'erreur remonte au repli.
         next: { revalidate: this.options.revalidateSeconds },
         headers: { accept: 'application/json' },
+        signal: AbortSignal.timeout(this.options.timeoutMs),
       } as RequestInit);
     } catch (error) {
-      throw new OpenMeteoError(`Open-Meteo (${label}) injoignable.`, { cause: error });
+      const timedOut = error instanceof Error && error.name === 'TimeoutError';
+      throw new OpenMeteoError(
+        timedOut
+          ? `Open-Meteo (${label}) n'a pas répondu en ${this.options.timeoutMs} ms.`
+          : `Open-Meteo (${label}) injoignable.`,
+        { cause: error },
+      );
     }
 
     const payload: unknown = await response.json().catch(() => null);

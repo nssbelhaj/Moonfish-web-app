@@ -295,3 +295,41 @@ describe('Open-Meteo — valeurs aberrantes', () => {
     expect(result.data[2]?.pressureHpa).toBeNull();
   });
 });
+
+describe('Open-Meteo — délai maximal', () => {
+  /**
+   * Régression : `fetch` sans signal attend indéfiniment. Au build, un
+   * fournisseur qui ne répond pas sans refuser la connexion bloquait la
+   * génération jusqu'à ce que la plateforme tue le processus — un échec de
+   * build dont aucun message ne désignait la cause.
+   */
+  it('arme un signal d’expiration sur chaque appel', async () => {
+    const signals: (AbortSignal | undefined)[] = [];
+    const impl = (async (_url: RequestInfo | URL, init?: RequestInit) => {
+      signals.push(init?.signal ?? undefined);
+      return Response.json(marineResponse());
+    }) as unknown as typeof fetch;
+
+    const provider = new OpenMeteoWeatherProvider({ fetchImpl: impl, timeoutMs: 1234 });
+    await provider.getMarineSeries(spot, range).catch(() => undefined);
+
+    expect(signals.length).toBeGreaterThan(0);
+    for (const signal of signals) expect(signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it('transforme une absence de réponse en erreur explicite, pas en attente infinie', async () => {
+    const impl = (async (_url: RequestInfo | URL, init?: RequestInit) => {
+      // Ne résout jamais de lui-même : seul le signal peut l'interrompre.
+      return new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => {
+          reject(init.signal?.reason ?? new Error('aborted'));
+        });
+      });
+    }) as unknown as typeof fetch;
+
+    const provider = new OpenMeteoWeatherProvider({ fetchImpl: impl, timeoutMs: 60 });
+
+    await expect(provider.getMarineSeries(spot, range)).rejects.toThrow(OpenMeteoError);
+    await expect(provider.getMarineSeries(spot, range)).rejects.toThrow(/60 ms/);
+  });
+});

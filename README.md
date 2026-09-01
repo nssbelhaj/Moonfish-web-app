@@ -280,8 +280,26 @@ avertissement. 95 tests unitaires. Aucun débordement horizontal à 375 px.
 
 ## Déploiement
 
-Aucune base de données n'est nécessaire à ce stade. Sur Vercel : importer le
-dépôt, définir `NEXT_PUBLIC_SITE_URL`, déployer. Open-Meteo ne demande pas de
-clé. Les inscriptions à la liste d'attente atterrissent dans le répertoire
-temporaire de l'instance et **n'y survivent pas** — c'est acceptable pour une
-démonstration, pas pour une collecte réelle, d'où l'étape Supabase.
+Aucune base de données n'est nécessaire à ce stade, et Open-Meteo ne demande pas
+de clé. Sur Vercel : importer le dépôt et déployer. **Aucune variable
+d'environnement n'est requise** — sans `NEXT_PUBLIC_SITE_URL`, les URL
+canoniques sont déduites du domaine que Vercel injecte lui-même.
+
+Node 20.9 ou plus est exigé via `engines`. Un projet Vercel resté sur Node 18
+échoue avant même la compilation ; ce champ force le bon choix.
+
+Les inscriptions à la liste d'attente atterrissent dans le répertoire temporaire
+de l'instance et **n'y survivent pas** — acceptable pour une démonstration, pas
+pour une collecte réelle, d'où l'étape Supabase.
+
+### Si le build échoue
+
+| Symptôme dans le log | Cause | État |
+| --- | --- | --- |
+| `Failed to collect page data` + `TypeError: Invalid URL` | `NEXT_PUBLIC_SITE_URL` sans `https://`. Le message ne nomme jamais la variable. | Corrigé : la valeur est normalisée, jamais passée telle quelle à `new URL()`. |
+| Build qui reste bloqué puis est tué | Un appel Open-Meteo qui ne répond pas, sans refuser la connexion. | Corrigé : délai maximal de 8 s par appel, puis repli sur les données simulées. |
+| `Node.js Version 18.x is deprecated` | Projet Vercel réglé sur une version retirée. | Corrigé : `engines.node` impose ≥ 20.9. |
+| `npm ci` échoue | `package-lock.json` désynchronisé. | Vérifié : `npm ci` passe sur un clone propre. |
+
+En dernier recours, `WEATHER_PROVIDER=mock` construit le site sans aucun appel
+réseau — utile pour isoler un problème de build d'un problème de fournisseur.
