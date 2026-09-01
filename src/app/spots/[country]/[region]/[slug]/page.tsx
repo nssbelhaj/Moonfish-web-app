@@ -19,7 +19,7 @@ import {
 } from '@/data/spots';
 import { tidalRangeOf } from '@/lib/forecast/tide-curve';
 import { absoluteUrl, spotPath } from '@/lib/routes';
-import { formatMeasure } from '@/lib/score-display';
+import { formatMeasure, formatScore } from '@/lib/score-display';
 import { formatDayLong, formatTime } from '@/lib/time';
 import { findSpot, resolveSpot, type RouteParams } from './spot-page-data';
 
@@ -57,7 +57,8 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
     .flatMap((day) => day.slots)
     .filter((slot) => new Date(slot.end).getTime() > now.getTime())
     .filter((slot) => slot.score.safety.level !== 'danger')
-    .sort((a, b) => b.score.value - a.score.value)[0];
+    .filter((slot) => slot.score.value !== null)
+    .sort((a, b) => (b.score.value ?? 0) - (a.score.value ?? 0))[0];
 
   return (
     <>
@@ -94,7 +95,7 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
                       {formatDayLong(new Date(nextPracticable.start), spot.timezone)} ·{' '}
                       {formatTime(new Date(nextPracticable.start), spot.timezone)}–
                       {formatTime(new Date(nextPracticable.end), spot.timezone)} ·{' '}
-                      {nextPracticable.score.value.toFixed(1).replace('.', ',')}/10
+                      {formatScore(nextPracticable.score.value)}/10
                     </p>
                     <p className="mt-2 text-meta nums text-fg-muted">
                       {nextPracticable.score.reasons[0]}
@@ -202,7 +203,7 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
             <h2 id="meteo" className="mt-2 text-val-sm font-600">
               Vent et état de mer
             </h2>
-            {current ? (
+            {current && current.conditions ? (
               <>
                 <div className="mt-4">
                   <WindCompass

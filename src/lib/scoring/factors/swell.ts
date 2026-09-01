@@ -1,6 +1,6 @@
 import { clamp, fr, ramp, round1, trapezoid } from '../math';
-import type { FactorResult, SwellInput } from '../types';
-import { FACTOR_WEIGHTS } from '../types';
+import type { AvailableFactorResult, FactorResult, SwellInput } from '../types';
+import { FACTOR_WEIGHTS, unavailableFactor } from '../types';
 
 /** Sous ce seuil, la mer est trop lisse pour brasser le bord. */
 export const SWELL_TOO_CALM_M = 0.3;
@@ -9,7 +9,11 @@ export const SWELL_CAUTION_M = 2.0;
 /** Danger, non négociable (spec + handoff §3). */
 export const SWELL_DANGER_M = 2.5;
 
-export function scoreSwell(input: SwellInput): FactorResult {
+export function scoreSwell(input: SwellInput): AvailableFactorResult;
+export function scoreSwell(input: SwellInput | null): FactorResult;
+export function scoreSwell(input: SwellInput | null): FactorResult {
+  if (input === null) return unavailableFactor('swell');
+
   const h = Math.max(0, input.heightM);
 
   // 0,5–1,5 m = optimal ; < 0,3 m trop calme ; > 2,5 m mauvais.
@@ -36,5 +40,10 @@ export function scoreSwell(input: SwellInput): FactorResult {
             ? `${hm} m à ${Math.round(input.periodS)} s — état de mer idéal pour le bord`
             : `${hm} m à ${Math.round(input.periodS)} s`;
 
-  return { score: round1(clamp(score, 0, 10)), weight: FACTOR_WEIGHTS.swell, note };
+  return {
+    score: round1(clamp(score, 0, 10)),
+    weight: FACTOR_WEIGHTS.swell,
+    nominalWeight: FACTOR_WEIGHTS.swell,
+    note,
+  };
 }

@@ -1,6 +1,6 @@
 import { clamp, fr, ramp, round1 } from '../math';
-import type { FactorResult, SolunarInput } from '../types';
-import { FACTOR_WEIGHTS } from '../types';
+import type { AvailableFactorResult, FactorResult, SolunarInput } from '../types';
+import { FACTOR_WEIGHTS, unavailableFactor } from '../types';
 
 /** Durée d'une lunaison en jours. */
 export const SYNODIC_MONTH_D = 29.53;
@@ -36,7 +36,11 @@ export function syzygyProximity(ageDays: number): number {
   return distance >= 3 ? 0 : ramp(distance, 0, 3, 1, 0);
 }
 
-export function scoreSolunar(input: SolunarInput): FactorResult {
+export function scoreSolunar(input: SolunarInput): AvailableFactorResult;
+export function scoreSolunar(input: SolunarInput | null): FactorResult;
+export function scoreSolunar(input: SolunarInput | null): FactorResult {
+  if (input === null) return unavailableFactor('solunar');
+
   // Période majeure : lune au zénith ou au nadir. La fenêtre porte ~2 h.
   const major = ramp(Math.abs(input.hoursToMajorPeriod), 0, 2.5, 1, 0.15);
   // Période mineure : lever et coucher de lune. Fenêtre plus courte et plus faible.
@@ -63,5 +67,10 @@ export function scoreSolunar(input: SolunarInput): FactorResult {
       ? `${window} · ${phase.toLowerCase()}, coefficient de vive-eau`
       : `${window} · ${phase.toLowerCase()} (${Math.round(input.moonIlluminationPct)} %)`;
 
-  return { score: round1(clamp(score, 0, 10)), weight: FACTOR_WEIGHTS.solunar, note };
+  return {
+    score: round1(clamp(score, 0, 10)),
+    weight: FACTOR_WEIGHTS.solunar,
+    nominalWeight: FACTOR_WEIGHTS.solunar,
+    note,
+  };
 }

@@ -1,7 +1,7 @@
 import type { MarinePoint, Spot, TideEvent } from '@/data/schemas';
 import { hoursToNearest, lightPhaseAt, moonAgeDays, moonIlluminationPct, solunarPeriods, sunTimes } from '@/lib/astro';
 import { computeScore, type ScoreResult } from '@/lib/scoring';
-import { addHours, startOfLocalDay } from '@/lib/time';
+import { addHours, localCalendarNoonUtc, startOfLocalDay } from '@/lib/time';
 import { tideContextAt } from './tide-context';
 
 /** Le handoff cadre la TimeWindowBar sur 8 colonnes de 3 h : c'est la granularité du produit. */
@@ -15,9 +15,18 @@ export interface ForecastSlot {
   /** Fin du créneau, ISO (exclusive). */
   end: string;
   score: ScoreResult;
-  /** Conditions relevées au milieu du créneau, représentatives des trois heures. */
-  conditions: MarinePoint;
-  tide: { hoursFromHighTide: number; coefficient: number; state: 'rising' | 'falling' | 'slack' };
+  /**
+   * Conditions relevées au milieu du créneau, représentatives des trois heures.
+   * `null` si la série marine ne couvre pas cet instant — même règle que la
+   * marée : le créneau reste, et le score dit ce qui lui manque (D11).
+   */
+  conditions: MarinePoint | null;
+  /**
+   * Contexte de marée au milieu du créneau, `null` si le fournisseur de marées
+   * n'a rien couvert ici. Le créneau existe quand même : le faire disparaître
+   * masquerait une panne au lieu de la déclarer (D11).
+   */
+  tide: { hoursFromHighTide: number; coefficient: number; state: 'rising' | 'falling' | 'slack' } | null;
   lightPhase: 'dawn' | 'day' | 'dusk' | 'night';
 }
 
@@ -59,8 +68,11 @@ export function buildForecastDays(
     const dayStart = startOfLocalDay(addHours(firstMidnight, dayIndex * 24 + 6), spot.timezone);
     const dayEnd = startOfLocalDay(addHours(dayStart, 30), spot.timezone);
 
-    const sun = sunTimes(dayStart, spot.lat, spot.lng);
-    const solunar = solunarPeriods(dayStart, spot.lng);
+    // Éphémérides de la DATE LOCALE, pas de la date UTC de minuit local :
+    // voir `localCalendarNoonUtc`.
+    const ephemerisDay = localCalendarNoonUtc(dayStart, spot.timezone);
+    const sun = sunTimes(ephemerisDay, spot.lat, spot.lng);
+    const solunar = solunarPeriods(ephemerisDay, spot.lng);
 
     const slots: ForecastSlot[] = [];
 
@@ -69,15 +81,25 @@ export function buildForecastDays(
       const end = addHours(start, SLOT_HOURS);
       const middle = addHours(start, SLOT_HOURS / 2);
 
-      const conditions = marineByHour.get(Math.floor(middle.getTime() / 3_600_000));
-      const tide = tideContextAt(middle, tideEvents);
-      if (!conditions || !tide) continue;
+      // Marée ou météo absente : le créneau est conservé et le score se calcule
+      // sans elle, poids renormalisés. Sauter le créneau ferait disparaître trois
+      // heures de la journée sans que rien ne l'explique — une panne de
+      // fournisseur ressemblerait alors à une nuit sans données plutôt qu'à une
+      // panne.
+      const conditions = marineByHour.get(Math.floor(middle.getTime() / 3_600_000)) ?? null;
+      const tide = tideContextAt(middle, tideEvents) ?? null;
 
       const score = computeScore({
         spotFacingDeg: spot.facingDeg,
         tide,
-        wind: { speedKmh: conditions.windSpeedKmh, fromDeg: conditions.windFromDeg },
-        swell: { heightM: conditions.swellHeightM, periodS: conditions.swellPeriodS },
+        wind:
+          conditions === null
+            ? null
+            : { speedKmh: conditions.windSpeedKmh, fromDeg: conditions.windFromDeg },
+        swell:
+          conditions === null
+            ? null
+            : { heightM: conditions.swellHeightM, periodS: conditions.swellPeriodS },
         solunar: {
           hoursToMajorPeriod: hoursToNearest(middle, solunar.major),
           hoursToMinorPeriod: hoursToNearest(middle, solunar.minor),
@@ -122,10 +144,14 @@ export function buildForecastDays(
  * possible de ce produit.
  */
 export function bestSlot(slots: readonly ForecastSlot[]): ForecastSlot | null {
-  const safe = slots.filter((slot) => slot.score.safety.level !== 'danger');
-  const pool = safe.length > 0 ? safe : [];
+  // Un créneau sans score n'est pas « le meilleur » non plus : on ne recommande
+  // pas une sortie sur une absence de donnée.
+  const pool = slots.filter(
+    (slot) => slot.score.safety.level !== 'danger' && slot.score.value !== null,
+  );
   return pool.reduce<ForecastSlot | null>(
-    (best, slot) => (best === null || slot.score.value > best.score.value ? slot : best),
+    (best, slot) =>
+      best === null || (slot.score.value ?? 0) > (best.score.value ?? 0) ? slot : best,
     null,
   );
 }
@@ -146,7 +172,10 @@ export function favourableSlots(
   threshold: number = FAVOURABLE_FROM,
 ): ForecastSlot[] {
   return slots.filter(
-    (slot) => slot.score.value >= threshold && slot.score.safety.level !== 'danger',
+    (slot) =>
+      slot.score.value !== null &&
+      slot.score.value >= threshold &&
+      slot.score.safety.level !== 'danger',
   );
 }
 
@@ -156,7 +185,7 @@ export function nextGoodWindow(days: readonly ForecastDay[], now: Date): Forecas
     for (const slot of day.slots) {
       if (new Date(slot.end).getTime() <= now.getTime()) continue;
       if (slot.score.safety.level === 'danger') continue;
-      if (slot.score.value >= 6) return slot;
+      if (slot.score.value !== null && slot.score.value >= 6) return slot;
     }
   }
   return null;

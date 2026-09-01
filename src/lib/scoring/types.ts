@@ -49,33 +49,63 @@ export interface LightInput {
   phase: LightPhase;
 }
 
+/**
+ * Entrée du score.
+ *
+ * Chaque facteur peut être `null` : une source indisponible n'est pas une
+ * source à zéro. Le score est alors calculé sur les facteurs restants, poids
+ * renormalisés, et le dit explicitement (D11). Substituer une valeur par
+ * défaut produirait un score faux qui se présenterait comme un score normal.
+ */
 export interface ScoreInput {
   /**
    * Cap du spot vers le large, en degrés (0 = plage exposée au nord).
    * Sert à qualifier le vent en « de mer » ou « de terre », qui est
-   * l'information réellement utile au pêcheur (handoff §5).
+   * l'information réellement utile au pêcheur.
    */
   spotFacingDeg: number;
-  tide: TideInput;
-  wind: WindInput;
-  swell: SwellInput;
-  solunar: SolunarInput;
-  light: LightInput;
+  tide: TideInput | null;
+  wind: WindInput | null;
+  swell: SwellInput | null;
+  solunar: SolunarInput | null;
+  light: LightInput | null;
 }
 
 export interface FactorResult {
-  /** Sous-score du facteur, 0–10. */
-  score: number;
-  /** Poids du facteur dans le total, 0–1. */
+  /** Sous-score du facteur, 0–10. `null` si la source est indisponible. */
+  score: number | null;
+  /**
+   * Poids EFFECTIF dans le total après renormalisation, 0–1.
+   * Vaut 0 quand le facteur est indisponible.
+   */
   weight: number;
+  /** Poids nominal du facteur, indépendant de ce qui est disponible. */
+  nominalWeight: number;
   /** Phrase courte expliquant le sous-score, en français. */
   note: string;
 }
 
+/**
+ * Résultat d'un facteur dont la source ÉTAIT disponible.
+ *
+ * Sert de type de retour aux surcharges des scoreurs appelés avec une entrée
+ * non nulle : le code qui sait déjà que la donnée existe n'a pas à traiter un
+ * `null` que le typage seul rendrait obligatoire.
+ */
+export interface AvailableFactorResult extends FactorResult {
+  score: number;
+}
+
 export interface ScoreResult {
-  /** Score global 0–10, une décimale. */
-  value: number;
-  label: ScoreLabel;
+  /** Score global 0–10, une décimale. `null` si aucun facteur n'est disponible. */
+  value: number | null;
+  label: ScoreLabel | null;
+  /**
+   * Part du poids nominal réellement couverte par les sources disponibles, 0–1.
+   * 1 = tous les facteurs présents. Sert à qualifier la confiance sans avoir à
+   * recalculer la somme des poids côté interface.
+   */
+  coverage: number;
   /** 2 à 3 phrases lisibles en français. */
   reasons: string[];
   breakdown: Record<ScoreFactor, FactorResult>;
@@ -97,3 +127,38 @@ export const FACTOR_LABELS: Record<ScoreFactor, string> = {
   solunar: 'Solunaire & lune',
   light: 'Lumière',
 };
+
+/** Sujet de la phrase « Calculé sans … », au féminin ou masculin correct. */
+export const FACTOR_SUBJECTS: Record<ScoreFactor, string> = {
+  tide: 'la marée',
+  wind: 'le vent',
+  swell: 'la houle',
+  solunar: 'le solunaire',
+  light: 'la lumière',
+};
+
+/** Note affichée dans le détail quand la source du facteur manque. */
+export const FACTOR_UNAVAILABLE_NOTES: Record<ScoreFactor, string> = {
+  tide: 'horaires de marée indisponibles pour ce créneau',
+  wind: 'vent indisponible pour ce créneau',
+  swell: 'houle indisponible pour ce créneau',
+  solunar: 'éphémérides lunaires indisponibles pour ce créneau',
+  light: 'lever et coucher du soleil indisponibles pour ce créneau',
+};
+
+/**
+ * Facteur dont la source manque.
+ *
+ * `score: null` et non 0 : un zéro se comporterait comme une mauvaise note et
+ * ferait chuter le total, ce qui reviendrait à affirmer une condition qu'on
+ * n'a pas mesurée. Le poids effectif est mis à 0 ; `computeScore` renormalise
+ * ensuite les autres facteurs pour que le total reste sur 10.
+ */
+export function unavailableFactor(factor: ScoreFactor): FactorResult {
+  return {
+    score: null,
+    weight: 0,
+    nominalWeight: FACTOR_WEIGHTS[factor],
+    note: FACTOR_UNAVAILABLE_NOTES[factor],
+  };
+}

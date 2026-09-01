@@ -28,11 +28,24 @@ const TIERS: Record<ScoreTier, TierPresentation> = {
   4: { tier: 4, label: 'Excellent', colorVar: 'var(--score-4)', shape: 'target', shapeLabel: 'cible annelée' },
 };
 
+/**
+ * Couleur d'un score absent. Ni palier, ni danger : la même teinte que les crans
+ * éteints de la réglette. Un score indisponible ne doit pas emprunter la couleur
+ * du palier bas, qui affirmerait de mauvaises conditions (D11, D12).
+ */
+export const UNAVAILABLE_COLOR_VAR = 'var(--edge)';
+
 export function tierFor(value: number): TierPresentation {
   if (value < 4) return TIERS[1];
   if (value < 6) return TIERS[2];
   if (value < 8) return TIERS[3];
   return TIERS[4];
+}
+
+/** Palier d'une valeur éventuellement absente. `null` = il n'y a rien à qualifier. */
+export function tierForOrNull(value: number | null | undefined): TierPresentation | null {
+  if (value === null || value === undefined || !Number.isFinite(value)) return null;
+  return tierFor(value);
 }
 
 /**

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { computeScore } from '../compute';
 import { evaluateSafety } from '../safety';
-import { IDEAL, withInput } from './fixtures';
+import { IDEAL, scoreOf, withInput } from './fixtures';
 
 describe('sécurité — règle non négociable', () => {
   it('passe en danger dès que la houle dépasse 2,5 m', () => {
@@ -79,12 +79,12 @@ describe('cumul de facteurs négatifs', () => {
   });
 
   it('classe le cumul négatif strictement sous chaque dégradation isolée', () => {
-    const base = computeScore(IDEAL).value;
-    const onlyWind = computeScore(withInput({ wind: { speedKmh: 47, fromDeg: 90 } })).value;
-    const onlySwell = computeScore(withInput({ swell: { heightM: 0.1, periodS: 3 } })).value;
-    const both = computeScore(
+    const base = scoreOf(IDEAL);
+    const onlyWind = scoreOf(withInput({ wind: { speedKmh: 47, fromDeg: 90 } }));
+    const onlySwell = scoreOf(withInput({ swell: { heightM: 0.1, periodS: 3 } }));
+    const both = scoreOf(
       withInput({ wind: { speedKmh: 47, fromDeg: 90 }, swell: { heightM: 0.1, periodS: 3 } }),
-    ).value;
+    );
 
     expect(both).toBeLessThan(onlyWind);
     expect(both).toBeLessThan(onlySwell);

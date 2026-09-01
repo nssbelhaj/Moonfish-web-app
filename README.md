@@ -318,6 +318,36 @@ au-dessus du score, quel que soit le score calculé. Cette évaluation vit dans
 `src/lib/scoring/safety.ts` et n'est jamais dérivée du `breakdown` : c'est
 volontaire, pour qu'aucune modification des pondérations ne puisse l'affaiblir.
 
+### Quand une source manque
+
+Un fournisseur peut tomber. Le score ne doit alors ni disparaître, ni mentir.
+
+- Le facteur concerné sort du calcul avec `score: null`. **Jamais 0** : un zéro
+  se comporterait comme une mauvaise note et affirmerait une condition qu'on n'a
+  pas mesurée. **Jamais une valeur par défaut** non plus, pour la même raison.
+- Les poids des facteurs restants sont **renormalisés** : leur somme reste 1, le
+  total reste sur 10 et reste comparable d'un créneau à l'autre.
+- `coverage` dit quelle part du poids nominal a réellement été couverte, et une
+  raison le dit en français : « Calculé sans la houle : source indisponible. »
+  Elle est placée **avant** les arguments, jamais après.
+- Le détail (`ScoreBreakdown`) garde la ligne du facteur absent, avec « —,— » et
+  « écarté du calcul (pesait 20 %) ». Les autres lignes affichent leur poids
+  renormalisé à côté du poids nominal — c'est le renormalisé qui explique le
+  total affiché.
+- Si **aucun** facteur n'est disponible, `value` et `label` valent `null` et la
+  jauge affiche « —,— / Indispo. » avec une seule raison : « Prévision
+  indisponible pour ce créneau. »
+- La sécurité ne présume rien : **sans mesure de houle ou de vent, le verdict ne
+  peut pas être `'ok'`.** Il passe à `'prudence'` et dit que les seuils de 2,5 m
+  et 50 km/h n'ont pas pu être vérifiés. L'absence de donnée n'est pas une
+  preuve de mer praticable.
+- Un créneau sans marée ou sans météo **reste affiché**. Le supprimer ferait
+  disparaître trois heures de la journée sans rien expliquer : une panne
+  ressemblerait à un trou naturel dans les données.
+
+Tests : `src/lib/scoring/__tests__/missing-sources.test.ts` et le bloc
+« panne du fournisseur » de `src/lib/forecast/__tests__/forecast.test.ts`.
+
 ---
 
 ## Déterminisme

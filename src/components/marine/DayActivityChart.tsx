@@ -1,7 +1,7 @@
 import type { TideEvent } from '@/data/schemas';
 import { favourableSlots, type ForecastDay } from '@/lib/forecast';
 import { eventsAround, sampleTideCurve, tideBounds, tideHeightAt } from '@/lib/forecast/tide-curve';
-import { tierFor } from '@/lib/score-display';
+import { UNAVAILABLE_COLOR_VAR, formatScore, tierForOrNull } from '@/lib/score-display';
 import { addHours, formatTime } from '@/lib/time';
 import { FishGlyph } from './FishGlyph';
 
@@ -75,7 +75,7 @@ export function DayActivityChart({
   const bands: (Band & { color: string })[] = favourable.map((slot) => ({
     fromPct: clampPct(pctOf(new Date(slot.start).getTime(), startMs, endMs)),
     toPct: clampPct(pctOf(new Date(slot.end).getTime(), startMs, endMs)),
-    color: tierFor(slot.score.value).colorVar,
+    color: tierForOrNull(slot.score.value)?.colorVar ?? UNAVAILABLE_COLOR_VAR,
   }));
 
   // Ruban jour/nuit. Le lever et le coucher sont calculés, pas simulés.
@@ -115,7 +115,7 @@ export function DayActivityChart({
       : `Créneaux favorables : ${favourable
           .map(
             (slot) =>
-              `${formatTime(new Date(slot.start), timeZone)}–${formatTime(new Date(slot.end), timeZone)} (${slot.score.value.toFixed(1).replace('.', ',')} sur 10)`,
+              `${formatTime(new Date(slot.start), timeZone)}–${formatTime(new Date(slot.end), timeZone)} (${formatScore(slot.score.value)} sur 10)`,
           )
           .join(', ')}.`;
 
@@ -124,7 +124,10 @@ export function DayActivityChart({
       {/* Rangée des poissons, au-dessus du tracé. */}
       <div className="relative h-8" aria-hidden="true">
         {favourable.map((slot) => {
-          const tier = tierFor(slot.score.value);
+          const tier = tierForOrNull(slot.score.value);
+          // `favourableSlots` écarte déjà les créneaux sans score ; ce garde-fou
+          // rend l'invariant lisible au typage plutôt que de l'affirmer.
+          if (tier === null) return null;
           const centre = clampPct(
             (pctOf(new Date(slot.start).getTime(), startMs, endMs) +
               pctOf(new Date(slot.end).getTime(), startMs, endMs)) /
@@ -246,13 +249,17 @@ export function DayActivityChart({
       {/* Réglette des 8 créneaux de 3 h. */}
       <div className="mt-2 flex gap-[2px]" aria-hidden="true">
         {day.slots.map((slot) => {
-          const tier = tierFor(slot.score.value);
+          const tier = tierForOrNull(slot.score.value);
           const isDanger = slot.score.safety.level === 'danger';
           return (
             <span
               key={slot.start}
               className="h-2 flex-1 rounded-[1px]"
-              style={{ backgroundColor: isDanger ? 'var(--score-1)' : tier.colorVar }}
+              style={{
+                backgroundColor: isDanger
+                  ? 'var(--score-1)'
+                  : (tier?.colorVar ?? UNAVAILABLE_COLOR_VAR),
+              }}
             />
           );
         })}

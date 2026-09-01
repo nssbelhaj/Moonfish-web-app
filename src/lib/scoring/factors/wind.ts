@@ -1,6 +1,6 @@
 import { angleDelta, clamp, round1, trapezoid } from '../math';
-import type { FactorResult, WindInput } from '../types';
-import { FACTOR_WEIGHTS } from '../types';
+import type { AvailableFactorResult, FactorResult, WindInput } from '../types';
+import { FACTOR_WEIGHTS, unavailableFactor } from '../types';
 
 /**
  * Le pêcheur ne cherche pas des degrés, il cherche à savoir si le vent lui
@@ -44,7 +44,11 @@ function speedFit(speedKmh: number, exposure: WindExposure): number {
   }
 }
 
-export function scoreWind(input: WindInput, spotFacingDeg: number): FactorResult {
+export function scoreWind(input: WindInput, spotFacingDeg: number): AvailableFactorResult;
+export function scoreWind(input: WindInput | null, spotFacingDeg: number): FactorResult;
+export function scoreWind(input: WindInput | null, spotFacingDeg: number): FactorResult {
+  if (input === null) return unavailableFactor('wind');
+
   const exposure = classifyWind(input.fromDeg, spotFacingDeg);
   const speed = Math.max(0, input.speedKmh);
 
@@ -67,5 +71,10 @@ export function scoreWind(input: WindInput, spotFacingDeg: number): FactorResult
             ? `${rounded} km/h de ${label} — mer aplatie, lancers faciles mais moins d'activité`
             : `${rounded} km/h de ${label}`;
 
-  return { score: round1(clamp(score, 0, 10)), weight: FACTOR_WEIGHTS.wind, note };
+  return {
+    score: round1(clamp(score, 0, 10)),
+    weight: FACTOR_WEIGHTS.wind,
+    nominalWeight: FACTOR_WEIGHTS.wind,
+    note,
+  };
 }

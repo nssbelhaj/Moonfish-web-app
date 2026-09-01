@@ -35,7 +35,10 @@ export default async function SpotForecastPage({ params }: { params: Promise<Rou
     .filter((slot) => new Date(slot.end).getTime() > now.getTime())
     .filter((slot) => slot.score.safety.level !== 'danger');
 
-  const bestSlots = [...upcoming].sort((a, b) => b.score.value - a.score.value).slice(0, 5);
+  const bestSlots = [...upcoming]
+    .filter((slot) => slot.score.value !== null)
+    .sort((a, b) => (b.score.value ?? 0) - (a.score.value ?? 0))
+    .slice(0, 5);
 
   return (
     <>

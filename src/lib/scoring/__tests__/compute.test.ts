@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { computeScore, labelFor } from '../compute';
 import { FACTOR_WEIGHTS } from '../types';
-import { IDEAL, withInput } from './fixtures';
+import { IDEAL, scoreOf, withInput } from './fixtures';
 
 describe('computeScore — invariants', () => {
   it('reste borné à 0–10 avec une décimale sur des entrées extrêmes', () => {
@@ -12,7 +12,7 @@ describe('computeScore — invariants', () => {
     ];
 
     for (const input of extremes) {
-      const { value } = computeScore(input);
+      const value = scoreOf(input);
       expect(value).toBeGreaterThanOrEqual(0);
       expect(value).toBeLessThanOrEqual(10);
       expect(Number.isInteger(value * 10)).toBe(true);

@@ -1,4 +1,4 @@
-import { formatScore, litNotches, tierFor } from '@/lib/score-display';
+import { formatScore, litNotches, tierForOrNull } from '@/lib/score-display';
 import type { ScoreResult } from '@/lib/scoring';
 import { ScoreShape } from './ScoreShape';
 
@@ -11,6 +11,11 @@ import { ScoreShape } from './ScoreShape';
  *
  * En conditions dangereuses, la réglette perd son accent et passe à 50 %
  * d'opacité : le score reste consultable mais cesse d'être une invitation.
+ *
+ * Score absent (D11) : « —,— », « Indispo. » et réglette entièrement éteinte.
+ * Jamais 0,0 et jamais un palier : un score manquant n'est pas un mauvais score,
+ * et emprunter la couleur du palier bas reviendrait à affirmer des conditions
+ * qu'on n'a pas mesurées.
  */
 export function ScoreGauge({
   score,
@@ -19,10 +24,11 @@ export function ScoreGauge({
   score: ScoreResult;
   size?: 'lg' | 'md';
 }) {
-  const tier = tierFor(score.value);
-  const lit = litNotches(score.value);
+  const tier = tierForOrNull(score.value);
+  const lit = score.value === null ? 0 : litNotches(score.value);
   const isDanger = score.safety.level === 'danger';
-  const color = isDanger ? 'var(--fg-muted)' : tier.colorVar;
+  const color =
+    tier === null ? 'var(--fg-faint)' : isDanger ? 'var(--fg-muted)' : tier.colorVar;
 
   // Handoff §3 : en danger, la jauge « passe à opacity .5 et perd sa couleur
   // d'accent ». Appliquée au bloc entier, cette opacité fait passer le chiffre
@@ -43,9 +49,11 @@ export function ScoreGauge({
       </div>
 
       <div className="mt-3 flex items-center gap-2">
-        <ScoreShape tier={tier} size={16} className={isDanger ? 'opacity-50' : undefined} />
+        {tier && (
+          <ScoreShape tier={tier} size={16} className={isDanger ? 'opacity-50' : undefined} />
+        )}
         <p className="text-meta text-fg-faint nums">
-          {tier.label}
+          {tier ? tier.label : 'Indispo.'}
         </p>
       </div>
 

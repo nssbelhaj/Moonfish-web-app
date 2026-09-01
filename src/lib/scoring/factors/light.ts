@@ -1,6 +1,6 @@
 import { round1 } from '../math';
-import type { FactorResult, LightInput, LightPhase } from '../types';
-import { FACTOR_WEIGHTS } from '../types';
+import type { AvailableFactorResult, FactorResult, LightInput, LightPhase } from '../types';
+import { FACTOR_WEIGHTS, unavailableFactor } from '../types';
 
 /**
  * Le bar et la plupart des prédateurs du bord chassent dans la lumière basse.
@@ -20,10 +20,15 @@ const LIGHT_NOTES: Record<LightPhase, string> = {
   day: 'plein jour — la lumière rase manque, activité en retrait',
 };
 
-export function scoreLight(input: LightInput): FactorResult {
+export function scoreLight(input: LightInput): AvailableFactorResult;
+export function scoreLight(input: LightInput | null): FactorResult;
+export function scoreLight(input: LightInput | null): FactorResult {
+  if (input === null) return unavailableFactor('light');
+
   return {
     score: round1(LIGHT_SCORES[input.phase]),
     weight: FACTOR_WEIGHTS.light,
+    nominalWeight: FACTOR_WEIGHTS.light,
     note: LIGHT_NOTES[input.phase],
   };
 }

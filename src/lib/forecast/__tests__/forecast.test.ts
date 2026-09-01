@@ -2,7 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { SPOTS } from '@/data/spots';
 import { generateMarineSeries } from '@/data/generators/marine';
 import { generateTideEvents, tidalRangeFor, tideCoefficientFor } from '@/data/generators/tide';
-import { favourableSlots, getSpotForecast, referenceNow } from '@/lib/forecast';
+import {
+  SLOTS_PER_DAY,
+  buildForecastDays,
+  favourableSlots,
+  getSpotForecast,
+  referenceNow,
+} from '@/lib/forecast';
+import { localHours } from '@/lib/time';
 import { tideContextAt } from '../tide-context';
 
 const NOW = new Date('2026-09-01T09:00:00Z');
@@ -229,5 +236,115 @@ describe('mémoïsation par requête', () => {
     const a = await getSpotForecast(spot, new Date('2026-09-01T09:00:00Z'));
     const b = await getSpotForecast(spot, new Date('2026-09-02T09:00:00Z'));
     expect(a.generatedAt).not.toBe(b.generatedAt);
+  });
+});
+
+describe('panne du fournisseur de marées (D11)', () => {
+  // La journée locale commence AVANT minuit UTC en Europe/Paris : la série
+  // marine part de la veille pour couvrir le premier créneau.
+  const from = new Date('2026-08-31T00:00:00Z');
+  const to = new Date('2026-09-08T00:00:00Z');
+
+  it('garde les huit créneaux de la journée quand aucune marée n’est couverte', () => {
+    // Sauter les créneaux sans marée faisait disparaître la journée entière de
+    // l'interface, sans qu'aucun message n'explique le trou.
+    const days = buildForecastDays(spot, NOW, [], generateMarineSeries(spot, from, to));
+    expect(days[0]!.slots).toHaveLength(SLOTS_PER_DAY);
+    expect(days[0]!.slots.every((slot) => slot.tide === null)).toBe(true);
+  });
+
+  it('calcule quand même un score, sur les facteurs restants, et le déclare', () => {
+    const days = buildForecastDays(spot, NOW, [], generateMarineSeries(spot, from, to));
+    const slot = days[0]!.slots[0]!;
+
+    expect(slot.score.value).not.toBeNull();
+    expect(slot.score.coverage).toBeCloseTo(0.65, 10);
+    expect(slot.score.reasons.join(' ')).toContain('Calculé sans la marée');
+  });
+
+  it('ne se contredit pas : avec les marées, plus rien n’est déclaré manquant', () => {
+    const days = buildForecastDays(
+      spot,
+      NOW,
+      generateTideEvents(spot, from, to),
+      generateMarineSeries(spot, from, to),
+    );
+    const slot = days[0]!.slots[0]!;
+
+    expect(slot.tide).not.toBeNull();
+    expect(slot.score.coverage).toBeCloseTo(1, 10);
+    expect(slot.score.reasons.join(' ')).not.toContain('Calculé sans');
+  });
+});
+
+describe('panne du fournisseur météo (D11)', () => {
+  const from = new Date('2026-08-31T00:00:00Z');
+  const to = new Date('2026-09-08T00:00:00Z');
+
+  it('garde les créneaux et déclare le vent et la houle manquants', () => {
+    const days = buildForecastDays(spot, NOW, generateTideEvents(spot, from, to), []);
+    const slot = days[0]!.slots[0]!;
+
+    expect(days[0]!.slots).toHaveLength(SLOTS_PER_DAY);
+    expect(slot.conditions).toBeNull();
+    expect(slot.score.value).not.toBeNull();
+    expect(slot.score.reasons.join(' ')).toContain('Calculé sans le vent ni la houle');
+  });
+
+  it('ne déclare jamais la sortie sûre sans mesure de vent ni de houle', () => {
+    const days = buildForecastDays(spot, NOW, generateTideEvents(spot, from, to), []);
+    for (const slot of days[0]!.slots) {
+      expect(slot.score.safety.level).not.toBe('ok');
+    }
+  });
+});
+
+describe('éphémérides : la date locale, pas la date UTC', () => {
+  const from = new Date('2026-08-31T00:00:00Z');
+  const to = new Date('2026-09-08T00:00:00Z');
+  const days = () =>
+    buildForecastDays(
+      spot,
+      NOW,
+      generateTideEvents(spot, from, to),
+      generateMarineSeries(spot, from, to),
+    );
+
+  it('place le lever et le coucher DANS la journée locale affichée', () => {
+    // À Paris, minuit local du 1er septembre vaut 22 h UTC le 31 août. Calculer
+    // les éphémérides sur la date UTC de cet instant donnait celles de la
+    // VEILLE : le lever tombait avant le début de la journée affichée.
+    const all = days();
+    for (let index = 0; index < all.length - 1; index += 1) {
+      const day = all[index]!;
+      const start = new Date(day.date).getTime();
+      const end = new Date(all[index + 1]!.date).getTime();
+
+      expect(day.sunrise).not.toBeNull();
+      expect(day.sunset).not.toBeNull();
+      expect(new Date(day.sunrise!).getTime()).toBeGreaterThanOrEqual(start);
+      expect(new Date(day.sunrise!).getTime()).toBeLessThan(end);
+      expect(new Date(day.sunset!).getTime()).toBeGreaterThan(new Date(day.sunrise!).getTime());
+      expect(new Date(day.sunset!).getTime()).toBeLessThan(end);
+    }
+  });
+
+  it('ne classe pas l’après-midi de septembre en « nuit »', () => {
+    const day = days()[0]!;
+    const afternoon = day.slots.find((slot) => {
+      const middle = new Date(new Date(slot.start).getTime() + 1.5 * 3_600_000);
+      return Math.round(localHours(middle, spot.timezone)) === 14;
+    });
+
+    expect(afternoon).toBeDefined();
+    expect(afternoon!.lightPhase).toBe('day');
+  });
+
+  it('donne bien les quatre phases sur une journée, pas une seule', () => {
+    // Le symptôme du bug : les huit créneaux portaient la même phase.
+    const phases = new Set(days()[0]!.slots.map((slot) => slot.lightPhase));
+    expect(phases.size).toBeGreaterThan(1);
+    expect(phases.has('day')).toBe(true);
+    expect(phases.has('night')).toBe(true);
   });
 });

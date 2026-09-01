@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { computeScore } from '../compute';
 import { coefficientFactor, scoreTide, tidePositionFactor } from '../factors/tide';
-import { IDEAL, withInput } from './fixtures';
+import { IDEAL, scoreOf, withInput } from './fixtures';
 
 const at = (hoursFromHighTide: number, coefficient = 82, state: 'rising' | 'falling' | 'slack' = 'rising') =>
   scoreTide({ hoursFromHighTide, coefficient, state });
@@ -68,8 +67,8 @@ describe('marée — coefficient', () => {
   });
 
   it('fait chuter le score global d’un créneau parfait sur le seul coefficient', () => {
-    const extreme = computeScore(withInput({ tide: { hoursFromHighTide: -1, coefficient: 119, state: 'rising' } }));
-    expect(extreme.value).toBeLessThan(computeScore(IDEAL).value);
+    const extreme = scoreOf(withInput({ tide: { hoursFromHighTide: -1, coefficient: 119, state: 'rising' } }));
+    expect(extreme).toBeLessThan(scoreOf(IDEAL));
   });
 });
 

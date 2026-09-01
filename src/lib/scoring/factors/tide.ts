@@ -1,6 +1,6 @@
 import { clamp, fr, ramp, round1, trapezoid } from '../math';
-import type { FactorResult, TideInput } from '../types';
-import { FACTOR_WEIGHTS } from '../types';
+import type { AvailableFactorResult, FactorResult, TideInput } from '../types';
+import { FACTOR_WEIGHTS, unavailableFactor } from '../types';
 
 /** Demi-période moyenne d'une marée semi-diurne, en heures. */
 const HALF_CYCLE_H = 6.2;
@@ -86,7 +86,11 @@ function buildNote(input: TideInput, positional: number, slack: number): string 
   return parts.join(' · ');
 }
 
-export function scoreTide(input: TideInput): FactorResult {
+export function scoreTide(input: TideInput): AvailableFactorResult;
+export function scoreTide(input: TideInput | null): FactorResult;
+export function scoreTide(input: TideInput | null): FactorResult {
+  if (input === null) return unavailableFactor('tide');
+
   const positional = tidePositionFactor(input.hoursFromHighTide);
   const slack = slackPenalty(input.hoursFromHighTide, input.state === 'slack');
   const coef = coefficientFactor(input.coefficient);
@@ -94,6 +98,7 @@ export function scoreTide(input: TideInput): FactorResult {
   return {
     score: round1(clamp(10 * positional * slack * coef, 0, 10)),
     weight: FACTOR_WEIGHTS.tide,
+    nominalWeight: FACTOR_WEIGHTS.tide,
     note: buildNote(input, positional, slack),
   };
 }

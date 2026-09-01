@@ -35,7 +35,7 @@ export function SpotCard({ summary }: { summary: SpotSummary }) {
         : 'Indispo.',
     ],
     ['Houle', formatMeasure(conditions?.swellHeightM, 'm', 1)],
-    ['Coefficient', current ? String(current.tide.coefficient) : 'Indispo.'],
+    ['Coefficient', current?.tide ? String(current.tide.coefficient) : 'Indispo.'],
     [
       'Prochaine fenêtre',
       nextGood ? formatDateTime(new Date(nextGood.start), spot.timezone) : 'Aucune sous 7 j',

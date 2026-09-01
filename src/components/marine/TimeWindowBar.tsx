@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { ForecastDay, ForecastSlot } from '@/lib/forecast';
-import { formatScore, tierFor } from '@/lib/score-display';
+import { UNAVAILABLE_COLOR_VAR, formatScore, tierForOrNull } from '@/lib/score-display';
 import { formatDayShort, formatTime } from '@/lib/time';
 
 /** Au-delà de J+2, la profondeur temporelle passe derrière le mur Pro (handoff §5). */
@@ -12,7 +12,7 @@ function slotColor(slot: ForecastSlot, isPast: boolean): string {
   // (handoff §5).
   if (isPast) return 'var(--night)';
   if (slot.score.safety.level === 'danger') return 'var(--score-1)';
-  return tierFor(slot.score.value).colorVar;
+  return tierForOrNull(slot.score.value)?.colorVar ?? UNAVAILABLE_COLOR_VAR;
 }
 
 /**
@@ -56,7 +56,7 @@ export function TimeWindowBar({
                 >
                   {day.slots.map((slot) => {
                     const isPast = new Date(slot.end).getTime() <= nowMs;
-                    const tier = tierFor(slot.score.value);
+                    const tier = tierForOrNull(slot.score.value);
 
                     return (
                       <li key={slot.start} className="flex items-center gap-2 py-[3px]">
@@ -67,7 +67,9 @@ export function TimeWindowBar({
                           className="h-4 rounded-[1px]"
                           style={{
                             backgroundColor: slotColor(slot, isPast),
-                            width: `${Math.max(6, slot.score.value * 10)}%`,
+                            // Score absent : la barre reste au minimum visible,
+                            // sans jamais suggérer une longueur donc une valeur.
+                            width: `${Math.max(6, (slot.score.value ?? 0) * 10)}%`,
                           }}
                         />
                         <span className="text-meta text-fg-faint nums" data-numeric="">
@@ -76,7 +78,9 @@ export function TimeWindowBar({
                         <span className="sr-only">
                           {isPast
                             ? 'créneau passé'
-                            : `${tier.label}, ${formatScore(slot.score.value)} sur 10`}
+                            : tier
+                              ? `${tier.label}, ${formatScore(slot.score.value)} sur 10`
+                              : 'score indisponible'}
                         </span>
                       </li>
                     );
