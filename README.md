@@ -344,6 +344,39 @@ fraîcheur » de `src/lib/__tests__/contrast.test.ts`.
 
 ---
 
+## Thèmes clair et nuit
+
+Le thème CLAIR est le défaut. Le nuit s'obtient par `[data-theme="night"]` sur
+`<html>`, posé par un script inline dans le `<head>` — pas à l'hydratation.
+Sans ce script, la page peint d'abord le clair puis bascule : un flash blanc en
+pleine nuit, sur une plage, exactement ce que D19 interdit.
+
+Ordre de décision (D18) : le choix explicite mémorisé gagne s'il existe, sinon
+on suit `prefers-color-scheme`. Mémorisé par appareil dans `localStorage`, la
+clé est `moonfish-theme`.
+
+La bascule porte TOUJOURS son libellé, jamais une icône seule : un soleil sans
+mot ne dit pas s'il montre l'état courant ou l'action à déclencher. Elle est
+absente des pages Guides (D16), qui restent en clair — lecture diurne et contenu
+indexable.
+
+Aucune transition sur la bascule (D19). C'est délibéré, pas un oubli.
+
+### Une règle de palette que rien n'appliquait
+
+`contrast.test.ts` établit depuis le v3 que seuls `fg` et `accent` tiennent AA
+sur `surface-2`. Rien ne vérifiait la même chose du côté des COMPOSANTS : huit
+éléments réels portaient `text-fg-muted` sur `bg-chip`, mesurés à 3,68:1 en
+thème nuit sur la page rendue.
+
+C'est le même angle mort que `text-abyss` en v2 — une règle vraie, écrite,
+testée au bon endroit, et contournée à l'usage sans que rien ne la voie.
+`color-classes.test.ts` interdit désormais toute encre non autorisée sur
+`bg-surface-2`, et exige que plus aucun composant n'emploie les noms `chip` et
+`card-2` du v2.
+
+---
+
 ## Où toucher au design
 
 **Handoff design v2.** Deux fichiers portent la totalité de la palette :

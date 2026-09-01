@@ -292,7 +292,7 @@ export function DayActivityChart({
           </li>
           <li className="flex items-center gap-2">
             <span
-              className="h-3 w-4 rounded-[1px] border border-edge bg-chip"
+              className="h-3 w-4 rounded-[1px] border border-edge bg-surface-2"
               aria-hidden="true"
             />
             Nuit

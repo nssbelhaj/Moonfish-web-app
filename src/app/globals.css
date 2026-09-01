@@ -61,6 +61,36 @@
 
 @layer components {
   /*
+   * Fond à courbes de niveau (R7).
+   *
+   * UNE SEULE FOIS, au niveau page, jamais dans un composant et jamais derrière
+   * du texte de lecture. Un motif répété dans chaque carte deviendrait la
+   * texture dominante de l'écran et écraserait la hiérarchie ; posé une fois
+   * sous tout, il donne au produit son registre de carte marine sans jamais
+   * entrer en concurrence avec une donnée.
+   *
+   * Opacité tenue à 0,55 du plafond du handoff, et le motif s'arrête là où
+   * commence le contenu — les cartes sont opaques, elles le masquent d'elles-mêmes.
+   *
+   * `background-attachment: fixed` est volontairement ÉVITÉ : il provoque un
+   * repaint à chaque frame de défilement sur mobile, ce qu'on ne paie pas pour
+   * une décoration.
+   */
+  .contour-field {
+    background-image: repeating-radial-gradient(
+      ellipse 120% 60% at 18% -10%,
+      transparent 0,
+      transparent 46px,
+      var(--edge) 46px,
+      var(--edge) 47px
+    );
+    background-repeat: no-repeat;
+    background-size: 100% 620px;
+    background-position: top center;
+    opacity: 0.55;
+  }
+
+  /*
    * Élévation v3 (R4) : remplissage ET filet 1 px, aucune ombre portée.
    *
    * Le filet passe par `box-shadow: 0 0 0 1px`, exactement comme dans les

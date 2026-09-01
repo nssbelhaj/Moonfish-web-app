@@ -83,3 +83,60 @@ describe('classes de couleur', () => {
     expect(offenders, `contraste sous AA :\n${offenders.join('\n')}`).toEqual([]);
   });
 });
+
+/**
+ * Encres autorisées SUR `surface-2`.
+ *
+ * `contrast.test.ts` établit la règle au niveau des tokens : sur les deux
+ * thèmes, seuls `fg` et `accent` tiennent AA sur cette surface de remplissage.
+ * Mais rien ne l'appliquait aux COMPOSANTS — et huit éléments réels portaient
+ * `text-fg-muted` sur `bg-chip`, mesurés à 3,68:1 en thème nuit.
+ *
+ * C'est le même angle mort que `text-abyss` en v2 : une règle vraie, écrite,
+ * testée au bon endroit, et contournée à l'usage sans que rien ne le voie.
+ */
+describe('encres sur surface-2', () => {
+  const files = sources(path.join(process.cwd(), 'src'));
+  const ALLOWED = new Set(['fg', 'accent', 'fg-on-accent', 'danger']);
+  // `text-` sert aussi aux tailles (`text-body`, `text-meta`) : seules les
+  // classes dont le nom est une COULEUR déclarée nous intéressent ici.
+  const colours = declaredColors();
+
+  it('n’y pose que ce qui y tient', () => {
+    const offenders: string[] = [];
+
+    for (const file of files) {
+      const text = readFileSync(file, 'utf8');
+      // On inspecte chaque littéral de classe contenant bg-surface-2 : c'est
+      // l'unité que Tailwind applique réellement à un élément.
+      for (const match of text.matchAll(/(?:className|class)=\{?["'`]([^"'`]*bg-surface-2[^"'`]*)["'`]/g)) {
+        const classes = (match[1] as string).split(/\s+/);
+        for (const cls of classes) {
+          const ink = /^text-([a-z][a-z0-9-]*)$/.exec(cls)?.[1];
+          if (ink && colours.has(ink) && !ALLOWED.has(ink)) {
+            offenders.push(`${path.relative(process.cwd(), file)} → ${cls} sur bg-surface-2`);
+          }
+        }
+      }
+    }
+
+    expect(
+      offenders,
+      'encre non autorisée sur surface-2 : elle n’y tient pas AA en thème nuit',
+    ).toStrictEqual([]);
+  });
+
+  it('ne laisse plus traîner les anciens noms de surface', () => {
+    // `chip` et `card-2` sont les noms du v2. Ils restent définis le temps de la
+    // migration, mais plus rien ne doit les employer — sinon la liste des
+    // hérités ne diminue jamais et le bloc d'alias devient permanent.
+    const offenders: string[] = [];
+    for (const file of files) {
+      const text = readFileSync(file, 'utf8');
+      for (const match of text.matchAll(/\b(?:bg|text|border)-(chip|card-2)\b/g)) {
+        offenders.push(`${path.relative(process.cwd(), file)} → ${match[0]}`);
+      }
+    }
+    expect(offenders).toStrictEqual([]);
+  });
+});

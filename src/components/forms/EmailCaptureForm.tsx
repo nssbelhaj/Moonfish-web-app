@@ -50,7 +50,7 @@ export function EmailCaptureForm({ source = 'site' }: { source?: string }) {
   if (status.kind === 'success') {
     return (
       <p
-        className="rounded-card border bg-card-2 px-4 py-4 text-body"
+        className="rounded-card border bg-surface-2 px-4 py-4 text-body"
         role="status"
       >
         {status.alreadyRegistered
@@ -78,7 +78,7 @@ export function EmailCaptureForm({ source = 'site' }: { source?: string }) {
           placeholder="vous@exemple.fr"
           aria-describedby={status.kind === 'error' ? feedbackId : undefined}
           aria-invalid={status.kind === 'error'}
-          className="min-h-[56px] flex-1 rounded-ctl border border-edge-strong bg-chip px-4 text-body text-fg placeholder:text-fg-muted"
+          className="min-h-[56px] flex-1 rounded-ctl border border-edge-strong bg-surface-2 px-4 text-body text-fg placeholder:text-fg"
         />
         <Button type="submit" disabled={status.kind === 'sending'}>
           {status.kind === 'sending' ? 'Envoi…' : 'Me prévenir'}

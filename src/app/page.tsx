@@ -202,7 +202,7 @@ export default async function HomePage() {
               </div>
 
               {/* La barre rend l'écart de poids immédiatement lisible. */}
-              <div className="ml-20 mt-2 h-1 rounded-[2px] bg-chip" aria-hidden="true">
+              <div className="ml-20 mt-2 h-1 rounded-[2px] bg-surface-2" aria-hidden="true">
                 <div
                   className="h-full rounded-[2px] bg-accent-score"
                   style={{ width: `${(factor.weight / 35) * 100}%` }}

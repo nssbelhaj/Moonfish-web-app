@@ -65,7 +65,7 @@ export function SafetyBanner({
       {isDanger && shelterHref && shelterCount !== undefined && shelterCount > 0 && (
         <Link
           href={shelterHref}
-          className="tappable mt-3 inline-flex min-h-tap items-center rounded-ctl bg-chip px-4 font-semibold text-fg hover:bg-card-2"
+          className="tappable mt-3 inline-flex min-h-tap items-center rounded-ctl bg-surface-2 px-4 font-semibold text-fg hover:bg-edge"
         >
           Voir {shelterCount} spot{shelterCount > 1 ? 's' : ''} abrité
           {shelterCount > 1 ? 's' : ''} à moins de 20 km

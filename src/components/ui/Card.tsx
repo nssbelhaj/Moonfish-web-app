@@ -23,7 +23,7 @@ export function Card({
   return (
     <div
       className={`surface ${active ? 'ring-2 ring-accent-score' : ''} ${
-        interactive ? 'pressable hover:bg-chip' : ''
+        interactive ? 'pressable hover:bg-surface-2' : ''
       } ${className}`}
     >
       {children}

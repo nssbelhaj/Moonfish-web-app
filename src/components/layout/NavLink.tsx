@@ -32,8 +32,8 @@ export function NavLink({
           : 'min-h-tap rounded-ctl border-b-2 px-3'
       } ${
         isActive
-          ? 'border-accent-data bg-chip font-semibold text-fg'
-          : 'border-transparent text-fg-muted hover:bg-chip hover:text-fg'
+          ? 'border-accent bg-surface-2 font-semibold text-fg'
+          : 'border-transparent text-fg-muted hover:bg-surface-2 hover:text-fg'
       }`}
     >
       {children}

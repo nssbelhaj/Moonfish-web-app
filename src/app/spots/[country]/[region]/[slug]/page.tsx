@@ -84,8 +84,14 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
         </div>
       </div>
 
-      <div className="mx-auto w-full max-w-shell px-4 py-8 md:px-8 md:py-12 xl:grid xl:grid-cols-[1fr_400px] xl:gap-12">
-        <div>
+      {/*
+        Densité par COLONNES, jamais par réduction (§3) : aucune police ne
+        rétrécit et aucune cible ne descend sous 48 px d'un palier à l'autre.
+        1024 : contenu + latérale de 340. 1440 : trois colonnes 300 / 1fr / 300,
+        la latérale gauche portant ce qui était sous le pli en mobile.
+      */}
+      <div className="mx-auto w-full max-w-shell gap-6 px-4 py-8 md:px-8 md:py-12 lg:grid lg:grid-cols-[1fr_340px] 2xl:grid-cols-[300px_1fr_300px] 2xl:gap-8">
+        <div className="2xl:order-2">
           {isDanger && (
             <section aria-labelledby="repli" className="mb-8">
               <h2 id="repli" className="font-serif text-h2 font-semibold">
@@ -187,7 +193,7 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
           )}
         </div>
 
-        <aside className="mt-10 xl:mt-0">
+        <aside className="mt-10 lg:mt-0 2xl:order-first">
           <section
             aria-labelledby="marees"
             className={tideIsSimulated ? 'demo-frame p-4' : 'surface p-[14px]'}

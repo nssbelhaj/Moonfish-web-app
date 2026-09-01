@@ -94,7 +94,7 @@ export default function DonneesPage() {
             <li key={label} className="surface p-4">
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <h3 className="text-body font-600 text-fg">{label}</h3>
-                <span className="rounded-ctl bg-chip px-1.5 py-0.5 text-meta font-600 text-fg-muted">
+                <span className="rounded-ctl bg-surface-2 px-1.5 py-0.5 text-meta font-600 text-fg">
                   {KIND_LABEL[source.kind]}
                 </span>
               </div>

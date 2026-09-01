@@ -59,7 +59,7 @@ export function SpotSearch({ spots }: { spots: readonly SearchableSpot[] }) {
         aria-expanded={results.length > 0}
         aria-controls={listId}
         aria-autocomplete="list"
-        className="mt-2 min-h-[56px] w-full rounded-ctl border border-edge-strong bg-chip px-4 text-body text-fg placeholder:text-fg-muted"
+        className="mt-2 min-h-[56px] w-full rounded-ctl border border-edge-strong bg-surface-2 px-4 text-body text-fg placeholder:text-fg"
       />
 
       <div aria-live="polite" className="sr-only">

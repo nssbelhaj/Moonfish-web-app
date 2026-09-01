@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { NavLink } from './NavLink';
+import { ThemeToggle } from './ThemeToggle';
 
 const NAV = [
   { href: '/spots', label: 'Spots' },
@@ -24,15 +25,18 @@ export function SiteHeader() {
           <span className="font-serif text-[19px] font-semibold">Moonfish</span>
         </Link>
 
-        <nav aria-label="Navigation principale" className="hidden md:block">
-          <ul className="flex items-center gap-1">
-            {NAV.map((item) => (
-              <li key={item.href}>
-                <NavLink href={item.href}>{item.label}</NavLink>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        <div className="flex items-center gap-3">
+          <nav aria-label="Navigation principale" className="hidden md:block">
+            <ul className="flex items-center gap-1">
+              {NAV.map((item) => (
+                <li key={item.href}>
+                  <NavLink href={item.href}>{item.label}</NavLink>
+                </li>
+              ))}
+            </ul>
+          </nav>
+          <ThemeToggle />
+        </div>
       </div>
     </header>
   );

@@ -14,3 +14,25 @@
  * `#0b0d0f`, sans que rien ne le signale.
  */
 export const BROWSER_THEME_COLOR = '#f7f4ed';
+
+/** Clé de mémorisation du thème, par appareil. */
+export const THEME_STORAGE_KEY = 'moonfish-theme';
+
+export type Theme = 'clair' | 'nuit';
+
+/**
+ * Script posé AVANT le premier rendu.
+ *
+ * Sans lui, la page peint d'abord le thème clair par défaut, puis bascule à
+ * l'hydratation : un flash blanc en pleine nuit, sur une plage, exactement ce
+ * que D19 interdit. Il doit donc rester synchrone et inline dans le <head> —
+ * un module différé arriverait trop tard.
+ *
+ * L'ordre de décision est celui de D18 : le choix explicite gagne s'il existe,
+ * sinon on suit le système.
+ */
+export const THEME_INIT_SCRIPT = `(function(){try{
+var s=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});
+var n=s?s==='nuit':window.matchMedia('(prefers-color-scheme: dark)').matches;
+if(n)document.documentElement.setAttribute('data-theme','night');
+}catch(e){}})();`;

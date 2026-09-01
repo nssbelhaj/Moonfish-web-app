@@ -15,11 +15,11 @@ export function ScoreBadge({
 }) {
   if (value === null) {
     return (
-      <span className="inline-flex items-center gap-2 rounded-ctl bg-chip px-2.5 py-1">
-        <span className="nums text-score-sm text-fg-muted" data-numeric="">
+      <span className="inline-flex items-center gap-2 rounded-ctl bg-surface-2 px-2.5 py-1">
+        <span className="nums text-score-sm text-fg" data-numeric="">
           —,—
         </span>
-        <span className="text-meta text-fg-faint nums">Indispo.</span>
+        <span className="text-meta text-fg nums">Indispo.</span>
       </span>
     );
   }

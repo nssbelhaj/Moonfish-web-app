@@ -44,7 +44,7 @@ export function DataSourceTag({
 
   return (
     <p className="mt-3 text-meta text-fg-faint nums leading-[1.5]">
-      <span className="mr-1.5 inline-block rounded-ctl bg-chip px-1.5 py-0.5 font-600 text-fg-muted">
+      <span className="mr-1.5 inline-block rounded-ctl bg-surface-2 px-1.5 py-0.5 font-600 text-fg">
         {KIND_LABEL[source.kind]}
       </span>
       {source.name}

@@ -3,7 +3,7 @@ import { Archivo, Spectral } from 'next/font/google';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { MobileNav, SiteHeader } from '@/components/layout/SiteHeader';
 import { SITE_URL } from '@/lib/routes';
-import { BROWSER_THEME_COLOR } from '@/lib/theme';
+import { BROWSER_THEME_COLOR, THEME_INIT_SCRIPT } from '@/lib/theme';
 import './globals.css';
 
 // Les trois familles du handoff §1. `next/font` les auto-héberge : aucune
@@ -48,16 +48,37 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" className={`${archivo.variable} ${spectral.variable}`}>
-      <body className="flex min-h-dvh flex-col font-sans antialiased">
+    <html
+      lang="fr"
+      className={`${archivo.variable} ${spectral.variable}`}
+      suppressHydrationWarning
+    >
+      <head>
+        {/*
+          Le thème est posé AVANT le premier rendu. Sans ce script, la page
+          peint le clair par défaut puis bascule à l'hydratation : un flash blanc
+          en pleine nuit, sur une plage — exactement ce que D19 interdit.
+          `suppressHydrationWarning` est nécessaire parce que ce script modifie
+          <html> avant que React ne compare son rendu serveur.
+        */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
+      <body className="relative flex min-h-dvh flex-col font-sans antialiased">
+        {/* R7 : les courbes de niveau, une seule fois, sous tout le reste. */}
+        <div
+          className="contour-field pointer-events-none absolute inset-x-0 top-0 h-[620px]"
+          aria-hidden="true"
+        />
         <a
           href="#contenu"
           className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-ctl focus:bg-card focus:px-4 focus:py-3"
         >
           Aller au contenu
         </a>
-        <SiteHeader />
-        <main id="contenu" className="flex-1">
+        <div className="relative">
+          <SiteHeader />
+        </div>
+        <main id="contenu" className="relative flex-1">
           {children}
         </main>
         <SiteFooter />

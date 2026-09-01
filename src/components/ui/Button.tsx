@@ -11,7 +11,7 @@ const BASE =
 
 const VARIANTS = {
   primary: 'min-h-[56px] bg-accent-score text-fg-on-accent hover:opacity-90',
-  secondary: 'min-h-[48px] border border-edge-strong text-fg hover:bg-chip',
+  secondary: 'min-h-[48px] border border-edge-strong text-fg hover:bg-surface-2',
   ghost: 'min-h-[48px] text-fg-muted hover:text-fg',
 } as const;
 

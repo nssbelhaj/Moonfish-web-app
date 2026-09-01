@@ -84,7 +84,7 @@ export function SpotFilters(props: SpotFiltersProps) {
               name={field.name}
               defaultValue={current[field.name] ?? ''}
               onChange={submitNow}
-              className="mt-2 min-h-[48px] w-full rounded-ctl border border-edge-strong bg-chip px-3 text-body text-fg"
+              className="mt-2 min-h-[48px] w-full rounded-ctl border border-edge-strong bg-surface-2 px-3 text-body text-fg"
             >
               <option value="">Tous</option>
               {options[field.key]?.map((option) => (
