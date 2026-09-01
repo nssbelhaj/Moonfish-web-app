@@ -61,9 +61,9 @@ export function activityLevel(value: number | null | undefined): 0 | 1 | 2 | 3 {
 
 export const ACTIVITY_LABELS: Record<0 | 1 | 2 | 3, string> = {
   0: 'activité faible',
-  1: 'activité modérée',
-  2: 'activité soutenue',
-  3: 'activité maximale',
+  1: 'activité moyenne',
+  2: 'activité élevée',
+  3: 'activité très élevée',
 };
 
 /** Palier d'une valeur éventuellement absente. `null` = il n'y a rien à qualifier. */

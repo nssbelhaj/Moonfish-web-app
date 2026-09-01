@@ -19,11 +19,13 @@ import { UI_TEXT_PROPS, WATER_TEXT_PROPS } from './WaterValue';
  */
 const COMPACT = {
   W: 340,
-  H: 186,
+  H: 190,
   top: 30,
   bottom: 116,
-  band: 138,
+  band: 140,
   font: 9.5,
+  /** Marge gauche réservée à l'axe des hauteurs. */
+  gutter: 30,
   /**
    * Deux fenêtres seulement en mobile.
    *
@@ -32,18 +34,19 @@ const COMPACT = {
    * cadre étroit ne porte donc que les deux meilleures : c'est de toute façon
    * la question qu'on se pose sur un téléphone, au bord de l'eau.
    */
-  maxWindows: 2,
+  maxWindows: 3,
   shortLabel: true,
 } as const;
 
 const WIDE = {
   W: 760,
-  H: 292,
+  H: 296,
   top: 46,
   bottom: 196,
-  band: 224,
+  band: 226,
   font: 11,
-  maxWindows: 4,
+  gutter: 40,
+  maxWindows: 5,
   shortLabel: false,
 } as const;
 
@@ -87,7 +90,7 @@ export interface CarryingWindow {
   start: string;
   end: string;
   /** Nombre de poissons : le meilleur palier atteint dans la fenêtre. */
-  level: 2 | 3;
+  level: 1 | 2 | 3;
   /** Meilleur score de la fenêtre, pour la couleur. */
   value: number;
 }
@@ -97,10 +100,10 @@ export interface CarryingWindow {
  *
  * Deux choses à la fois :
  *
- *  — on ne garde que les créneaux au palier « Bon » ou mieux. Douze tranches
- *    affichées côte à côte redevenaient un tableau ; ce qui intéresse le
- *    pêcheur, c'est lesquelles valent le déplacement, et s'il n'y en a aucune,
- *    la réponse est « aucune », pas une rangée de créneaux médiocres ;
+ *  — on ne garde que les créneaux qui portent au moins un poisson, c'est-à-dire
+ *    le palier « Passable » ou mieux. Douze tranches côte à côte redevenaient un
+ *    tableau ; les fenêtres, elles, se lisent d'un coup. Une journée sans rien
+ *    de porteur le dit, plutôt que d'aligner des créneaux médiocres ;
  *
  *  — les tranches CONTIGUËS sont fusionnées. Deux créneaux de deux heures qui
  *    se suivent ne sont pas deux sorties, c'est une fenêtre de quatre heures.
@@ -111,19 +114,26 @@ export interface CarryingWindow {
 export function carryingWindows(day: ForecastDay, max = 4): CarryingWindow[] {
   const carrying = day.slots
     .filter((slot) => slot.score.safety.level !== 'danger')
-    .filter((slot) => activityLevel(slot.score.value) >= 2);
+    .filter((slot) => activityLevel(slot.score.value) >= 1);
 
   const merged: CarryingWindow[] = [];
   for (const slot of carrying) {
-    const level = activityLevel(slot.score.value) as 2 | 3;
+    const level = activityLevel(slot.score.value) as 1 | 2 | 3;
     const value = slot.score.value ?? 0;
     const last = merged[merged.length - 1];
 
-    if (last && new Date(last.end).getTime() === new Date(slot.start).getTime()) {
+    // Fusion uniquement à niveau ÉGAL.
+    //
+    // Fusionner des niveaux différents faisait absorber les créneaux moyens
+    // voisins par une fenêtre à trois poissons, et produisait une « fenêtre très
+    // élevée » de dix-huit heures — c'est-à-dire plus rien de lisible, et une
+    // affirmation fausse sur les heures avalées au passage.
+    if (
+      last &&
+      last.level === level &&
+      new Date(last.end).getTime() === new Date(slot.start).getTime()
+    ) {
       last.end = slot.end;
-      // La fenêtre porte le MEILLEUR de ses créneaux : c'est ce qu'on va y
-      // chercher, pas la moyenne de ce qu'on y traverse.
-      if (level > last.level) last.level = level;
       if (value > last.value) last.value = value;
       continue;
     }
@@ -175,10 +185,29 @@ export function TideActivityChart({
         <ChartBody {...{ day, tideEvents, timeZone, now }} frame={WIDE} />
       </div>
 
+      {hasCarrying && (
+        <ul className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
+          {([3, 2, 1] as const).map((level) => (
+            <li key={level} className="flex items-center gap-[5px] text-[11px] text-fg-muted">
+              <span className="flex items-center gap-[2px]" aria-hidden="true">
+                {Array.from({ length: level }, (_, i) => (
+                  <svg key={i} width="11" height="6" viewBox="0 0 24 12" fill="var(--fg-muted)">
+                    {FISH_PATHS.map((d) => (
+                      <path key={d} d={d} />
+                    ))}
+                  </svg>
+                ))}
+              </span>
+              {ACTIVITY_LABELS[level]}
+            </li>
+          ))}
+        </ul>
+      )}
+
       <p className="card-source mt-3">
         {!hasCarrying
-          ? 'Aucun créneau porteur aujourd’hui : le score reste sous le palier « Bon » sur les douze tranches de deux heures.'
-          : 'Deux ou trois poissons = le palier du score, lu autrement. Marée, vent, houle, solunaire et lumière ; jamais une promesse de prise.'}
+          ? 'Aucun créneau porteur aujourd’hui : le score reste au palier le plus bas sur les douze tranches de deux heures.'
+          : 'Le nombre de poissons est le palier du score, lu autrement. Marée, vent, houle, solunaire et lumière ; jamais une promesse de prise.'}
       </p>
 
       <p className="sr-only">
@@ -211,13 +240,14 @@ function ChartBody({
   now: string;
   frame: Frame;
 }) {
-  const { W, H, top, bottom, band, font, maxWindows, shortLabel } = frame;
+  const { W, H, top, bottom, band, font, gutter, maxWindows, shortLabel } = frame;
   const carrying = carryingWindows(day, maxWindows);
 
   const startMs = new Date(day.date).getTime();
   const endMs = startMs + 24 * 3_600_000;
-  const x = (ms: number) => ((ms - startMs) / (endMs - startMs)) * W;
-  const clampX = (v: number) => Math.max(0, Math.min(W, v));
+  const plotW = W - gutter;
+  const x = (ms: number) => gutter + ((ms - startMs) / (endMs - startMs)) * plotW;
+  const clampX = (v: number) => Math.max(gutter, Math.min(W, v));
 
   const relevant = tideEvents.filter((e) => {
     const t = new Date(e.time).getTime();
@@ -236,7 +266,7 @@ function ChartBody({
       )
     : [];
   const curve = smooth(samples);
-  const area = curve ? `${curve} L${W},${bottom} L0,${bottom} Z` : '';
+  const area = curve ? `${curve} L${W},${bottom} L${gutter},${bottom} Z` : '';
 
   const sunrise = day.sunrise ? clampX(x(new Date(day.sunrise).getTime())) : null;
   const sunset = day.sunset ? clampX(x(new Date(day.sunset).getTime())) : null;
@@ -248,6 +278,18 @@ function ChartBody({
     const t = new Date(e.time).getTime();
     return t >= startMs && t <= endMs;
   });
+
+  /**
+   * Graduations de hauteur.
+   *
+   * Le graphe montrait une courbe SANS échelle : une forme dont on ne pouvait
+   * lire aucune hauteur. Quatre repères suffisent — les extrêmes du jour et deux
+   * intermédiaires — et ils portent leur valeur, sinon ce ne sont que des traits.
+   */
+  const ticks =
+    bounds && bounds.max > bounds.min
+      ? [0, 1 / 3, 2 / 3, 1].map((f) => bounds.min + f * (bounds.max - bounds.min))
+      : [];
 
   const gradientId = `mf-eau-${W}`;
 
@@ -263,14 +305,48 @@ function ChartBody({
       {/* Ruban de nuit : deux régimes de lumière, pas deux instants. */}
       {sunrise !== null && sunset !== null && (
         <g fill="var(--fg)" opacity="0.06">
-          <rect x="0" y={top - 8} width={sunrise} height={bottom - top + 8} />
+          <rect x={gutter} y={top - 8} width={Math.max(0, sunrise - gutter)} height={bottom - top + 8} />
           <rect x={sunset} y={top - 8} width={W - sunset} height={bottom - top + 8} />
         </g>
       )}
 
-      <g stroke="var(--edge)" strokeWidth="1" strokeDasharray="2 5" opacity="0.7">
-        <line x1="0" y1={top + (bottom - top) * 0.3} x2={W} y2={top + (bottom - top) * 0.3} />
-        <line x1="0" y1={top + (bottom - top) * 0.7} x2={W} y2={top + (bottom - top) * 0.7} />
+      <g>
+        {ticks.map((h) => (
+          <g key={h}>
+            <line
+              x1={gutter}
+              y1={y(h)}
+              x2={W}
+              y2={y(h)}
+              stroke="var(--edge)"
+              strokeWidth="1"
+              strokeDasharray="2 5"
+              opacity="0.7"
+            />
+            <text
+              x={gutter - 5}
+              y={y(h) + font / 3}
+              textAnchor="end"
+              fontSize={font - 0.5}
+              fill="var(--fg-muted)"
+              opacity="0.85"
+              {...UI_TEXT_PROPS}
+            >
+              {h.toFixed(1).replace('.', ',')}
+            </text>
+          </g>
+        ))}
+        <text
+          x={gutter - 5}
+          y={top - 10}
+          textAnchor="end"
+          fontSize={font - 0.5}
+          fill="var(--fg-muted)"
+          opacity="0.85"
+          {...UI_TEXT_PROPS}
+        >
+          m
+        </text>
       </g>
 
       {area && <path d={area} fill={`url(#${gradientId})`} />}
@@ -292,7 +368,25 @@ function ChartBody({
         const start = px < font * 5;
         return (
           <g key={event.time}>
-            <circle cx={px} cy={py} r={font / 3.6} fill="var(--accent)" />
+            {/*
+              Pleine mer en disque PLEIN, basse mer en anneau CREUX.
+              Le site de référence les distingue en bleu et rouge ; nous ne
+              pouvons pas, le rouge étant réservé à la sécurité et un rouge de
+              catégorie l'affaiblirait. La forme porte donc le second canal, et
+              elle a l'avantage de rester lisible en niveaux de gris.
+            */}
+            {event.type === 'high' ? (
+              <circle cx={px} cy={py} r={font / 3.2} fill="var(--accent)" />
+            ) : (
+              <circle
+                cx={px}
+                cy={py}
+                r={font / 3.2}
+                fill="var(--card)"
+                stroke="var(--accent)"
+                strokeWidth="1.6"
+              />
+            )}
             <text
               x={end ? px - 3 : start ? px + 3 : px}
               y={event.type === 'high' ? py - font : py + font * 1.5}
@@ -331,14 +425,16 @@ function ChartBody({
 
         return (
           <g key={window.start}>
-            <rect
-              x={x1}
-              y={band - font * 1.1}
-              width={Math.max(x2 - x1, 4)}
-              height={font * 2.4}
-              rx={font}
-              fill={color}
-              fillOpacity="0.13"
+            {/* Un simple liseré sous les poissons : la durée, sans l'encadrer. */}
+            <line
+              x1={x1}
+              y1={band + font * 0.9}
+              x2={x2}
+              y2={band + font * 0.9}
+              stroke={color}
+              strokeWidth="2"
+              strokeLinecap="round"
+              opacity="0.45"
             />
             <g fill={color} transform={`translate(${cx - totalW / 2}, ${band - font * 0.32})`}>
               {Array.from({ length: level }, (_, i) => (

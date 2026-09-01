@@ -19,32 +19,53 @@ const days = buildForecastDays(
 );
 
 describe('fenêtres porteuses', () => {
-  it('ne retient que les créneaux au palier « Bon » ou mieux', () => {
+  it('ne retient que les créneaux qui portent au moins un poisson', () => {
+    // Seuil au palier « Passable » : le site de référence affiche aussi
+    // l'activité moyenne, et la masquer donnait des journées vides là où il y
+    // avait quelque chose à dire.
     for (const day of days) {
       for (const w of carryingWindows(day)) {
-        expect(w.level).toBeGreaterThanOrEqual(2);
-        expect(w.value).toBeGreaterThanOrEqual(6);
+        expect(w.level).toBeGreaterThanOrEqual(1);
+        expect(w.value).toBeGreaterThanOrEqual(4);
       }
     }
   });
 
-  it('fusionne les créneaux contigus en une seule fenêtre', () => {
-    // Deux tranches de deux heures qui se suivent ne sont pas deux sorties :
-    // c'est une fenêtre de quatre heures. Les afficher séparément collait deux
-    // pastilles bord à bord et écrivait « 14–16h16–18h » sans espace — le
-    // découpage technique fuyait dans l'interface.
+  it('écarte le palier le plus bas, qui ne porte aucun poisson', () => {
+    const mediocre = {
+      ...days[0]!,
+      slots: days[0]!.slots.map((s) => ({ ...s, score: { ...s.score, value: 3.9 } })),
+    };
+    expect(carryingWindows(mediocre)).toStrictEqual([]);
+  });
+
+  it('fusionne les créneaux contigus DE MÊME NIVEAU en une seule fenêtre', () => {
+    // Deux tranches de deux heures qui se suivent au même niveau ne sont pas
+    // deux sorties : c'est une fenêtre de quatre heures. Les afficher séparément
+    // collait deux pastilles bord à bord et écrivait « 14–16h16–18h » sans
+    // espace — le découpage technique fuyait dans l'interface.
+    //
+    // Deux fenêtres ADJACENTES restent donc possibles, à condition d'être de
+    // niveaux différents : c'est précisément l'information à ne pas gommer.
     for (const day of days) {
       const windows = carryingWindows(day, 12);
       for (let i = 0; i < windows.length - 1; i++) {
         const end = new Date(windows[i]!.end).getTime();
         const nextStart = new Date(windows[i + 1]!.start).getTime();
-        expect(nextStart).toBeGreaterThan(end);
+        if (nextStart === end) {
+          expect(windows[i]!.level).not.toBe(windows[i + 1]!.level);
+        } else {
+          expect(nextStart).toBeGreaterThan(end);
+        }
       }
     }
   });
 
-  it('donne à une fenêtre fusionnée le MEILLEUR palier de ses créneaux', () => {
-    // C'est ce qu'on va y chercher, pas la moyenne de ce qu'on y traverse.
+  it('ne fusionne QUE des créneaux de même niveau', () => {
+    // Fusionner des niveaux différents faisait absorber les créneaux moyens
+    // voisins par une fenêtre à trois poissons : on obtenait une « activité très
+    // élevée » annoncée sur dix-huit heures, illisible et fausse pour les heures
+    // avalées au passage.
     for (const day of days) {
       for (const w of carryingWindows(day, 12)) {
         const inside = day.slots.filter(
@@ -52,8 +73,18 @@ describe('fenêtres porteuses', () => {
             new Date(s.start).getTime() >= new Date(w.start).getTime() &&
             new Date(s.end).getTime() <= new Date(w.end).getTime(),
         );
-        const best = Math.max(...inside.map((s) => activityLevel(s.score.value)));
-        expect(w.level).toBe(best);
+        for (const slot of inside) {
+          expect(activityLevel(slot.score.value)).toBe(w.level);
+        }
+      }
+    }
+  });
+
+  it('ne produit jamais une fenêtre couvrant la moitié de la journée', () => {
+    for (const day of days) {
+      for (const w of carryingWindows(day, 12)) {
+        const hours = (new Date(w.end).getTime() - new Date(w.start).getTime()) / 3_600_000;
+        expect(hours).toBeLessThanOrEqual(12);
       }
     }
   });
