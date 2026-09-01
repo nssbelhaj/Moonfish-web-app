@@ -9,7 +9,7 @@ export function ScoreReasons({ reasons }: { reasons: readonly string[] }) {
   return (
     <ul className="mt-4 space-y-2">
       {reasons.map((reason) => (
-        <li key={reason} className="font-mono text-data leading-[1.45] text-fg-muted">
+        <li key={reason} className="text-meta nums leading-[1.45] text-fg-muted">
           {reason}
         </li>
       ))}

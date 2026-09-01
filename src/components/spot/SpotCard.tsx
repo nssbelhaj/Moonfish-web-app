@@ -46,26 +46,26 @@ export function SpotCard({ summary }: { summary: SpotSummary }) {
     <Card interactive className="relative flex h-full flex-col p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="text-h3 font-600">
+          <h3 className="text-body font-semibold font-600">
             <Link href={spotPath(spot)} className="after:absolute after:inset-0 after:content-['']">
               {spot.name}
             </Link>
           </h3>
-          <p className="meta mt-1 font-mono">{spot.regionName}</p>
+          <p className="text-meta text-fg-faint mt-1 nums">{spot.regionName}</p>
         </div>
         <ScoreBadge value={current?.score.value ?? null} muted={danger} />
       </div>
 
       {danger && (
-        <p className="meta mt-3 rounded-tag bg-alert-bg px-2 py-1 font-mono text-alert-ink">
+        <p className="text-meta text-fg-faint mt-3 rounded-ctl bg-card px-2 py-1 nums text-fg">
           Danger — conditions non praticables
         </p>
       )}
 
-      <dl className="mt-4 space-y-1.5 font-mono text-data">
+      <dl className="mt-4 space-y-1.5 text-meta nums">
         {rows.map(([label, value]) => (
           <div key={label} className="flex items-baseline justify-between gap-3">
-            <dt className="meta shrink-0">{label}</dt>
+            <dt className="text-meta text-fg-faint shrink-0">{label}</dt>
             <dd className="truncate text-right text-fg-muted" data-numeric="">
               {value}
             </dd>

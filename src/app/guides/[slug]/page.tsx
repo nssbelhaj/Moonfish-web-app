@@ -62,19 +62,18 @@ export default async function GuidePage({ params }: { params: Promise<RouteParam
 
   return (
     /*
-      Les guides restent en sombre. Un îlot clair coincé entre un en-tête et un
-      pied de page sombres se lit comme un copier-coller raté, pas comme une
-      identité. Le passage à la serif suffit à signaler le mode lecture.
-      Le thème clair reste défini et testé dans globals.css, prêt à resservir.
+      D6 : le thème clair habille les pages éditoriales, contenu de lecture
+      longue et de jour. Ce n'est pas un mode d'affichage de l'app — le sondeur
+      ne s'inverse pas, et prefers-color-scheme ne le déclenche pas.
     */
-    <div>
+    <div data-theme="guide" className="bg-page">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
       />
 
       <article className="mx-auto w-full max-w-shell px-4 py-8 md:px-8 md:py-12">
-        <nav aria-label="Fil d’Ariane" className="font-mono text-data text-fg-muted">
+        <nav aria-label="Fil d’Ariane" className="text-meta nums text-fg-muted">
           <Link href="/guides" className="underline decoration-dotted underline-offset-4">
             Guides
           </Link>
@@ -82,9 +81,9 @@ export default async function GuidePage({ params }: { params: Promise<RouteParam
           {guide.category}
         </nav>
 
-        <header className="mt-4 max-w-measure">
-          <h1 className="text-h1 font-700">{guide.title}</h1>
-          <p className="mt-3 font-mono text-data text-fg-muted" data-numeric="">
+        <header className="mt-4 max-w-prose">
+          <h1 className="text-val font-700">{guide.title}</h1>
+          <p className="mt-3 text-meta nums text-fg-muted" data-numeric="">
             <time dateTime={guide.published}>
               {new Intl.DateTimeFormat('fr-FR', {
                 day: 'numeric',
@@ -104,7 +103,7 @@ export default async function GuidePage({ params }: { params: Promise<RouteParam
           tout le HTML avant transformation, aucun balisage brut ne passe.
         */}
         <div
-          className="guide-prose mt-8 max-w-measure font-serif text-guide-body"
+          className="guide-prose mt-8 max-w-prose font-serif text-[19px]"
           dangerouslySetInnerHTML={{ __html: guide.html }}
         />
 
@@ -118,7 +117,7 @@ export default async function GuidePage({ params }: { params: Promise<RouteParam
             .
           </p>
 
-          <h2 className="mt-8 text-h2 font-600">À lire ensuite</h2>
+          <h2 className="mt-8 text-val-sm font-600">À lire ensuite</h2>
           <ul className="mt-4 grid gap-4 sm:grid-cols-2">
             {others.map((other) => (
               <li key={other.slug}>

@@ -34,14 +34,14 @@ export function DataSourceTag({
     : null;
 
   return (
-    <p className="mt-3 meta font-mono leading-[1.5]">
-      <span className="mr-1.5 inline-block rounded-tag bg-card-raised px-1.5 py-0.5 font-600 text-fg-muted">
+    <p className="mt-3 text-meta text-fg-faint nums leading-[1.5]">
+      <span className="mr-1.5 inline-block rounded-ctl bg-chip px-1.5 py-0.5 font-600 text-fg-muted">
         {KIND_LABEL[source.kind]}
       </span>
       {source.name}
       {formatted ? ` · maj ${formatted}` : ''}
       <br />
-      <span className="text-fg-dim">{source.precision}</span>
+      <span className="text-fg-faint">{source.precision}</span>
     </p>
   );
 }

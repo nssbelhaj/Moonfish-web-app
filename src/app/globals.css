@@ -2,130 +2,48 @@
 @tailwind components;
 @tailwind utilities;
 
-/*
- * Le sombre n'est pas un thème : c'est le défaut (handoff §5).
- * Le clair est opt-in via .theme-light, posé sur les guides et le mode jour.
- * Ce fichier + tailwind.config.ts sont les DEUX seuls points d'entrée du design.
- */
-:root {
-  color-scheme: dark;
-
-  --page: #0a0b0d;
-  --card: #15181c;
-  --card-raised: #1d2126;
-  --edge: #262a30;
-  --edge-strong: #3a3f47;
-
-  --fg: #f1f3f5;
-  --fg-muted: #a7aeb8;
-  --fg-dim: #828a95;
-
-  --score-bad: #f26a62;
-  --score-mid: #e6a63c;
-  --score-good: #5bb8dc;
-  --score-best: #3dd9a0;
-
-  --alert-bg: #2a1210;
-  --alert-ink: #ffd9d6;
-  --alert-line: #f26a62;
-  --vigil-bg: #241b0a;
-  --vigil-ink: #ffdfae;
-  --ok-bg: #10231d;
-  --ok-line: #1f5a48;
-
-  /* Non-couleur de la nuit et fond des fenêtres favorables : ce sont des
-     DONNÉES dans les instruments, pas de la décoration. */
-  --night: #1a1d21;
-  --best-bg: #10231d;
-
-  --focus: #3dd9a0;
-
-  /* Élévation par REMPLISSAGE, pas par liseré (règle d'audit : choisir l'un ou
-     l'autre, jamais les deux). Le liseré ne subsiste que pour porter un sens :
-     carte active, bandeau de danger, séparateur de tableau. */
-  --lift-1: var(--card);
-  --lift-2: var(--card-raised);
-}
-
-.theme-light {
-  color-scheme: light;
-
-  /* Indispensable : les descendants héritent de la couleur CALCULÉE sur <body>,
-     où --fg valait encore la valeur sombre. Sans ces deux lignes, le contenu
-     sortirait en texte clair sur fond clair. */
-  color: var(--fg);
-  background-color: var(--page);
-
-  --page: #fbfaf8;
-  --card: #f3f1ed;
-  --card-raised: #e9e6df;
-  --edge: #ddd8ce;
-  --edge-strong: #b4ac9d;
-
-  --fg: #14161a;
-  --fg-muted: #4a5058;
-  --fg-dim: #5a6069;
-
-  /* Séparés par la TEINTE — rouge, ambre, bleu, vert — et non par la seule
-     luminosité. Les valeurs héritées étaient deux bleu-vert quasi identiques :
-     0,081 de distance perceptuelle, en dessous du seuil de confusion. */
-  --score-bad: #c22b1e;
-  --score-mid: #8a5a00;
-  --score-good: #12579e;
-  --score-best: #1b6b3a;
-
-  --alert-bg: #f9e6e4;
-  --alert-ink: #6b1410;
-  --alert-line: #c22b1e;
-  --vigil-bg: #f7efdc;
-  --vigil-ink: #573600;
-  --ok-bg: #e5efe9;
-  --ok-line: #1b6b3a;
-
-  --night: #e9e6df;
-  --best-bg: #dfeee6;
-
-  /* Le vert d'accent sombre tombe sous 4,5:1 sur du papier : en clair, le focus
-     prend l'accent clair pour tenir la garantie AA. */
-  --focus: #1b6b3a;
-}
+@import './tokens.css';
 
 @layer base {
-  * {
-    border-color: var(--edge);
-  }
-
   html {
     -webkit-text-size-adjust: 100%;
-    /* Les ancres des pages longues ne doivent pas sauter brutalement. */
     scroll-behavior: smooth;
   }
 
   body {
     background-color: var(--page);
     color: var(--fg);
-    font-size: 1rem; /* plancher 16px ; jamais sous 14px */
-    line-height: 1.6;
+    font-size: 15px;
+    line-height: 1.55;
     text-rendering: optimizeLegibility;
   }
 
   /*
-   * Grain : une trame très faible, fixe, non interactive.
-   * Un aplat parfaitement lisse sonne numérique et vide. Le bruit est en SVG
-   * inline plutôt qu'en image : aucune requête, aucun octet transféré, et il
-   * s'adapte à toute taille d'écran.
+   * Ce qui remplace la chasse fixe (§2.4).
+   *
+   * L'alignement des colonnes n'a jamais eu besoin d'une police : il a besoin de
+   * chiffres de largeur égale et d'une grille. Archivo a des chiffres tabulaires ;
+   * à 15 px ils s'alignent au pixel. La chasse fixe, elle, coûtait de la
+   * lisibilité (hauteur d'x plus faible) exactement là où on en a le plus
+   * besoin — dehors, la nuit — et donnait un registre « terminal, non fini ».
    */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    opacity: 0.035;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  .nums,
+  [data-numeric] {
+    font-variant-numeric: tabular-nums;
   }
 
-  /* Un titre ne doit jamais laisser un mot seul sur sa dernière ligne. */
+  /* Identique partout, jamais retiré. */
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background: var(--accent-data);
+    color: var(--fg-on-accent);
+  }
+
   h1,
   h2,
   h3 {
@@ -137,95 +55,81 @@
   dd {
     text-wrap: pretty;
   }
-
-  /* Toute donnée chiffrée est en mono et alignée en colonnes (handoff §1). */
-  .font-mono,
-  [data-numeric] {
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* Le focus n'est jamais retiré, y compris sur les cartes (handoff §1). */
-  :focus-visible {
-    outline: 2px solid var(--focus);
-    outline-offset: 2px;
-    border-radius: 2px;
-  }
-
-  ::selection {
-    background: var(--score-best);
-    color: var(--page);
-  }
 }
 
 @layer components {
   /*
-   * Surface de carte. L'élévation se joue au REMPLISSAGE : pas de bordure, pas
-   * d'ombre. Une bordure ne subsiste que lorsqu'elle porte un sens — carte
-   * active, alerte — et jamais pour simplement délimiter.
+   * Élévation par REMPLISSAGE (§2.2). Zéro bordure de carte, zéro ombre.
+   *
+   * À la densité visée — jusqu'à neuf cartes sur une page Live desktop — le
+   * liseré devient la texture dominante et écrase la hiérarchie : tout a le
+   * même poids de contour.
+   *
+   * Trois exceptions, exhaustives et non extensibles : le SafetyBanner, l'anneau
+   * de focus, et les hairlines internes des graphiques et tableaux — qui
+   * séparent des données, pas des conteneurs.
    */
   .surface {
     background-color: var(--card);
-    border-radius: 14px;
+    border-radius: 12px;
   }
 
-  .surface-raised {
-    background-color: var(--card-raised);
-    border-radius: 14px;
+  .surface-2 {
+    background-color: var(--card-2);
+    border-radius: 10px;
   }
 
-  /* Loading = skeleton plein, sans pulsation ni spinner. */
-  .skeleton {
-    background-color: var(--card-raised);
-    border-radius: 4px;
-  }
-
-  /* Bloc de données simulées : le pointillé est le seul liseré décoratif
-     conservé, parce qu'il porte une information — cette donnée est inventée. */
-  .demo-frame {
-    border: 1px dashed var(--edge-strong);
-    border-radius: 14px;
+  /* Étiquette de zone 1 d'une carte de données. */
+  .label {
+    font-size: 11px;
+    line-height: 1.3;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--fg-faint);
   }
 
   /*
-   * Libellé de donnée : le petit texte gris au-dessus d'une valeur.
-   *
-   * Deux corrections d'un coup. D'abord la taille : ces libellés étaient à
-   * 11 px, sous le plancher de 14 px que le produit s'était lui-même fixé.
-   * Ensuite la casse : les capitales espacées, employées partout, cessent de
-   * hiérarchiser et deviennent une signature générique. On distingue désormais
-   * par la couleur et le poids, pas par le cri.
+   * Squelette de chargement (D9). Bloc chip aux dimensions finales, sans
+   * pulsation : une animation sur un écran d'instruments donne l'impression que
+   * les données bougent.
    */
-  .meta {
-    font-size: 0.875rem;
-    line-height: 1.35;
-    font-weight: 500;
-    color: var(--fg-dim);
+  .skeleton {
+    background-color: var(--chip);
+    border-radius: 8px;
   }
 
-  /* Retour tactile : un appui doit se voir. */
-  .pressable {
+  /* Données de démonstration (D21) : une capture de maquette finit toujours par
+     circuler comme si elle était réelle. */
+  .demo-frame {
+    border: 1px dashed var(--edge-strong);
+    border-radius: 12px;
+  }
+
+  /*
+   * R18 : transitions sur la couleur et le fond UNIQUEMENT, 120 ms. Rien ne
+   * bouge, ne grandit, ni n'apparaît en fondu.
+   */
+  .tappable {
     transition:
-      background-color 180ms cubic-bezier(0.22, 0.61, 0.36, 1),
-      transform 120ms cubic-bezier(0.22, 0.61, 0.36, 1);
-  }
-
-  .pressable:active {
-    transform: translateY(1px);
+      background-color 120ms linear,
+      color 120ms linear;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
   }
 }
 
 @layer components {
-  /* Corps des guides : Spectral, mesure courte, rythme vertical généreux.
-     Seul endroit du site où la serif est utilisée. */
   .guide-prose h2 {
     font-family: var(--font-archivo), system-ui, sans-serif;
     font-size: 1.375rem;

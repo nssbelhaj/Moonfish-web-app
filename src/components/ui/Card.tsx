@@ -22,8 +22,8 @@ export function Card({
 }) {
   return (
     <div
-      className={`surface ${active ? 'ring-2 ring-accent' : ''} ${
-        interactive ? 'pressable hover:bg-card-raised' : ''
+      className={`surface ${active ? 'ring-2 ring-accent-score' : ''} ${
+        interactive ? 'pressable hover:bg-chip' : ''
       } ${className}`}
     >
       {children}

@@ -43,8 +43,8 @@ export function MoonPhase({
       </svg>
 
       <div>
-        <p className="text-h3 font-600">{phase}</p>
-        <p className="mt-1 font-mono text-data text-fg-muted" data-numeric="">
+        <p className="text-body font-semibold font-600">{phase}</p>
+        <p className="mt-1 text-meta nums text-fg-muted" data-numeric="">
           {Math.round(illuminationPct)} % éclairée · {ageDays.toFixed(1).replace('.', ',')} j de lunaison
         </p>
       </div>

@@ -73,7 +73,7 @@ export function WindCompass({
           y1={center}
           x2={tipX}
           y2={tipY}
-          stroke="var(--score-good)"
+          stroke="var(--score-3)"
           strokeWidth="2.5"
           strokeLinecap="round"
         />
@@ -81,14 +81,14 @@ export function WindCompass({
       </svg>
 
       <div>
-        <p className="font-mono text-score-md font-600" data-numeric="">
+        <p className="nums text-val font-600" data-numeric="">
           {Math.round(speedKmh)}
-          <span className="text-h3 font-500 text-fg-dim"> km/h</span>
+          <span className="text-body font-semibold font-500 text-fg-faint"> km/h</span>
         </p>
-        <p className="mt-1 font-mono text-data text-fg-muted" data-numeric="">
+        <p className="mt-1 text-meta nums text-fg-muted" data-numeric="">
           {gustKmh === null ? 'rafales indispo.' : `rafales ${Math.round(gustKmh)} km/h`}
         </p>
-        <p className="mt-1 font-mono text-data text-fg-muted">
+        <p className="mt-1 text-meta nums text-fg-muted">
           {label} · secteur {cardinal(fromDeg)} ({Math.round(fromDeg)}°)
         </p>
       </div>

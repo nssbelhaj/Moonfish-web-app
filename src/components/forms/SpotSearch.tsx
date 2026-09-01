@@ -46,7 +46,7 @@ export function SpotSearch({ spots }: { spots: readonly SearchableSpot[] }) {
 
   return (
     <div>
-      <label htmlFor={inputId} className="block meta font-mono">
+      <label htmlFor={inputId} className="block text-meta text-fg-faint nums">
         Chercher un spot ou une ville
       </label>
       <input
@@ -59,7 +59,7 @@ export function SpotSearch({ spots }: { spots: readonly SearchableSpot[] }) {
         aria-expanded={results.length > 0}
         aria-controls={listId}
         aria-autocomplete="list"
-        className="mt-2 min-h-[56px] w-full rounded-input border border-edge-strong bg-card-raised px-4 text-body text-fg placeholder:text-fg-dim"
+        className="mt-2 min-h-[56px] w-full rounded-ctl border border-edge-strong bg-chip px-4 text-body text-fg placeholder:text-fg-muted"
       />
 
       <div aria-live="polite" className="sr-only">
@@ -87,12 +87,12 @@ export function SpotSearch({ spots }: { spots: readonly SearchableSpot[] }) {
                 >
                   <span>
                     <span className="block font-600">{spot.name}</span>
-                    <span className="block font-mono text-data text-fg-muted">
+                    <span className="block text-meta nums text-fg-muted">
                       {spot.regionName} · {spot.countryName}
                     </span>
                   </span>
                   <span
-                    className="font-mono text-score-md font-600"
+                    className="nums text-val font-600"
                     style={{ color: tier?.colorVar ?? 'var(--fg-dim)' }}
                     data-numeric=""
                   >

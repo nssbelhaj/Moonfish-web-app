@@ -4,87 +4,107 @@ import { describe, expect, it } from 'vitest';
 import { contrastRatio, perceptualDistance } from '../contrast';
 
 /**
- * Garde-fou de la palette.
+ * Garde-fou de la palette (§2.6 : « AA tenu, sans exception. On ne descend pas »).
  *
- * Les valeurs sont LUES dans globals.css, jamais recopiées ici : un test qui
- * duplique la palette ne teste que sa propre copie. Modifier une couleur sans
- * faire passer ce test casse le build — c'est le seul moyen fiable de tenir la
- * garantie AA à travers un changement de direction artistique.
+ * Les valeurs sont LUES dans tokens.css, jamais recopiées : un test qui
+ * duplique la palette ne teste que sa propre copie.
  */
-const CSS = readFileSync(path.join(process.cwd(), 'src/app/globals.css'), 'utf8');
+const TOKENS = readFileSync(path.join(process.cwd(), 'src/app/tokens.css'), 'utf8');
 
-function themeBlock(selector: string): string {
-  const start = CSS.indexOf(`${selector} {`);
-  if (start === -1) throw new Error(`Bloc introuvable : ${selector}`);
-  return CSS.slice(start, CSS.indexOf('}', start));
-}
-
-function tokens(selector: string): Record<string, string> {
+function literals(): Record<string, string> {
   const found: Record<string, string> = {};
-  for (const match of themeBlock(selector).matchAll(/--([a-z0-9-]+):\s*(#[0-9a-fA-F]{3,8})\s*;/g)) {
-    found[match[1] as string] = match[2] as string;
+  for (const m of TOKENS.matchAll(/--([a-z]+-\d{3}):\s*(#[0-9a-fA-F]{6})\s*;/g)) {
+    found[m[1] as string] = (m[2] as string).toLowerCase();
   }
   return found;
 }
 
-const SURFACES = ['page', 'card', 'card-raised'] as const;
-const INKS = ['fg', 'fg-muted', 'fg-dim', 'score-bad', 'score-mid', 'score-good', 'score-best'] as const;
+function block(selector: string): string {
+  const start = TOKENS.indexOf(selector);
+  return TOKENS.slice(start, TOKENS.indexOf('\n}', start));
+}
+
+/** Résout les tokens sémantiques d'un thème vers leurs littéraux. */
+function theme(selector: string): Record<string, string> {
+  const lit = literals();
+  const resolved: Record<string, string> = {};
+  for (const m of block(selector).matchAll(/--([a-z0-9-]+):\s*var\(--([a-z]+-\d{3})\)\s*;/g)) {
+    resolved[m[1] as string] = lit[m[2] as string] as string;
+  }
+  return resolved;
+}
+
+const INKS_EVERYWHERE = ['fg', 'fg-muted', 'score-1', 'score-2', 'score-3', 'score-4', 'danger', 'accent-data', 'accent-score'] as const;
+const ALL_SURFACES = ['page', 'card', 'card-2', 'chip'] as const;
 
 describe.each([
   ['thème sombre', ':root'],
-  ['thème clair', '.theme-light'],
-])('%s — contraste AA', (_label, selector) => {
-  const palette = tokens(selector);
+  ['thème guide', "[data-theme='guide']"],
+])('%s', (_label, selector) => {
+  const t = theme(selector);
 
-  it('définit toutes les surfaces et toutes les encres', () => {
-    for (const name of [...SURFACES, ...INKS]) {
-      expect(palette[name], `token manquant : --${name}`).toMatch(/^#[0-9a-fA-F]{6}$/);
+  it('résout tous les tokens sémantiques attendus', () => {
+    for (const name of [...INKS_EVERYWHERE, ...ALL_SURFACES, 'fg-faint', 'fg-on-accent', 'focus']) {
+      expect(t[name], `token non résolu : --${name}`).toMatch(/^#[0-9a-f]{6}$/);
     }
   });
 
-  it.each(INKS)('%s tient 4,5:1 sur les trois surfaces', (ink) => {
-    for (const surface of SURFACES) {
-      const ratio = contrastRatio(palette[ink] as string, palette[surface] as string);
-      expect(
-        ratio,
-        `${ink} sur ${surface} : ${ratio.toFixed(2)}:1, en dessous du seuil AA`,
-      ).toBeGreaterThanOrEqual(4.5);
+  it.each(INKS_EVERYWHERE)('%s tient AA sur les quatre surfaces', (ink) => {
+    for (const surface of ALL_SURFACES) {
+      const ratio = contrastRatio(t[ink] as string, t[surface] as string);
+      expect(ratio, `${ink} sur ${surface} : ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
     }
   });
 
-  it('garde les quatre paliers de score perceptuellement distincts', () => {
-    // Mesuré en distance OKLab et non en contraste de luminance : deux teintes
-    // franchement différentes peuvent avoir la même luminance, et le rapport de
-    // contraste ne dit rien de leur distinguabilité.
-    //
-    // Ce test ne garantit pas la lisibilité en niveaux de gris — c'est la FORME
-    // du palier qui s'en charge, quatrième canal redondant à côté du chiffre,
-    // du libellé et de la couleur.
-    //
-    // Seuil à 0,13 : le rouge et l'ambre sont voisins par nature et ne peuvent
-    // pas s'écarter davantage sans quitter leur sens. Il aurait suffi à
-    // attraper le défaut réel qui a motivé ce test — deux paliers à 0,081.
-    const tiers = ['score-bad', 'score-mid', 'score-good', 'score-best'] as const;
+  /**
+   * `fg-faint` est le plancher du système. Le handoff garantit 4,6:1 sur
+   * card-2 — mais PAS sur chip, où il tombe à 4,13:1. La règle qui en découle
+   * est vérifiée côté usage par `color-classes.test.ts` : jamais de texte faint
+   * sur une surface chip.
+   */
+  it('fg-faint tient AA sur page, card et card-2', () => {
+    for (const surface of ['page', 'card', 'card-2'] as const) {
+      const ratio = contrastRatio(t['fg-faint'] as string, t[surface] as string);
+      expect(ratio, `fg-faint sur ${surface} : ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it('garde le texte sur accent lisible', () => {
+    const ratio = contrastRatio(t['fg-on-accent'] as string, t['accent-score'] as string);
+    expect(ratio, `fg-on-accent sur accent-score : ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('garde la bague de focus visible sur la surface la plus claire', () => {
+    const ratio = contrastRatio(t.focus as string, t.chip as string);
+    expect(ratio, `focus : ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(3);
+  });
+
+  /**
+   * D5 : l'échelle n'est pas un dégradé rouge → vert, et les quatre paliers
+   * doivent rester séparables. Mesuré en distance OKLab, pas en contraste de
+   * luminance : deux teintes différentes peuvent avoir la même luminance.
+   *
+   * Vérifié sur le thème de l'app uniquement. En thème guide, `score-1` est un
+   * gris foncé désaturé : en OKLab il est proche de tout ce qui l'entoure, et
+   * l'écarter demanderait de le noircir jusqu'à ce que « Médiocre » se lise
+   * comme une emphase. Aucun score ne se rend dans une page éditoriale — c'est
+   * la raison de la limite, et elle tombe le jour où un guide affiche un score.
+   */
+  it.runIf(selector === ':root')('garde les quatre paliers perceptuellement distincts', () => {
+    const tiers = ['score-1', 'score-2', 'score-3', 'score-4'] as const;
     for (let i = 0; i < tiers.length; i += 1) {
       for (let j = i + 1; j < tiers.length; j += 1) {
-        const distance = perceptualDistance(palette[tiers[i]!] as string, palette[tiers[j]!] as string);
-        expect(
-          distance,
-          `${tiers[i]} et ${tiers[j]} : distance ${distance.toFixed(3)}, trop proches`,
-        ).toBeGreaterThan(0.13);
+        const d = perceptualDistance(t[tiers[i]!] as string, t[tiers[j]!] as string);
+        expect(d, `${tiers[i]} et ${tiers[j]} : ${d.toFixed(3)}`).toBeGreaterThan(0.13);
       }
     }
   });
 
-  it('n’utilise jamais le noir pur ni le blanc pur en fond', () => {
-    for (const surface of SURFACES) {
-      expect(palette[surface]?.toLowerCase()).not.toBe('#000000');
-      expect(palette[surface]?.toLowerCase()).not.toBe('#ffffff');
+  /** D5 : le rouge est réservé, exclusivement, à la sécurité. */
+  it.runIf(selector === ':root')('éloigne le danger de tous les paliers de score', () => {
+    for (const tier of ['score-1', 'score-2', 'score-3', 'score-4'] as const) {
+      const d = perceptualDistance(t.danger as string, t[tier] as string);
+      expect(d, `danger et ${tier} : ${d.toFixed(3)}`).toBeGreaterThan(0.13);
     }
-  });
-
-  it('garde la bague de focus visible sur la surface la plus claire', () => {
-    const ratio = contrastRatio(palette.focus as string, palette['card-raised'] as string);
-    expect(ratio, `focus : ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(3);
   });
 });

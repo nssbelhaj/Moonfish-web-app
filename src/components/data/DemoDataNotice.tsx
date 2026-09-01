@@ -42,7 +42,7 @@ export function DemoDataNotice({
 
   if (compact) {
     return (
-      <p className="meta font-mono text-score-mid">
+      <p className="text-meta text-fg-faint nums text-accent-score">
         Données de démo
       </p>
     );
@@ -62,7 +62,7 @@ export function DemoDataNotice({
 
   return (
     <aside className="demo-frame px-4 py-3" role="note">
-      <p className="meta font-mono text-score-mid">
+      <p className="text-meta text-fg-faint nums text-accent-score">
         Données de démonstration
       </p>
       <p className="mt-2 text-body text-fg-muted">

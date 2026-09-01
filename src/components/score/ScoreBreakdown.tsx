@@ -22,16 +22,16 @@ export function ScoreBreakdown({ score }: { score: ScoreResult }) {
         return (
           <li key={factor} className="py-4">
             <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-              <h3 className="text-h3 font-600">{FACTOR_LABELS[factor]}</h3>
-              <p className="font-mono text-data" data-numeric="">
+              <h3 className="text-body font-semibold font-600">{FACTOR_LABELS[factor]}</h3>
+              <p className="text-meta nums" data-numeric="">
                 <span style={{ color: tier.colorVar, fontWeight: 600 }}>
                   {entry.score.toFixed(1).replace('.', ',')}
                 </span>
-                <span className="text-fg-dim">/10 · pèse {percent} %</span>
+                <span className="text-fg-faint">/10 · pèse {percent} %</span>
               </p>
             </div>
 
-            <p className="mt-1 font-mono text-data text-fg-muted">{entry.note}</p>
+            <p className="mt-1 text-meta nums text-fg-muted">{entry.note}</p>
 
             <div className="mt-2 h-1.5 w-full rounded-[1px] bg-edge" aria-hidden="true">
               <div

@@ -45,11 +45,11 @@ describe('computeScore — invariants', () => {
     }
   });
 
-  it('mappe les paliers du handoff sur les libellés', () => {
-    expect(labelFor(0)).toBe('Mauvais');
-    expect(labelFor(3.9)).toBe('Mauvais');
-    expect(labelFor(4)).toBe('Moyen');
-    expect(labelFor(5.9)).toBe('Moyen');
+  it('mappe les paliers du handoff v2 sur les libellés', () => {
+    expect(labelFor(0)).toBe('Médiocre');
+    expect(labelFor(3.9)).toBe('Médiocre');
+    expect(labelFor(4)).toBe('Passable');
+    expect(labelFor(5.9)).toBe('Passable');
     expect(labelFor(6)).toBe('Bon');
     expect(labelFor(7.9)).toBe('Bon');
     expect(labelFor(8)).toBe('Excellent');

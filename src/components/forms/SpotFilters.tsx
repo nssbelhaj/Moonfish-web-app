@@ -75,7 +75,7 @@ export function SpotFilters(props: SpotFiltersProps) {
           <div key={field.name}>
             <label
               htmlFor={`filter-${field.name}`}
-              className="block meta font-mono"
+              className="block text-meta text-fg-faint nums"
             >
               {field.label}
             </label>
@@ -84,7 +84,7 @@ export function SpotFilters(props: SpotFiltersProps) {
               name={field.name}
               defaultValue={current[field.name] ?? ''}
               onChange={submitNow}
-              className="mt-2 min-h-[48px] w-full rounded-input border border-edge-strong bg-card-raised px-3 text-body text-fg"
+              className="mt-2 min-h-[48px] w-full rounded-ctl border border-edge-strong bg-chip px-3 text-body text-fg"
             >
               <option value="">Tous</option>
               {options[field.key]?.map((option) => (
@@ -100,17 +100,17 @@ export function SpotFilters(props: SpotFiltersProps) {
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <button
           type="submit"
-          className="inline-flex min-h-[48px] items-center rounded-input border border-edge-strong px-4 font-600"
+          className="inline-flex min-h-[48px] items-center rounded-ctl border border-edge-strong px-4 font-600"
         >
           Filtrer
         </button>
         <Link
           href="/spots"
-          className="inline-flex min-h-[48px] items-center px-2 font-mono text-data text-fg-muted underline decoration-dotted underline-offset-4"
+          className="inline-flex min-h-[48px] items-center px-2 text-meta nums text-fg-muted underline decoration-dotted underline-offset-4"
         >
           Tout afficher
         </Link>
-        <p className="font-mono text-data text-fg-muted" data-numeric="" aria-live="polite">
+        <p className="text-meta nums text-fg-muted" data-numeric="" aria-live="polite">
           {total} spot{total > 1 ? 's' : ''}
         </p>
       </div>

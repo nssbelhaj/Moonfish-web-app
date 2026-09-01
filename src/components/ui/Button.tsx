@@ -7,11 +7,11 @@ import type { ReactNode } from 'react';
  * primaire le porte.
  */
 const BASE =
-  'inline-flex items-center justify-center rounded-input px-5 font-600 transition-colors';
+  'inline-flex items-center justify-center rounded-ctl px-5 font-600 transition-colors';
 
 const VARIANTS = {
-  primary: 'min-h-[56px] bg-accent text-page hover:opacity-90',
-  secondary: 'min-h-[48px] border border-edge-strong text-fg hover:bg-card-raised',
+  primary: 'min-h-[56px] bg-accent-score text-fg-on-accent hover:opacity-90',
+  secondary: 'min-h-[48px] border border-edge-strong text-fg hover:bg-chip',
   ghost: 'min-h-[48px] text-fg-muted hover:text-fg',
 } as const;
 

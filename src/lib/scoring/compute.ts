@@ -9,13 +9,13 @@ import { evaluateSafety } from './safety';
 import type { FactorResult, ScoreFactor, ScoreLabel, ScoreInput, ScoreResult } from './types';
 
 /**
- * Paliers du handoff §1 : 0–3 Mauvais · 4–5 Moyen · 6–7 Bon · 8–10 Excellent.
- * Le score portant une décimale, les bornes sont posées sur l'entier supérieur
- * pour qu'aucune valeur ne tombe entre deux paliers.
+ * Paliers du handoff v2 : 0–3,9 Médiocre · 4–5,9 Passable · 6–7,9 Bon ·
+ * 8–10 Excellent. Les bornes sont exclusives en haut, si bien qu'aucune valeur
+ * décimale ne tombe entre deux paliers.
  */
 export function labelFor(value: number): ScoreLabel {
-  if (value < 4) return 'Mauvais';
-  if (value < 6) return 'Moyen';
+  if (value < 4) return 'Médiocre';
+  if (value < 6) return 'Passable';
   if (value < 8) return 'Bon';
   return 'Excellent';
 }

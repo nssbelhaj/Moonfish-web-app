@@ -32,8 +32,8 @@ const PLANS: Plan[] = [
   },
   {
     name: 'Pro',
-    price: 'À définir',
-    priceNote: 'pas encore lancé',
+    price: '4,90 €',
+    priceNote: 'par mois · pas encore lancé',
     pitch:
       'La profondeur temporelle et le suivi personnel. C’est ce qui se paie : pas le score du moment, la capacité à planifier.',
     features: [
@@ -58,7 +58,7 @@ function Check({ included }: { included: boolean }) {
         <path
           d="M4 12.5 L9.5 18 L20 6"
           fill="none"
-          stroke="var(--score-best)"
+          stroke="var(--score-4)"
           strokeWidth="2.5"
           strokeLinecap="round"
         />
@@ -77,9 +77,9 @@ export function PricingTable() {
         <section
           key={plan.name}
           aria-labelledby={`plan-${plan.name}`}
-          className={`surface flex flex-col p-6 ${plan.highlighted ? 'ring-2 ring-accent' : ''}`}
+          className={`surface flex flex-col p-6 ${plan.highlighted ? 'ring-2 ring-accent-score' : ''}`}
         >
-          <h2 id={`plan-${plan.name}`} className="text-h2 font-600">
+          <h2 id={`plan-${plan.name}`} className="text-val-sm font-600">
             {plan.name}
           </h2>
 
@@ -90,10 +90,10 @@ export function PricingTable() {
             colonne devient impossible à lire.
           */}
           <div className="mt-3 min-h-[5.5rem]">
-            <p className="font-mono text-score-lg font-700" data-numeric="">
+            <p className="nums text-score-sm font-700" data-numeric="">
               {plan.price}
             </p>
-            <p className="mt-1 meta font-mono">{plan.priceNote}</p>
+            <p className="mt-1 text-meta text-fg-faint nums">{plan.priceNote}</p>
           </div>
 
           <p className="min-h-[5.5rem] text-body text-fg-muted">{plan.pitch}</p>
@@ -102,7 +102,7 @@ export function PricingTable() {
             {plan.features.map((feature) => (
               <li key={feature.label} className="flex gap-3">
                 <Check included={feature.included} />
-                <span className={feature.included ? 'text-body' : 'text-body text-fg-dim'}>
+                <span className={feature.included ? 'text-body' : 'text-body text-fg-faint'}>
                   {feature.label}
                   {!feature.included && <span className="sr-only"> — non inclus</span>}
                 </span>

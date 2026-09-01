@@ -49,10 +49,10 @@ export default async function SpotForecastPage({ params }: { params: Promise<Rou
 
       <div className="mx-auto w-full max-w-shell px-4 py-8 md:px-8 md:py-12">
         <section aria-labelledby="fenetres">
-          <h2 id="fenetres" className="text-h2 font-600">
+          <h2 id="fenetres" className="text-val-sm font-600">
             Les meilleurs créneaux des 7 jours
           </h2>
-          <p className="mt-2 max-w-measure text-body text-fg-muted">
+          <p className="mt-2 max-w-prose text-body text-fg-muted">
             Classés par score, hors conditions dangereuses. Un créneau dangereux n’est jamais
             recommandé, quel que soit son score halieutique.
           </p>
@@ -61,14 +61,14 @@ export default async function SpotForecastPage({ params }: { params: Promise<Rou
             {bestSlots.map((slot) => (
               <li key={slot.start} className="py-4">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
-                  <p className="font-mono text-data text-fg" data-numeric="">
+                  <p className="text-meta nums text-fg" data-numeric="">
                     {formatDayLong(new Date(slot.start), spot.timezone)} ·{' '}
                     {formatTime(new Date(slot.start), spot.timezone)}–
                     {formatTime(new Date(slot.end), spot.timezone)}
                   </p>
                   <ScoreBadge value={slot.score.value} />
                 </div>
-                <p className="mt-2 font-mono text-data text-fg-muted">
+                <p className="mt-2 text-meta nums text-fg-muted">
                   {slot.score.reasons[1] ?? slot.score.reasons[0]}
                 </p>
               </li>
@@ -82,10 +82,10 @@ export default async function SpotForecastPage({ params }: { params: Promise<Rou
         </section>
 
         <section aria-labelledby="jours" className="mt-12">
-          <h2 id="jours" className="text-h2 font-600">
+          <h2 id="jours" className="text-val-sm font-600">
             Jour par jour
           </h2>
-          <p className="mt-2 max-w-measure text-body text-fg-muted">
+          <p className="mt-2 max-w-prose text-body text-fg-muted">
             Le meilleur créneau de chaque journée, et le nombre de tranches favorables qu’elle
             contient.
           </p>
@@ -96,7 +96,7 @@ export default async function SpotForecastPage({ params }: { params: Promise<Rou
               return (
                 <li key={day.date}>
                   <Card className="h-full p-4">
-                    <p className="meta font-mono">
+                    <p className="text-meta text-fg-faint nums">
                       {formatDayLong(new Date(day.date), spot.timezone)}
                     </p>
                     <div className="mt-3">
@@ -105,12 +105,12 @@ export default async function SpotForecastPage({ params }: { params: Promise<Rou
                         muted={day.best === null}
                       />
                     </div>
-                    <p className="mt-3 font-mono text-data text-fg-muted" data-numeric="">
+                    <p className="mt-3 text-meta nums text-fg-muted" data-numeric="">
                       {day.best
                         ? `Meilleure fenêtre ${formatTime(new Date(day.best.start), spot.timezone)}–${formatTime(new Date(day.best.end), spot.timezone)}`
                         : 'Aucune fenêtre praticable'}
                     </p>
-                    <p className="mt-1 font-mono text-data text-fg-dim" data-numeric="">
+                    <p className="mt-1 text-meta nums text-fg-faint" data-numeric="">
                       {favourable.length} créneau{favourable.length > 1 ? 'x' : ''} favorable
                       {favourable.length > 1 ? 's' : ''} sur 8
                     </p>
@@ -122,7 +122,7 @@ export default async function SpotForecastPage({ params }: { params: Promise<Rou
         </section>
 
         <section aria-labelledby="tous" className="mt-12">
-          <h2 id="tous" className="text-h2 font-600">
+          <h2 id="tous" className="text-val-sm font-600">
             Tous les créneaux
           </h2>
           <div className="mt-6">

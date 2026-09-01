@@ -15,10 +15,10 @@ export default async function GuidesPage() {
   const guides = await listGuides();
 
   return (
-    <div>
+    <div data-theme="guide" className="bg-page">
       <div className="mx-auto w-full max-w-shell px-4 pt-8 md:px-8 md:pt-12">
-        <h1 className="text-h1 font-700">Guides</h1>
-        <p className="mt-3 max-w-measure text-body text-fg-muted">
+        <h1 className="text-val font-700">Guides</h1>
+        <p className="mt-3 max-w-prose text-body text-fg-muted">
           Ce que le score regarde, et pourquoi. Quatre articles écrits pour être utiles sur le
           terrain, sans promesse de prise et sans recette miracle.
         </p>
@@ -27,7 +27,7 @@ export default async function GuidesPage() {
       <Section>
         {/* Un h2 entre le h1 et les h3 des cartes : la hiérarchie de titres doit
             rester séquentielle pour la navigation au lecteur d'écran. */}
-        <h2 className="text-h2 font-600">Les quatre guides</h2>
+        <h2 className="text-val-sm font-600">Les quatre guides</h2>
         <ul className="mt-6 grid gap-4 sm:grid-cols-2">
           {guides.map((guide) => (
             <li key={guide.slug}>

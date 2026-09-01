@@ -27,13 +27,13 @@ export function SiteFooter() {
           aussi sûrement qu'une mention absente.
         */}
         <div className={anySimulated ? 'demo-frame px-4 py-3' : 'surface px-4 py-3'}>
-          <p className="meta font-mono">
+          <p className="text-meta text-fg-faint nums">
             D’où viennent les données
           </p>
-          <ul className="mt-3 max-w-measure space-y-2">
+          <ul className="mt-3 max-w-prose space-y-2">
             {SOURCES.map(({ label, source }) => (
               <li key={label} className="text-body text-fg-muted">
-                <span className="meta font-mono">
+                <span className="text-meta text-fg-faint nums">
                   {KIND_LABEL[source.kind]}
                 </span>{' '}
                 — <strong className="font-600 text-fg">{label}</strong> : {source.name}.
@@ -41,7 +41,7 @@ export function SiteFooter() {
             ))}
           </ul>
           {anySimulated && (
-            <p className="mt-3 max-w-measure text-body text-fg-muted">
+            <p className="mt-3 max-w-prose text-body text-fg-muted">
               Ce qui est marqué <em>simulé</em> est inventé : ne vous en servez pas pour planifier
               une sortie. Horaires officiels sur{' '}
               <a
@@ -82,7 +82,7 @@ export function SiteFooter() {
           </ul>
         </nav>
 
-        <p className="mt-4 meta font-mono">
+        <p className="mt-4 text-meta text-fg-faint nums">
           Moonfish — les meilleurs créneaux de pêche en mer, spot par spot. Aucune promesse de prise :
           la mer décide.
         </p>

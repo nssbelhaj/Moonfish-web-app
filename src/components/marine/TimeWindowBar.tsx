@@ -11,7 +11,7 @@ function slotColor(slot: ForecastSlot, isPast: boolean): string {
   // tout. Il prend `night`, une non-couleur, pour ne pas être lu comme un échec
   // (handoff §5).
   if (isPast) return 'var(--night)';
-  if (slot.score.safety.level === 'danger') return 'var(--score-bad)';
+  if (slot.score.safety.level === 'danger') return 'var(--score-1)';
   return tierFor(slot.score.value).colorVar;
 }
 
@@ -45,7 +45,7 @@ export function TimeWindowBar({
               key={day.date}
               className="min-w-[46%] flex-1 snap-start sm:min-w-[30%] md:min-w-0"
             >
-              <p className="meta font-mono">
+              <p className="text-meta text-fg-faint nums">
                 {formatDayShort(new Date(day.date), timeZone)}
               </p>
 
@@ -60,7 +60,7 @@ export function TimeWindowBar({
 
                     return (
                       <li key={slot.start} className="flex items-center gap-2 py-[3px]">
-                        <span className="w-9 shrink-0 meta font-mono" data-numeric="">
+                        <span className="w-9 shrink-0 text-meta text-fg-faint nums" data-numeric="">
                           {formatTime(new Date(slot.start), timeZone)}
                         </span>
                         <span
@@ -70,7 +70,7 @@ export function TimeWindowBar({
                             width: `${Math.max(6, slot.score.value * 10)}%`,
                           }}
                         />
-                        <span className="meta font-mono" data-numeric="">
+                        <span className="text-meta text-fg-faint nums" data-numeric="">
                           {isPast ? '—' : formatScore(slot.score.value)}
                         </span>
                         <span className="sr-only">
@@ -85,7 +85,7 @@ export function TimeWindowBar({
 
                 {locked && (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="meta font-mono text-fg-muted">
+                    <span className="text-meta text-fg-faint nums text-fg-muted">
                       Pro
                     </span>
                   </div>
@@ -96,7 +96,7 @@ export function TimeWindowBar({
         })}
       </div>
 
-      <p className="mt-4 font-mono text-data text-fg-muted">
+      <p className="mt-4 text-meta nums text-fg-muted">
         Les trois premiers jours sont gratuits. Les créneaux de J+3 à J+6 sont réservés au plan
         Pro —{' '}
         <Link href="/pricing" className="underline decoration-dotted underline-offset-4">

@@ -2,14 +2,32 @@ import Link from 'next/link';
 import type { SafetyLevel } from '@/lib/scoring';
 
 /**
- * Bandeau de sécurité (handoff §3).
+ * Bandeau de sécurité — R6, R7, §06.
  *
- * `danger` : rouge, bordure 2 px, NON refermable, collé en haut au scroll,
- * placé au-dessus du score. Il ne dépend jamais du score : un créneau peut être
- * halieutiquement excellent et humainement dangereux.
+ * Seul composant du produit à porter une bordure : la sécurité n'est pas une
+ * surface parmi d'autres. Non refermable, sans croix, sticky sous l'en-tête,
+ * placé au-dessus du score.
  *
- * `prudence` : variante ambre, discrète, qui ne masque rien.
+ * Il ne dépend jamais du score (R7) : un 9,1 avec 2,8 m de houle affiche le
+ * bandeau, et le score n'est pas atténué pour autant — ce sont deux
+ * informations, pas une moyenne.
  */
+function WarningTriangle({ className }: { className?: string }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" focusable="false" className={className}>
+      <path
+        d="M12 3 L22 20.5 H2 Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <path d="M12 9.5 V14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="12" cy="17" r="1.15" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function SafetyBanner({
   level,
   message,
@@ -24,36 +42,35 @@ export function SafetyBanner({
 }) {
   if (level === 'ok' || !message) return null;
 
-  if (level === 'danger') {
-    return (
-      <div
-        role="alert"
-        className="sticky top-0 z-30 border-2 border-score-bad-dark bg-alert-bg px-4 py-4 text-alert-ink"
-        style={{ borderRadius: 10 }}
-      >
-        <p className="font-mono text-label uppercase tracking-[0.14em]">Danger — ne pas sortir</p>
-        <p className="mt-2 text-body">{message}</p>
-        {shelterHref && shelterCount !== undefined && shelterCount > 0 && (
-          <Link
-            href={shelterHref}
-            className="mt-3 inline-flex min-h-[48px] items-center rounded-input border-2 border-score-bad-dark px-4 font-600 text-alert-ink"
-          >
-            Voir {shelterCount} spot{shelterCount > 1 ? 's' : ''} abrité
-            {shelterCount > 1 ? 's' : ''} à moins de 20 km
-          </Link>
-        )}
-      </div>
-    );
-  }
+  const isDanger = level === 'danger';
 
   return (
     <div
-      role="status"
-      className="border border-vigil-ink/40 bg-vigil-bg px-4 py-3 text-vigil-ink"
-      style={{ borderRadius: 10 }}
+      role="alert"
+      className={`surface sticky top-0 z-30 border-2 p-4 ${
+        isDanger ? 'border-danger' : 'border-accent-score'
+      }`}
     >
-      <p className="font-mono text-label uppercase tracking-[0.14em]">Vigilance</p>
-      <p className="mt-1.5 text-body">{message}</p>
+      <p
+        className={`flex items-center gap-2 text-body font-semibold ${
+          isDanger ? 'text-danger' : 'text-accent-score'
+        }`}
+      >
+        <WarningTriangle />
+        {isDanger ? 'Danger — ne pas sortir' : 'Vigilance'}
+      </p>
+
+      <p className="mt-2 max-w-prose text-body text-fg">{message}</p>
+
+      {isDanger && shelterHref && shelterCount !== undefined && shelterCount > 0 && (
+        <Link
+          href={shelterHref}
+          className="tappable mt-3 inline-flex min-h-tap items-center rounded-ctl bg-chip px-4 font-semibold text-fg hover:bg-card-2"
+        >
+          Voir {shelterCount} spot{shelterCount > 1 ? 's' : ''} abrité
+          {shelterCount > 1 ? 's' : ''} à moins de 20 km
+        </Link>
+      )}
     </div>
   );
 }

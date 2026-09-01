@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Archivo, IBM_Plex_Mono, Spectral } from 'next/font/google';
 import { SiteFooter } from '@/components/layout/SiteFooter';
-import { SiteHeader } from '@/components/layout/SiteHeader';
+import { MobileNav, SiteHeader } from '@/components/layout/SiteHeader';
 import { SITE_URL } from '@/lib/routes';
 import { BROWSER_THEME_COLOR } from '@/lib/theme';
 import './globals.css';
@@ -59,7 +59,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="flex min-h-dvh flex-col font-sans antialiased">
         <a
           href="#contenu"
-          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-input focus:bg-card focus:px-4 focus:py-3"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-ctl focus:bg-card focus:px-4 focus:py-3"
         >
           Aller au contenu
         </a>
@@ -68,6 +68,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
         </main>
         <SiteFooter />
+        {/* La barre basse recouvre 56 px : le pied de page doit pouvoir défiler
+            au-dessus, sinon ses derniers liens sont inatteignables. */}
+        <div className="h-tap-lg md:hidden" aria-hidden="true" />
+        <MobileNav />
       </body>
     </html>
   );

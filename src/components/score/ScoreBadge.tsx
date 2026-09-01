@@ -15,11 +15,11 @@ export function ScoreBadge({
 }) {
   if (value === null) {
     return (
-      <span className="inline-flex items-center gap-2 rounded-tag bg-card-raised px-2.5 py-1">
-        <span className="font-mono text-score-md text-fg-dim" data-numeric="">
+      <span className="inline-flex items-center gap-2 rounded-ctl bg-chip px-2.5 py-1">
+        <span className="nums text-val text-fg-faint" data-numeric="">
           —,—
         </span>
-        <span className="meta font-mono">Indispo.</span>
+        <span className="text-meta text-fg-faint nums">Indispo.</span>
       </span>
     );
   }
@@ -34,10 +34,10 @@ export function ScoreBadge({
   return (
     <span className="inline-flex items-center gap-2">
       <ScoreShape tier={tier} size={14} className={muted ? 'opacity-50' : undefined} />
-      <span className="font-mono text-score-md" style={{ color, fontWeight: 600 }} data-numeric="">
+      <span className="nums text-val" style={{ color, fontWeight: 600 }} data-numeric="">
         {formatScore(value)}
       </span>
-      <span className="meta font-mono">
+      <span className="text-meta text-fg-faint nums">
         {tier.label}
       </span>
     </span>

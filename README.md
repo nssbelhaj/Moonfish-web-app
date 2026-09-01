@@ -46,7 +46,7 @@ Node 20 ou plus. Aucune variable d'environnement n'est requise pour démarrer.
 | `npm start` | Sert le build de production |
 | `npm run typecheck` | `tsc --noEmit` en mode strict renforcé |
 | `npm run lint` | ESLint (config `next/core-web-vitals` + `next/typescript`) |
-| `npm test` | 150 tests unitaires (Vitest), hermétiques — aucun accès réseau |
+| `npm test` | 195 tests unitaires (Vitest), hermétiques — aucun accès réseau |
 | `npm run test:watch` | Tests en mode surveillance |
 
 ---
@@ -266,27 +266,36 @@ mer » est en bordure pleine et étiqueté *Prévision*, tandis que le bloc
 
 ## Où toucher au design
 
-**Deux fichiers portent la totalité de la palette :**
+**Handoff design v2.** Deux fichiers portent la totalité de la palette :
 
-- **`tailwind.config.ts`** — palette, familles, échelle typographique, rayons,
-  ombres.
-- **`src/app/globals.css`** — variables CSS des deux thèmes. Le sombre est le
-  défaut (`:root`), le clair est opt-in (`.theme-light`, posé sur les guides).
+- **`src/app/tokens.css`** — littéraux et tokens sémantiques. Le sombre est le
+  défaut (`:root`) ; `[data-theme="guide"]` habille les pages éditoriales.
+- **`tailwind.config.ts`** — ne connaît que des noms sémantiques adossés à
+  `var(--…)`, plus l'échelle typographique et les rayons.
 
 Les composants n'utilisent que les tokens sémantiques (`bg-card`, `text-fg`,
 `var(--score-best)`…), jamais les littéraux. Vérifié : **aucune couleur en dur
 dans `src/components/` ni `src/app/`**.
 
-### Les deux exceptions, et pourquoi
+### Les exceptions, et comment elles sont tenues
 
-Deux endroits ne peuvent pas lire une variable CSS. Ils sont donc à mettre à
-jour à la main lors d'un changement de direction artistique — d'où cette liste,
-pour qu'ils ne soient pas oubliés :
+Deux endroits ne peuvent pas lire une variable CSS. La règle **D22** — aucune
+couleur littérale hors des tokens — est vérifiée par un test qui fait échouer
+le build, et ces exceptions sont elles-mêmes sous surveillance :
 
-| Fichier | Raison |
+| Fichier | Raison | Garde-fou |
+| --- | --- | --- |
+| `src/lib/og-palette.ts` | L'image OG est rendue hors du DOM par Satori : pas de cascade, pas de variables. | `og-palette.test.ts` compare chaque valeur au littéral de `tokens.css`. |
+| `src/lib/theme.ts` | `<meta name="theme-color">` est lue avant tout rendu, hors cascade. | Doit refléter `--page` du thème sombre. |
+
+### Les quatre garde-fous de la palette
+
+| Test | Ce qu'il empêche |
 | --- | --- |
-| `src/lib/theme.ts` | `<meta name="theme-color">` est lue par le navigateur avant tout rendu, hors cascade CSS. Doit refléter `--page` du thème sombre. |
-| `src/app/spots/[country]/[region]/[slug]/opengraph-image.tsx` | L'image OG est rendue hors du DOM par Satori : pas de cascade, pas de variables. |
+| `contrast.test.ts` | Une couleur sous 4,5:1. Lit `tokens.css`, ne recopie rien. |
+| `color-classes.test.ts` | Une classe pointant vers une couleur retirée — Tailwind n'émet alors aucune règle, la classe devient un no-op **silencieux**. |
+| `color-literals.test.ts` | Un `#rrggbb` dans un composant (D22). |
+| `og-palette.test.ts` | La palette de l'image OG désynchronisée des tokens. |
 
 ---
 
@@ -324,10 +333,10 @@ Lighthouse mobile, build de production, 8 URL couvrant les 5 pages :
 
 | | Performance | Accessibilité | SEO | Bonnes pratiques |
 | --- | --- | --- | --- | --- |
-| Toutes les pages | 94–98 | 100 | 100 | 100 |
+| Toutes les pages | 96–99 | 100 | 100 | 100 |
 
 `npm run build`, `npm run typecheck` et `npm run lint` passent sans erreur ni
-avertissement. 150 tests unitaires. Aucun débordement horizontal à 375 px.
+avertissement. 195 tests unitaires. Aucun débordement horizontal à 375 px.
 
 ## Déploiement
 

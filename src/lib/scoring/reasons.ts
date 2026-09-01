@@ -1,10 +1,14 @@
 import type { FactorResult, SafetyLevel, ScoreFactor, ScoreLabel } from './types';
 
+/**
+ * Aucune formulation de promesse de prise (D17, R10). Vocabulaire autorisé :
+ * « conditions favorables », « créneau praticable », « fenêtre ».
+ */
 const LEAD: Record<ScoreLabel, string> = {
-  Excellent: 'Créneau à ne pas manquer sur ce spot.',
-  Bon: 'Bon créneau, il vaut le déplacement.',
-  Moyen: 'Créneau moyen : pêchable, sans plus.',
-  Mauvais: 'Créneau défavorable, mieux vaut viser une autre marée.',
+  Excellent: 'Conditions rarement aussi favorables sur ce spot.',
+  Bon: 'Conditions favorables : le créneau vaut le déplacement.',
+  Passable: 'Créneau praticable, sans plus.',
+  Médiocre: 'Conditions défavorables, mieux vaut viser une autre marée.',
 };
 
 const POSITIVE: Record<ScoreFactor, string> = {

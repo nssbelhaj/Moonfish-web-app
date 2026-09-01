@@ -5,7 +5,7 @@
 
 export type ScoreFactor = 'tide' | 'wind' | 'swell' | 'solunar' | 'light';
 
-export type ScoreLabel = 'Mauvais' | 'Moyen' | 'Bon' | 'Excellent';
+export type ScoreLabel = 'Médiocre' | 'Passable' | 'Bon' | 'Excellent';
 
 export type SafetyLevel = 'ok' | 'prudence' | 'danger';
 

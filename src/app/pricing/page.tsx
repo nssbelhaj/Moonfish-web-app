@@ -48,8 +48,8 @@ export default function PricingPage() {
       />
 
       <div className="mx-auto w-full max-w-shell px-4 pt-8 md:px-8 md:pt-12">
-        <h1 className="text-h1 font-700">Ce qui reste gratuit, ce qui se paiera</h1>
-        <p className="mt-3 max-w-measure text-body text-fg-muted">
+        <h1 className="text-val font-700">Ce qui reste gratuit, ce qui se paiera</h1>
+        <p className="mt-3 max-w-prose text-body text-fg-muted">
           Le plan Pro n’existe pas encore et aucun paiement n’est ouvert. Cette page dit dès
           maintenant où passera la ligne, pour que personne ne découvre un mur après coup.
         </p>
@@ -63,8 +63,8 @@ export default function PricingPage() {
         <dl className="divide-y divide-edge">
           {FAQ.map((item) => (
             <div key={item.question} className="py-4">
-              <dt className="text-h3 font-600">{item.question}</dt>
-              <dd className="mt-2 max-w-measure text-body text-fg-muted">{item.answer}</dd>
+              <dt className="text-body font-semibold font-600">{item.question}</dt>
+              <dd className="mt-2 max-w-prose text-body text-fg-muted">{item.answer}</dd>
             </div>
           ))}
         </dl>

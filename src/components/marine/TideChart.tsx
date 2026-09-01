@@ -21,7 +21,7 @@ export function TideChart({
 }) {
   if (events.length < 2) {
     return (
-      <p className="font-mono text-data text-fg-dim">
+      <p className="text-meta nums text-fg-faint">
         Marées indisponibles pour cette journée.
       </p>
     );
@@ -115,7 +115,7 @@ export function TideChart({
         <polyline
           points={samples.join(' ')}
           fill="none"
-          stroke="var(--score-good)"
+          stroke="var(--score-3)"
           strokeWidth="2"
           strokeLinejoin="round"
         />
@@ -141,7 +141,7 @@ export function TideChart({
         })}
       </svg>
 
-      <figcaption className="mt-3 flex flex-wrap gap-x-4 gap-y-1 font-mono text-data text-fg-muted">
+      <figcaption className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-meta nums text-fg-muted">
         {visibleEvents.map((event) => (
           <span key={`legend-${event.time}`} data-numeric="">
             {event.type === 'high' ? 'PM' : 'BM'} {formatTime(new Date(event.time), timeZone)}

@@ -95,7 +95,7 @@ export default async function SpotLayout({
               : {})}
           />
           {isDanger && shelters.length === 0 && (
-            <p className="mt-3 font-mono text-data text-fg-muted">
+            <p className="mt-3 text-meta nums text-fg-muted">
               Aucun spot plus abrité du catalogue n’est à moins de 20 km. Consultez{' '}
               <Link href="/spots" className="underline decoration-dotted underline-offset-4">
                 la liste complète
@@ -107,7 +107,7 @@ export default async function SpotLayout({
       )}
 
       <div className="mx-auto w-full max-w-shell px-4 pt-6 md:px-8 md:pt-10">
-        <nav aria-label="Fil d’Ariane" className="font-mono text-data text-fg-muted">
+        <nav aria-label="Fil d’Ariane" className="text-meta nums text-fg-muted">
           <Link href="/spots" className="underline decoration-dotted underline-offset-4">
             Spots
           </Link>
@@ -133,7 +133,7 @@ export default async function SpotLayout({
           repoussait la navigation sous la ligne de flottaison, et l'utilisateur
           ne pouvait pas voir qu'il y avait autre chose que la page courante.
         */}
-        <h1 className="mt-3 text-h1 font-700">{spot.name}</h1>
+        <h1 className="mt-3 text-val font-700">{spot.name}</h1>
       </div>
 
       {children}

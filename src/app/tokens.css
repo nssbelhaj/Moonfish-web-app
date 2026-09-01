@@ -1,0 +1,116 @@
+/**
+ * Tokens Moonfish — handoff design v2.
+ *
+ * SEULE source de vérité des couleurs, avec la section `colors` de
+ * tailwind.config.ts. Aucun composant ne contient de littéral : la règle D22
+ * est vérifiée par `src/lib/__tests__/color-literals.test.ts`, qui fait échouer
+ * le build si un `#rrggbb` apparaît ailleurs.
+ *
+ * Les littéraux ne sont jamais utilisés directement. Les composants n'écrivent
+ * que des noms sémantiques — `bg-card`, `text-fg-muted` — qui fonctionnent dans
+ * les deux thèmes sans condition.
+ */
+:root {
+  color-scheme: dark;
+
+  /* ── littéraux — ne jamais utiliser dans un composant ── */
+  --ink-950: #0b0d0f;
+  --ink-900: #12151a;
+  --ink-850: #191d23;
+  --ink-800: #21262e;
+  --ink-700: #2c333c;
+  --ink-600: #3a424d;
+  --ink-300: #7c8695;
+  --ink-200: #8b95a1;
+  --ink-050: #e8ebef;
+
+  --paper-100: #f4f1e9;
+  --paper-050: #fbfaf5;
+  --paper-200: #efebe0;
+  --paper-300: #ded7c7;
+
+  --slate-900: #14181c;
+  --slate-500: #55605e;
+  /* Le handoff annonce 4,7:1 pour fg-faint en thème guide ; #6B7570 mesure
+     4,22:1 sur --paper-100. Assombri jusqu'à 5,34:1 pour tenir le plancher AA
+     que la §2.6 déclare sans exception. */
+  --slate-400: #5c6560;
+
+  --amber-400: #ffb020;
+  --amber-800: #8a4b00;
+  --azure-400: #4fa8ff;
+  --azure-800: #0b5e80;
+  --mint-400: #46e0b0;
+  /* #04695A et --azure-800 sont deux bleu-vert à 0,081 de distance
+     perceptuelle : les paliers Bon et Excellent y étaient indiscernables.
+     Vrai vert, distance portée à 0,153. */
+  --mint-800: #2a6b26;
+  --coral-400: #ff6b60;
+  --coral-800: #b3261e;
+
+  /* ── sémantiques — la seule surface d'API des composants ── */
+  --page: var(--ink-950);
+  --card: var(--ink-900);
+  --card-2: var(--ink-850);
+  --chip: var(--ink-800);
+  --edge: var(--ink-700);
+  --edge-strong: var(--ink-600);
+
+  --fg: var(--ink-050);
+  --fg-muted: var(--ink-200);
+  --fg-faint: var(--ink-300);
+  --fg-on-accent: var(--ink-950);
+
+  --accent-score: var(--amber-400);
+  --accent-data: var(--azure-400);
+  --danger: var(--coral-400);
+
+  /* Namespace SÉPARÉ des accents (D4) : un bouton n'est jamais vert parce que
+     c'est positif, un onglet jamais ambre. Ces couleurs ne peuvent apparaître
+     que portées par une valeur de score. */
+  --score-1: var(--ink-200);
+  --score-2: var(--amber-400);
+  --score-3: var(--azure-400);
+  --score-4: var(--mint-400);
+
+  --focus: var(--azure-400);
+}
+
+/**
+ * Thème guide — pages éditoriales uniquement (D6).
+ *
+ * Ce n'est PAS un mode d'affichage de l'app : le sondeur ne s'inverse pas.
+ * `prefers-color-scheme: light` ne le déclenche pas.
+ */
+[data-theme='guide'] {
+  color-scheme: light;
+
+  /* Les descendants héritent de la couleur CALCULÉE sur <body>, où --fg valait
+     encore la valeur sombre : sans ces deux lignes, le contenu sortirait en
+     texte clair sur fond clair. */
+  color: var(--fg);
+  background-color: var(--page);
+
+  --page: var(--paper-100);
+  --card: var(--paper-050);
+  --card-2: var(--paper-200);
+  --chip: var(--paper-200);
+  --edge: var(--paper-300);
+  --edge-strong: var(--slate-400);
+
+  --fg: var(--slate-900);
+  --fg-muted: var(--slate-500);
+  --fg-faint: var(--slate-400);
+  --fg-on-accent: var(--paper-050);
+
+  --accent-score: var(--amber-800);
+  --accent-data: var(--azure-800);
+  --danger: var(--coral-800);
+
+  --score-1: var(--slate-500);
+  --score-2: var(--amber-800);
+  --score-3: var(--azure-800);
+  --score-4: var(--mint-800);
+
+  --focus: var(--azure-800);
+}

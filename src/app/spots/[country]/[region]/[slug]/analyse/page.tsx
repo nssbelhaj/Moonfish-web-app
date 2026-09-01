@@ -51,10 +51,10 @@ export default async function SpotAnalysisPage({ params }: { params: Promise<Rou
       <div className="mx-auto w-full max-w-shell px-4 py-8 md:px-8 md:py-12 xl:grid xl:grid-cols-[1fr_400px] xl:gap-12">
         <div>
           <section aria-labelledby="detail">
-            <h2 id="detail" className="text-h2 font-600">
+            <h2 id="detail" className="text-val-sm font-600">
               Le détail du calcul
             </h2>
-            <p className="mt-2 max-w-measure text-body text-fg-muted">
+            <p className="mt-2 max-w-prose text-body text-fg-muted">
               Chaque facteur est noté sur 10, puis pondéré. Le poids est affiché : sans lui, un bon
               score de lumière paraîtrait aussi décisif qu’un bon score de marée, alors qu’il pèse
               sept fois moins.
@@ -64,11 +64,11 @@ export default async function SpotAnalysisPage({ params }: { params: Promise<Rou
                 <ScoreBreakdown score={current.score} />
               </div>
             ) : (
-              <p className="mt-4 font-mono text-data text-fg-dim">
+              <p className="mt-4 text-meta nums text-fg-faint">
                 Aucun créneau à analyser pour l’instant.
               </p>
             )}
-            <p className="mt-4 max-w-measure text-body text-fg-muted">
+            <p className="mt-4 max-w-prose text-body text-fg-muted">
               Les pondérations et leur justification sont détaillées dans{' '}
               <Link href="/guides" className="underline decoration-dotted underline-offset-4">
                 les guides
@@ -78,18 +78,18 @@ export default async function SpotAnalysisPage({ params }: { params: Promise<Rou
           </section>
 
           <section aria-labelledby="techniques" className="mt-12">
-            <h2 id="techniques" className="text-h2 font-600">
+            <h2 id="techniques" className="text-val-sm font-600">
               Techniques praticables
             </h2>
-            <p className="mt-2 max-w-measure text-body text-fg-muted">
+            <p className="mt-2 max-w-prose text-body text-fg-muted">
               Ce qui se pratique réellement ici, selon le fond et l’accès. Le score, lui, est
               calibré pour la pêche du bord en général : il ne se décline pas encore par technique.
             </p>
             <dl className="mt-6 divide-y divide-edge">
               {spot.techniques.map((technique) => (
                 <div key={technique} className="py-4">
-                  <dt className="text-h3 font-600">{TECHNIQUE_LABELS[technique]}</dt>
-                  <dd className="mt-1 max-w-measure text-body text-fg-muted">
+                  <dt className="text-body font-semibold font-600">{TECHNIQUE_LABELS[technique]}</dt>
+                  <dd className="mt-1 max-w-prose text-body text-fg-muted">
                     {TECHNIQUE_DESCRIPTIONS[technique]}
                   </dd>
                 </div>
@@ -100,10 +100,10 @@ export default async function SpotAnalysisPage({ params }: { params: Promise<Rou
 
         <aside className="mt-12 xl:mt-0">
           <section aria-labelledby="spot" className="surface p-4">
-            <h2 id="spot" className="text-h2 font-600">
+            <h2 id="spot" className="text-val-sm font-600">
               Le spot
             </h2>
-            <dl className="mt-4 grid grid-cols-2 gap-3 font-mono text-data">
+            <dl className="mt-4 grid grid-cols-2 gap-3 text-meta nums">
               {[
                 ['Type', SPOT_TYPE_LABELS[spot.type]],
                 ['Fond', BOTTOM_LABELS[spot.bottom]],
@@ -111,7 +111,7 @@ export default async function SpotAnalysisPage({ params }: { params: Promise<Rou
                 ['Marnage moyen', `${spot.meanTideRangeM.toFixed(1).replace('.', ',')} m`],
               ].map(([label, value]) => (
                 <div key={label}>
-                  <dt className="meta">
+                  <dt className="text-meta text-fg-faint">
                     {label}
                   </dt>
                   <dd className="mt-0.5 text-fg-muted" data-numeric="">
@@ -120,24 +120,24 @@ export default async function SpotAnalysisPage({ params }: { params: Promise<Rou
                 </div>
               ))}
             </dl>
-            <p className="mt-4 font-mono text-data text-fg-muted">
+            <p className="mt-4 text-meta nums text-fg-muted">
               Espèces cibles : {spot.species.join(', ')}.
             </p>
-            <p className="mt-3 font-mono text-data text-fg-dim" data-numeric="">
+            <p className="mt-3 text-meta nums text-fg-faint" data-numeric="">
               {spot.lat.toFixed(4).replace('.', ',')}, {spot.lng.toFixed(4).replace('.', ',')} ·
               orientation {Math.round(spot.facingDeg)}° vers le large
             </p>
           </section>
 
           <section aria-labelledby="acces" className="mt-6 surface p-4">
-            <h2 id="acces" className="text-h2 font-600">
+            <h2 id="acces" className="text-val-sm font-600">
               Accès et sécurité
             </h2>
             <p className="mt-2 text-body text-fg-muted">{spot.access}</p>
           </section>
 
           <section aria-labelledby="alerte" className="mt-6 surface p-4">
-            <h2 id="alerte" className="text-h2 font-600">
+            <h2 id="alerte" className="text-val-sm font-600">
               Être prévenu pour ce spot
             </h2>
             <p className="mt-2 text-body text-fg-muted">

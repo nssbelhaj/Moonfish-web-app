@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og';
+import { OG_PALETTE as COLORS } from '@/lib/og-palette';
 import { BOTTOM_LABELS, EXPOSURE_LABELS } from '@/data/spots';
 import { getSpotForecast, referenceNow } from '@/lib/forecast';
 import { spots as spotRepository } from '@/lib/providers';
@@ -14,19 +15,6 @@ interface RouteParams {
   slug: string;
 }
 
-/** Les couleurs du handoff, en dur : l'image est rendue hors du DOM, sans variables CSS. */
-const COLORS = {
-  page: '#0A0B0D',
-  card: '#15181C',
-  line: '#262A30',
-  ink: '#F1F3F5',
-  muted: '#A7AEB8',
-  dim: '#828A95',
-  bad: '#F26A62',
-  mid: '#E6A63C',
-  good: '#5BB8DC',
-  best: '#3DD9A0',
-} as const;
 
 /** Mêmes 12 chemins que la page : l'image est produite au build, pas à la demande. */
 export async function generateStaticParams(): Promise<RouteParams[]> {
@@ -52,7 +40,7 @@ export default async function OpengraphImage({ params }: { params: RouteParams }
             alignItems: 'center',
             justifyContent: 'center',
             background: COLORS.page,
-            color: COLORS.ink,
+            color: COLORS.fg,
             fontSize: 56,
           }}
         >
@@ -68,7 +56,7 @@ export default async function OpengraphImage({ params }: { params: RouteParams }
   const value = current?.score.value ?? null;
   const tier = value === null ? null : tierFor(value);
   const isDanger = current?.score.safety.level === 'danger';
-  const accent = isDanger ? COLORS.muted : (COLORS[tier?.tier ?? 'good'] as string);
+  const accent = isDanger ? COLORS.fgMuted : COLORS[`score${tier?.tier ?? 3}` as 'score3'];
   const lit = value === null ? 0 : litNotches(value);
 
   return new ImageResponse(
@@ -92,15 +80,15 @@ export default async function OpengraphImage({ params }: { params: RouteParams }
               fontSize: 22,
               letterSpacing: 4,
               textTransform: 'uppercase',
-              color: COLORS.dim,
+              color: COLORS.fgFaint,
             }}
           >
             Moonfish · {spot.regionName}, {spot.countryName}
           </div>
-          <div style={{ display: 'flex', fontSize: 76, color: COLORS.ink, marginTop: 12, fontWeight: 700 }}>
+          <div style={{ display: 'flex', fontSize: 76, color: COLORS.fg, marginTop: 12, fontWeight: 700 }}>
             {spot.name}
           </div>
-          <div style={{ display: 'flex', fontSize: 26, color: COLORS.muted, marginTop: 10 }}>
+          <div style={{ display: 'flex', fontSize: 26, color: COLORS.fgMuted, marginTop: 10 }}>
             {EXPOSURE_LABELS[spot.exposure]} · fond de {BOTTOM_LABELS[spot.bottom].toLowerCase()}
           </div>
         </div>
@@ -111,9 +99,9 @@ export default async function OpengraphImage({ params }: { params: RouteParams }
               <span style={{ fontSize: 150, color: accent, fontWeight: 700, lineHeight: 1 }}>
                 {formatScore(value)}
               </span>
-              <span style={{ fontSize: 40, color: COLORS.dim, marginLeft: 10 }}>/10</span>
+              <span style={{ fontSize: 40, color: COLORS.fgFaint, marginLeft: 10 }}>/10</span>
             </div>
-            <div style={{ display: 'flex', fontSize: 28, color: COLORS.muted, marginTop: 8, letterSpacing: 3 }}>
+            <div style={{ display: 'flex', fontSize: 28, color: COLORS.fgMuted, marginTop: 8, letterSpacing: 3 }}>
               {isDanger ? 'CONDITIONS DANGEREUSES' : (tier?.label.toUpperCase() ?? 'INDISPONIBLE')}
             </div>
           </div>
@@ -126,7 +114,7 @@ export default async function OpengraphImage({ params }: { params: RouteParams }
                 style={{
                   width: 34,
                   height: 56,
-                  background: index < lit ? accent : COLORS.line,
+                  background: index < lit ? accent : COLORS.edge,
                 }}
               />
             ))}
@@ -137,14 +125,14 @@ export default async function OpengraphImage({ params }: { params: RouteParams }
           style={{
             display: 'flex',
             justifyContent: 'space-between',
-            borderTop: `1px solid ${COLORS.line}`,
+            borderTop: `1px solid ${COLORS.edge}`,
             paddingTop: 22,
             fontSize: 22,
-            color: COLORS.dim,
+            color: COLORS.fgFaint,
           }}
         >
           <span>Marée · vent · houle · lune</span>
-          <span style={{ color: COLORS.mid }}>DONNÉES DE DÉMONSTRATION</span>
+          <span style={{ color: COLORS.accentScore }}>DONNÉES DE DÉMONSTRATION</span>
         </div>
       </div>
     ),

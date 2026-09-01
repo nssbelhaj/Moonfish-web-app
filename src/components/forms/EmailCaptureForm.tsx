@@ -50,7 +50,7 @@ export function EmailCaptureForm({ source = 'site' }: { source?: string }) {
   if (status.kind === 'success') {
     return (
       <p
-        className="rounded-card border border-ok-line bg-ok-bg px-4 py-4 text-body"
+        className="rounded-card border bg-card-2 px-4 py-4 text-body"
         role="status"
       >
         {status.alreadyRegistered
@@ -62,7 +62,7 @@ export function EmailCaptureForm({ source = 'site' }: { source?: string }) {
 
   return (
     <form onSubmit={handleSubmit} noValidate>
-      <label htmlFor={inputId} className="block meta font-mono">
+      <label htmlFor={inputId} className="block text-meta text-fg-faint nums">
         Adresse e-mail
       </label>
 
@@ -78,7 +78,7 @@ export function EmailCaptureForm({ source = 'site' }: { source?: string }) {
           placeholder="vous@exemple.fr"
           aria-describedby={status.kind === 'error' ? feedbackId : undefined}
           aria-invalid={status.kind === 'error'}
-          className="min-h-[56px] flex-1 rounded-input border border-edge-strong bg-card-raised px-4 text-body text-fg placeholder:text-fg-dim"
+          className="min-h-[56px] flex-1 rounded-ctl border border-edge-strong bg-chip px-4 text-body text-fg placeholder:text-fg-muted"
         />
         <Button type="submit" disabled={status.kind === 'sending'}>
           {status.kind === 'sending' ? 'Envoi…' : 'Me prévenir'}
@@ -86,7 +86,7 @@ export function EmailCaptureForm({ source = 'site' }: { source?: string }) {
       </div>
 
       {status.kind === 'error' && (
-        <p id={feedbackId} role="alert" className="mt-2 font-mono text-data text-score-bad">
+        <p id={feedbackId} role="alert" className="mt-2 text-meta nums text-danger">
           {status.message}
         </p>
       )}
@@ -94,7 +94,7 @@ export function EmailCaptureForm({ source = 'site' }: { source?: string }) {
       {/* Ne promettre que ce qui est réellement implémenté. La désinscription
           en un clic n'existe pas encore : on donne l'adresse de contact plutôt
           que d'annoncer une fonctionnalité absente. */}
-      <p className="mt-3 meta font-mono leading-[1.5]">
+      <p className="mt-3 text-meta text-fg-faint nums leading-[1.5]">
         Seule votre adresse est enregistrée, avec la page d’où vous vous inscrivez. Aucun partage à
         des tiers. Pour être retiré de la liste, écrivez à contact@moonfish.fish : la suppression
         est manuelle tant que le produit n’est pas lancé.

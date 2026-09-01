@@ -64,7 +64,7 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
       <div className="mx-auto w-full max-w-shell px-4 pt-6 md:px-8">
         <SpotTabs basePath={spotPath(spot)} active="live" />
 
-        <p className="mt-6 max-w-measure text-body text-fg-muted">{spot.summary}</p>
+        <p className="mt-6 max-w-prose text-body text-fg-muted">{spot.summary}</p>
 
         <div className="mt-4 flex flex-wrap gap-2">
           <Tag>{SPOT_TYPE_LABELS[spot.type]}</Tag>
@@ -84,19 +84,19 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
         <div>
           {isDanger && (
             <section aria-labelledby="repli" className="mb-8">
-              <h2 id="repli" className="text-h2 font-600">
+              <h2 id="repli" className="text-val-sm font-600">
                 Prochain créneau praticable
               </h2>
               <Card className="mt-4 p-4">
                 {nextPracticable ? (
                   <>
-                    <p className="font-mono text-data" data-numeric="">
+                    <p className="text-meta nums" data-numeric="">
                       {formatDayLong(new Date(nextPracticable.start), spot.timezone)} ·{' '}
                       {formatTime(new Date(nextPracticable.start), spot.timezone)}–
                       {formatTime(new Date(nextPracticable.end), spot.timezone)} ·{' '}
                       {nextPracticable.score.value.toFixed(1).replace('.', ',')}/10
                     </p>
-                    <p className="mt-2 font-mono text-data text-fg-muted">
+                    <p className="mt-2 text-meta nums text-fg-muted">
                       {nextPracticable.score.reasons[0]}
                     </p>
                   </>
@@ -110,13 +110,13 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
           )}
 
           <section aria-labelledby="score">
-            <h2 id="score" className="text-h2 font-600">
+            <h2 id="score" className="text-val-sm font-600">
               Créneau en cours
             </h2>
 
             {current ? (
               <div className="mt-4">
-                <p className="font-mono text-data text-fg-dim" data-numeric="">
+                <p className="text-meta nums text-fg-faint" data-numeric="">
                   {formatDayLong(new Date(current.start), spot.timezone)} ·{' '}
                   {formatTime(new Date(current.start), spot.timezone)}–
                   {formatTime(new Date(current.end), spot.timezone)} (heure locale)
@@ -127,7 +127,7 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
                 <ScoreReasons reasons={current.score.reasons} />
               </div>
             ) : (
-              <p className="mt-4 font-mono text-data text-fg-dim">
+              <p className="mt-4 text-meta nums text-fg-faint">
                 Score indisponible pour ce créneau.
               </p>
             )}
@@ -135,10 +135,10 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
 
           {today && (
             <section aria-labelledby="journee" className="mt-10">
-              <h2 id="journee" className="text-h2 font-600">
+              <h2 id="journee" className="text-val-sm font-600">
                 La journée d’un coup d’œil
               </h2>
-              <p className="mt-2 max-w-measure text-body text-fg-muted">
+              <p className="mt-2 max-w-prose text-body text-fg-muted">
                 La hauteur d’eau, les huit créneaux de trois heures et ceux qui ressortent.{' '}
                 {tideIsSimulated
                   ? 'Les marées affichées ici sont simulées ; le lever et le coucher du soleil, eux, sont calculés.'
@@ -162,12 +162,12 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
             className={tideIsSimulated ? 'demo-frame p-4' : 'surface p-4'}
           >
             <DemoDataNotice sources={[forecast.sources.tide]} compact />
-            <h2 id="marees" className="mt-2 text-h2 font-600">
+            <h2 id="marees" className="mt-2 text-val-sm font-600">
               Marées du jour
             </h2>
             {today && (
               <>
-                <p className="mt-2 font-mono text-data text-fg-muted" data-numeric="">
+                <p className="mt-2 text-meta nums text-fg-muted" data-numeric="">
                   Coefficient {today.tideEvents[0]?.coefficient ?? '—'} ·{' '}
                   {(() => {
                     const range = tidalRangeOf(today.tideEvents);
@@ -199,7 +199,7 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
             }
           >
             <DemoDataNotice sources={[forecast.sources.weather]} compact />
-            <h2 id="meteo" className="mt-2 text-h2 font-600">
+            <h2 id="meteo" className="mt-2 text-val-sm font-600">
               Vent et état de mer
             </h2>
             {current ? (
@@ -212,7 +212,7 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
                     spotFacingDeg={spot.facingDeg}
                   />
                 </div>
-                <dl className="mt-4 grid grid-cols-2 gap-3 font-mono text-data">
+                <dl className="mt-4 grid grid-cols-2 gap-3 text-meta nums">
                   {[
                     ['Houle', formatMeasure(current.conditions.swellHeightM, 'm', 1)],
                     ['Période', formatMeasure(current.conditions.swellPeriodS, 's', 0)],
@@ -222,7 +222,7 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
                     ['Pression', formatMeasure(current.conditions.pressureHpa, 'hPa', 0)],
                   ].map(([label, value]) => (
                     <div key={label}>
-                      <dt className="meta">
+                      <dt className="text-meta text-fg-faint">
                         {label}
                       </dt>
                       <dd className="mt-0.5 text-fg-muted" data-numeric="">
@@ -233,7 +233,7 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
                 </dl>
               </>
             ) : (
-              <p className="mt-4 font-mono text-data text-fg-dim">Conditions indisponibles.</p>
+              <p className="mt-4 text-meta nums text-fg-faint">Conditions indisponibles.</p>
             )}
             <DataSourceTag
               source={forecast.sources.weather}
@@ -243,7 +243,7 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
           </section>
 
           <section aria-labelledby="lune" className="mt-6 surface p-4">
-            <h2 id="lune" className="text-h2 font-600">
+            <h2 id="lune" className="text-val-sm font-600">
               Lune et lumière
             </h2>
             {today && (
@@ -254,9 +254,9 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
                     illuminationPct={today.moonIlluminationPct}
                   />
                 </div>
-                <dl className="mt-4 grid grid-cols-2 gap-3 font-mono text-data">
+                <dl className="mt-4 grid grid-cols-2 gap-3 text-meta nums">
                   <div>
-                    <dt className="meta">
+                    <dt className="text-meta text-fg-faint">
                       Lever du soleil
                     </dt>
                     <dd className="mt-0.5 text-fg-muted" data-numeric="">
@@ -266,7 +266,7 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
                     </dd>
                   </div>
                   <div>
-                    <dt className="meta">
+                    <dt className="text-meta text-fg-faint">
                       Coucher du soleil
                     </dt>
                     <dd className="mt-0.5 text-fg-muted" data-numeric="">
@@ -275,7 +275,7 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
                   </div>
                 </dl>
                 {current && (
-                  <p className="mt-3 font-mono text-data text-fg-muted">
+                  <p className="mt-3 text-meta nums text-fg-muted">
                     {current.score.breakdown.solunar.note}
                   </p>
                 )}

@@ -33,18 +33,18 @@ export function ScoreGauge({
     <div>
       <div className="flex items-end gap-3">
         <p
-          className={`font-mono font-700 ${size === 'lg' ? 'text-score-xl' : 'text-score-lg'}`}
+          className={`nums font-700 ${size === 'lg' ? 'text-score' : 'text-score-sm'}`}
           style={{ color, fontWeight: 700 }}
           data-numeric=""
         >
           {formatScore(score.value)}
-          <span className="text-h3 font-500 text-fg-dim"> /10</span>
+          <span className="text-body font-semibold font-500 text-fg-faint"> /10</span>
         </p>
       </div>
 
       <div className="mt-3 flex items-center gap-2">
         <ScoreShape tier={tier} size={16} className={isDanger ? 'opacity-50' : undefined} />
-        <p className="meta font-mono">
+        <p className="text-meta text-fg-faint nums">
           {tier.label}
         </p>
       </div>

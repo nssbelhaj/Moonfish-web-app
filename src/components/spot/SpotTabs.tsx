@@ -32,7 +32,7 @@ export function SpotTabs({ basePath, active }: { basePath: string; active: SpotT
                 aria-current={isActive ? 'page' : undefined}
                 className={`inline-flex min-h-[48px] items-center whitespace-nowrap border-b-2 px-4 font-600 ${
                   isActive
-                    ? 'border-accent text-fg'
+                    ? 'border-accent-data text-fg'
                     : 'border-transparent text-fg-muted hover:text-fg'
                 }`}
               >

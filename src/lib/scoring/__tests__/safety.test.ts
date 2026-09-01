@@ -58,7 +58,7 @@ describe('sécurité — règle non négociable', () => {
 });
 
 describe('cumul de facteurs négatifs', () => {
-  it('sort en Mauvais quand marée, vent, houle, lune et lumière sont tous défavorables', () => {
+  it('sort en Médiocre quand marée, vent, houle, lune et lumière sont tous défavorables', () => {
     const worst = computeScore({
       spotFacingDeg: 270,
       tide: { hoursFromHighTide: 6.2, coefficient: 118, state: 'slack' },
@@ -74,7 +74,7 @@ describe('cumul de facteurs négatifs', () => {
     });
 
     expect(worst.value).toBeLessThan(4);
-    expect(worst.label).toBe('Mauvais');
+    expect(worst.label).toBe('Médiocre');
     expect(worst.safety.level).toBe('prudence');
   });
 

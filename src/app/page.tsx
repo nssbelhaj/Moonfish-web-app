@@ -104,10 +104,10 @@ export default async function HomePage() {
       />
 
       <div className="mx-auto w-full max-w-shell px-4 pb-4 pt-8 md:px-8 md:pt-12">
-        <h1 className="max-w-[16ch] text-h1 font-700 md:text-display">
+        <h1 className="max-w-[16ch] text-val font-700 md:text-val">
           Les meilleurs créneaux de pêche en mer, spot par spot
         </h1>
-        <p className="mt-4 max-w-measure text-body text-fg-muted">
+        <p className="mt-4 max-w-prose text-body text-fg-muted">
           Un score sur 10 par tranche de trois heures, sur sept jours. Marée, vent, houle, lune et
           lumière, pondérés et expliqués — pour choisir quand y aller, pas pour vous promettre une
           prise. Surfcasting, lancer-ramener, rockfishing : chaque spot indique ce qui s’y pratique.
@@ -192,27 +192,27 @@ export default async function HomePage() {
             <li key={factor.title} className="py-6">
               <div className="flex items-baseline gap-4">
                 <span
-                  className="w-16 shrink-0 font-mono text-score-md font-700 text-fg"
+                  className="w-16 shrink-0 nums text-val font-700 text-fg"
                   data-numeric=""
                 >
                   {factor.weight}
-                  <span className="text-body font-500 text-fg-dim"> %</span>
+                  <span className="text-body font-500 text-fg-faint"> %</span>
                 </span>
-                <h3 className="text-h3 font-600">{factor.title}</h3>
+                <h3 className="text-body font-semibold font-600">{factor.title}</h3>
               </div>
 
               {/* La barre rend l'écart de poids immédiatement lisible. */}
-              <div className="ml-20 mt-2 h-1 rounded-[2px] bg-card-raised" aria-hidden="true">
+              <div className="ml-20 mt-2 h-1 rounded-[2px] bg-chip" aria-hidden="true">
                 <div
-                  className="h-full rounded-[2px] bg-accent"
+                  className="h-full rounded-[2px] bg-accent-score"
                   style={{ width: `${(factor.weight / 35) * 100}%` }}
                 />
               </div>
 
-              <p className="ml-20 mt-3 max-w-measure text-body text-fg-muted">{factor.body}</p>
+              <p className="ml-20 mt-3 max-w-prose text-body text-fg-muted">{factor.body}</p>
               <Link
                 href={factor.href}
-                className="ml-20 mt-2 inline-flex min-h-[44px] items-center font-mono text-data text-fg underline decoration-dotted underline-offset-4"
+                className="ml-20 mt-2 inline-flex min-h-[44px] items-center text-meta nums text-fg underline decoration-dotted underline-offset-4"
               >
                 {factor.link}
               </Link>
@@ -225,8 +225,8 @@ export default async function HomePage() {
         <dl className="divide-y divide-edge">
           {FAQ.map((item) => (
             <div key={item.question} className="py-4">
-              <dt className="text-h3 font-600">{item.question}</dt>
-              <dd className="mt-2 max-w-measure text-body text-fg-muted">{item.answer}</dd>
+              <dt className="text-body font-semibold font-600">{item.question}</dt>
+              <dd className="mt-2 max-w-prose text-body text-fg-muted">{item.answer}</dd>
             </div>
           ))}
         </dl>
@@ -240,7 +240,7 @@ export default async function HomePage() {
         <div className="max-w-[42rem]">
           <EmailCaptureForm source="accueil" />
         </div>
-        <p className="mt-4 font-mono text-data text-fg-dim" data-numeric="">
+        <p className="mt-4 text-meta nums text-fg-faint" data-numeric="">
           Prochaine fenêtre la plus proche, tous spots confondus :{' '}
           {summaries[0]?.nextGood
             ? `${summaries[0].spot.name}, ${formatDateTime(new Date(summaries[0].nextGood.start), summaries[0].spot.timezone)}`

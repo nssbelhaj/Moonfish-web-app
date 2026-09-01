@@ -111,10 +111,10 @@ export default async function SpotsPage({
   return (
     <>
       <div className="mx-auto w-full max-w-shell px-4 pt-8 md:px-8 md:pt-12">
-        <h1 className="text-h1 font-700">
+        <h1 className="text-val font-700">
           {description ? `Spots de pêche ${description}` : 'Les 12 spots suivis par Moonfish'}
         </h1>
-        <p className="mt-3 max-w-measure text-body text-fg-muted">
+        <p className="mt-3 max-w-prose text-body text-fg-muted">
           Le classement suit le score du créneau en cours. Filtrez par technique — surfcasting,
           lancer-ramener, rockfishing, shore-jigging, pêche à pied — ou par région. Les filtres sont
           écrits dans l’adresse de la page : elle est partageable telle quelle.
@@ -144,21 +144,21 @@ export default async function SpotsPage({
 
         {matching.length === 0 ? (
           <div className="mt-6 surface px-4 py-8">
-            <p className="text-h3 font-600">Aucun spot ne correspond à cette combinaison.</p>
-            <p className="mt-2 max-w-measure text-body text-fg-muted">
+            <p className="text-body font-semibold font-600">Aucun spot ne correspond à cette combinaison.</p>
+            <p className="mt-2 max-w-prose text-body text-fg-muted">
               Le catalogue compte 12 spots pour l’instant. Retirez un filtre, ou repartez de la
               liste complète.
             </p>
             <Link
               href="/spots"
-              className="mt-4 inline-flex min-h-[48px] items-center rounded-input border border-edge-strong px-4 font-600"
+              className="mt-4 inline-flex min-h-[48px] items-center rounded-ctl border border-edge-strong px-4 font-600"
             >
               Voir les 12 spots
             </Link>
           </div>
         ) : (
           <>
-            <h2 className="mt-8 text-h2 font-600">
+            <h2 className="mt-8 text-val-sm font-600">
               {matching.length} spot{matching.length > 1 ? 's' : ''}
               {description ? ` ${description}` : ''}
             </h2>
@@ -171,7 +171,7 @@ export default async function SpotsPage({
         )}
 
         {hasAnyFilter(filters) && (
-          <p className="mt-6 font-mono text-data text-fg-dim" data-numeric="">
+          <p className="mt-6 text-meta nums text-fg-faint" data-numeric="">
             {matching.length} spot{matching.length > 1 ? 's' : ''} sur {all.length}.
           </p>
         )}

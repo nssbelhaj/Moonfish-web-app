@@ -1,60 +1,70 @@
 import type { ScoreLabel } from '@/lib/scoring';
 
-export type ScoreTier = 'bad' | 'mid' | 'good' | 'best';
+export type ScoreTier = 1 | 2 | 3 | 4;
 
 /**
- * Un palier porte QUATRE canaux redondants (handoff §2.3) : le chiffre, le
- * libellé, la forme et la couleur. Un daltonien, un écran à contre-jour ou une
- * capture en niveaux de gris doivent tous laisser passer l'information.
+ * Un palier porte QUATRE canaux redondants (R3) : chiffre, libellé, forme et
+ * couleur. Test de recette : une capture en niveaux de gris doit rester lisible.
+ *
+ * L'échelle n'est PAS un dégradé rouge → vert (D5). Une telle échelle est
+ * illisible en deutéranopie et confondrait le palier bas avec le danger — or le
+ * rouge est réservé, exclusivement, à la sécurité. Les quatre paliers se
+ * distinguent aussi par leur luminance, donc restent séparables en gris.
  */
 export interface TierPresentation {
   tier: ScoreTier;
   label: ScoreLabel;
-  /** Variable CSS de la couleur du palier, valable dans les deux thèmes. */
+  /** Variable CSS du palier, valable dans les deux thèmes. */
   colorVar: string;
-  /** Forme associée, seule à changer d'un palier à l'autre. */
-  shape: 'square' | 'diamond' | 'disc' | 'target';
+  shape: 'bar' | 'diamond' | 'disc' | 'target';
   /** Description de la forme, lue par les lecteurs d'écran. */
   shapeLabel: string;
 }
 
 const TIERS: Record<ScoreTier, TierPresentation> = {
-  bad: { tier: 'bad', label: 'Mauvais', colorVar: 'var(--score-bad)', shape: 'square', shapeLabel: 'carré' },
-  mid: { tier: 'mid', label: 'Moyen', colorVar: 'var(--score-mid)', shape: 'diamond', shapeLabel: 'losange' },
-  good: { tier: 'good', label: 'Bon', colorVar: 'var(--score-good)', shape: 'disc', shapeLabel: 'disque' },
-  best: { tier: 'best', label: 'Excellent', colorVar: 'var(--score-best)', shape: 'target', shapeLabel: 'cible annelée' },
+  1: { tier: 1, label: 'Médiocre', colorVar: 'var(--score-1)', shape: 'bar', shapeLabel: 'trait plat' },
+  2: { tier: 2, label: 'Passable', colorVar: 'var(--score-2)', shape: 'diamond', shapeLabel: 'losange creux' },
+  3: { tier: 3, label: 'Bon', colorVar: 'var(--score-3)', shape: 'disc', shapeLabel: 'disque plein' },
+  4: { tier: 4, label: 'Excellent', colorVar: 'var(--score-4)', shape: 'target', shapeLabel: 'cible annelée' },
 };
 
 export function tierFor(value: number): TierPresentation {
-  if (value < 4) return TIERS.bad;
-  if (value < 6) return TIERS.mid;
-  if (value < 8) return TIERS.good;
-  return TIERS.best;
+  if (value < 4) return TIERS[1];
+  if (value < 6) return TIERS[2];
+  if (value < 8) return TIERS[3];
+  return TIERS[4];
 }
 
 /**
- * Formatage d'un score.
- * Une donnée absente s'affiche « —,— », jamais 0 : un 0 est un score (handoff §5).
+ * Formats imposés (R12) : score à une décimale, virgule décimale, et
+ * « —,— » pour une valeur absente — jamais 0, jamais un tiret seul (D12).
+ * La forme garde la place et l'allure d'un nombre : la colonne ne se décale
+ * pas, et l'œil comprend « valeur attendue, absente » sans lire.
  */
 export function formatScore(value: number | null | undefined): string {
   if (value === null || value === undefined || !Number.isFinite(value)) return '—,—';
   return value.toFixed(1).replace('.', ',');
 }
 
-/** Idem pour toute mesure : l'absence se dit, elle ne se remplace pas par zéro. */
+/** Espace insécable avant l'unité (R12). */
+const NBSP = '\u00a0';
+
 export function formatMeasure(
   value: number | null | undefined,
   unit: string,
   decimals = 0,
 ): string {
   if (value === null || value === undefined || !Number.isFinite(value)) return 'Indispo.';
-  return `${value.toFixed(decimals).replace('.', ',')} ${unit}`;
+  return `${value.toFixed(decimals).replace('.', ',')}${NBSP}${unit}`;
 }
 
 /**
  * Nombre de crans allumés sur la réglette, sur 10.
- * Troncature et non arrondi : 8,4 allume 8 crans. Jamais d'arrondi visuel
- * généreux (handoff §5) — la réglette ne doit pas flatter le score.
+ *
+ * Troncature et jamais arrondi (D1) : 8,4 comme 8,9 allument 8 crans. Arrondir
+ * 8,9 à 9 donnerait à la réglette l'image de 9,0 et la ferait contredire le
+ * chiffre affiché juste à côté. La troncature dit « au moins 8 », ce qui est
+ * toujours vrai.
  */
 export function litNotches(value: number): number {
   return Math.max(0, Math.min(10, Math.floor(value)));

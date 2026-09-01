@@ -137,7 +137,7 @@ export function DayActivityChart({
               style={{ left: `${centre}%` }}
             >
               <FishGlyph color={tier.colorVar} size={16} />
-              {tier.tier === 'best' && <FishGlyph color={tier.colorVar} size={16} />}
+              {tier.tier === 4 && <FishGlyph color={tier.colorVar} size={16} />}
             </span>
           );
         })}
@@ -204,7 +204,7 @@ export function DayActivityChart({
             <polyline
               points={curvePoints}
               fill="none"
-              stroke="var(--score-good)"
+              stroke="var(--score-3)"
               strokeWidth="2"
               strokeLinejoin="round"
               vectorEffect="non-scaling-stroke"
@@ -237,7 +237,7 @@ export function DayActivityChart({
         ))}
 
         {!curvePoints && (
-          <p className="absolute inset-0 flex items-center justify-center font-mono text-data text-fg-dim">
+          <p className="absolute inset-0 flex items-center justify-center text-meta nums text-fg-faint">
             Courbe de marée indisponible.
           </p>
         )}
@@ -252,13 +252,13 @@ export function DayActivityChart({
             <span
               key={slot.start}
               className="h-2 flex-1 rounded-[1px]"
-              style={{ backgroundColor: isDanger ? 'var(--score-bad)' : tier.colorVar }}
+              style={{ backgroundColor: isDanger ? 'var(--score-1)' : tier.colorVar }}
             />
           );
         })}
       </div>
 
-      <div className="mt-2 flex justify-between font-mono text-data text-fg-dim" aria-hidden="true">
+      <div className="mt-2 flex justify-between text-meta nums text-fg-faint" aria-hidden="true">
         {['00h', '03h', '06h', '09h', '12h', '15h', '18h', '21h', '24h'].map((label, index) => (
           <span key={label} className={index % 2 === 1 ? 'hidden sm:inline' : undefined}>
             {label}
@@ -267,33 +267,33 @@ export function DayActivityChart({
       </div>
 
       <figcaption className="mt-4">
-        <ul className="flex flex-wrap gap-x-5 gap-y-2 font-mono text-data text-fg-muted">
+        <ul className="flex flex-wrap gap-x-5 gap-y-2 text-meta nums text-fg-muted">
           <li className="flex items-center gap-2">
-            <span className="h-[2px] w-6 bg-score-good" aria-hidden="true" />
+            <span className="h-[2px] w-6 bg-score-3" aria-hidden="true" />
             Hauteur d’eau
           </li>
           <li className="flex items-center gap-2">
-            <FishGlyph color="var(--score-good)" size={16} />
+            <FishGlyph color="var(--score-3)" size={16} />
             Créneau favorable
           </li>
           <li className="flex items-center gap-2">
             <span className="flex gap-[2px]" aria-hidden="true">
-              <FishGlyph color="var(--score-best)" size={16} />
-              <FishGlyph color="var(--score-best)" size={16} />
+              <FishGlyph color="var(--score-4)" size={16} />
+              <FishGlyph color="var(--score-4)" size={16} />
             </span>
             Créneau excellent
           </li>
           <li className="flex items-center gap-2">
             <span
-              className="h-3 w-4 rounded-[1px] border border-edge bg-night"
+              className="h-3 w-4 rounded-[1px] border border-edge bg-chip"
               aria-hidden="true"
             />
             Nuit
           </li>
           <li className="flex items-center gap-2">
             <span className="flex h-3 w-6 items-center gap-[3px]" aria-hidden="true">
-              <span className="h-2 flex-1 rounded-[1px] bg-score-mid" />
-              <span className="h-2 flex-1 rounded-[1px] bg-score-best" />
+              <span className="h-2 flex-1 rounded-[1px] bg-score-2" />
+              <span className="h-2 flex-1 rounded-[1px] bg-score-4" />
             </span>
             Score des 8 créneaux
           </li>
@@ -309,13 +309,13 @@ export function DayActivityChart({
         </ul>
 
         {(day.sunrise || day.sunset) && (
-          <p className="mt-3 font-mono text-data text-fg-muted" data-numeric="">
+          <p className="mt-3 text-meta nums text-fg-muted" data-numeric="">
             Lever {day.sunrise ? formatTime(new Date(day.sunrise), timeZone) : '—'} · coucher{' '}
             {day.sunset ? formatTime(new Date(day.sunset), timeZone) : '—'} (heure locale, calculé).
           </p>
         )}
 
-        <p className="mt-3 max-w-measure text-body text-fg-muted">
+        <p className="mt-3 max-w-prose text-body text-fg-muted">
           {summary}{' '}
           <strong className="font-600 text-fg">
             Ces créneaux décrivent des conditions, pas la présence du poisson.
