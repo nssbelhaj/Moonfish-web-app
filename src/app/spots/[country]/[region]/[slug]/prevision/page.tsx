@@ -4,6 +4,7 @@ import { DemoDataNotice } from '@/components/data/DemoDataNotice';
 import { SpotTabs } from '@/components/spot/SpotTabs';
 import { SlotRow } from '@/components/v3/SlotRow';
 import { TideActivityChart } from '@/components/v3/TideActivityChart';
+import { MoonTimesInline } from '@/components/v3/MoonTimes';
 import { WaterValue } from '@/components/v3/WaterValue';
 import { SLOTS_PER_DAY, sourceList } from '@/lib/forecast';
 import { tidalRangeOf } from '@/lib/forecast/tide-curve';
@@ -156,16 +157,22 @@ export default async function SpotForecastPage({ params }: { params: Promise<Rou
                     )}
                     {day.sunrise && day.sunset && (
                       <>
-                        {' · lever '}
+                        {' · soleil '}
                         <span className="nums">
                           {formatTime(new Date(day.sunrise), spot.timezone)}
                         </span>
-                        {', coucher '}
+                        {'–'}
                         <span className="nums">
                           {formatTime(new Date(day.sunset), spot.timezone)}
                         </span>
                       </>
                     )}
+                    {' · '}
+                    <MoonTimesInline
+                      moonrise={day.moonrise}
+                      moonset={day.moonset}
+                      timeZone={spot.timezone}
+                    />
                   </p>
                 </div>
               </div>

@@ -1,5 +1,13 @@
 import type { MarinePoint, Spot, TideEvent } from '@/data/schemas';
-import { hoursToNearest, lightPhaseAt, moonAgeDays, moonIlluminationPct, solunarPeriods, sunTimes } from '@/lib/astro';
+import {
+  hoursToNearest,
+  lightPhaseAt,
+  moonPhase,
+  moonTimes,
+  periodsFrom,
+  sunTimes,
+  type MoonTimes,
+} from '@/lib/astro';
 import { computeScore, type ScoreResult } from '@/lib/scoring';
 import { addHours, localCalendarNoonUtc, startOfLocalDay } from '@/lib/time';
 import { tideContextAt } from './tide-context';
@@ -43,9 +51,18 @@ export interface ForecastDay {
   slots: ForecastSlot[];
   sunrise: string | null;
   sunset: string | null;
+  /**
+   * Lever et coucher de Lune, ISO. `null` est une VALEUR : la Lune se lève
+   * environ cinquante minutes plus tard chaque jour et saute donc une journée
+   * civile deux fois par mois. L'affichage doit le dire, pas le masquer.
+   */
+  moonrise: string | null;
+  moonset: string | null;
   tideEvents: TideEvent[];
   moonIlluminationPct: number;
   moonAgeDays: number;
+  /** Vrai entre la nouvelle et la pleine lune. */
+  moonWaxing: boolean;
   /** Meilleur créneau de la journée, sécurité comprise. */
   best: ForecastSlot | null;
 }
@@ -71,15 +88,42 @@ export function buildForecastDays(
   const days: ForecastDay[] = [];
   const firstMidnight = startOfLocalDay(anchor, spot.timezone);
 
+  const dayStarts: Date[] = [];
   for (let dayIndex = 0; dayIndex < FORECAST_DAYS; dayIndex += 1) {
-    const dayStart = startOfLocalDay(addHours(firstMidnight, dayIndex * 24 + 6), spot.timezone);
+    dayStarts.push(startOfLocalDay(addHours(firstMidnight, dayIndex * 24 + 6), spot.timezone));
+  }
+
+  /*
+    Positions lunaires : une journée de plus de chaque côté.
+    Les périodes solunaires d'un jour donné se lisent sur trois journées —
+    un créneau de minuit est souvent plus près d'un passage au méridien de la
+    veille que de n'importe quel instant du jour même. Les calculer ici, une
+    seule fois par journée, plutôt que trois fois dans la boucle : la recherche
+    de lever et de coucher est la partie coûteuse du calcul astronomique.
+  */
+  const moonDays: MoonTimes[] = [];
+  for (let dayIndex = -1; dayIndex <= FORECAST_DAYS; dayIndex += 1) {
+    const start =
+      dayIndex < 0
+        ? startOfLocalDay(addHours(firstMidnight, -18), spot.timezone)
+        : dayIndex < FORECAST_DAYS
+          ? (dayStarts[dayIndex] as Date)
+          : startOfLocalDay(addHours(firstMidnight, dayIndex * 24 + 6), spot.timezone);
+    moonDays.push(moonTimes(start, spot.lat, spot.lng));
+  }
+
+  for (let dayIndex = 0; dayIndex < FORECAST_DAYS; dayIndex += 1) {
+    const dayStart = dayStarts[dayIndex] as Date;
     const dayEnd = startOfLocalDay(addHours(dayStart, 30), spot.timezone);
 
-    // Éphémérides de la DATE LOCALE, pas de la date UTC de minuit local :
-    // voir `localCalendarNoonUtc`.
+    // Éphémérides SOLAIRES de la DATE LOCALE, pas de la date UTC de minuit
+    // local : voir `localCalendarNoonUtc`. La Lune, elle, est cherchée sur la
+    // fenêtre de vingt-quatre heures qui commence à minuit local — donc sans
+    // ambiguïté de date.
     const ephemerisDay = localCalendarNoonUtc(dayStart, spot.timezone);
     const sun = sunTimes(ephemerisDay, spot.lat, spot.lng);
-    const solunar = solunarPeriods(ephemerisDay, spot.lng);
+    const moon = moonDays[dayIndex + 1] as MoonTimes;
+    const solunar = periodsFrom(moonDays.slice(dayIndex, dayIndex + 3));
 
     const slots: ForecastSlot[] = [];
 
@@ -95,6 +139,7 @@ export function buildForecastDays(
       // panne.
       const conditions = marineByHour.get(Math.floor(middle.getTime() / 3_600_000)) ?? null;
       const tide = tideContextAt(middle, tideEvents) ?? null;
+      const slotMoon = moonPhase(middle);
 
       const score = computeScore({
         spotFacingDeg: spot.facingDeg,
@@ -117,8 +162,8 @@ export function buildForecastDays(
         solunar: {
           hoursToMajorPeriod: hoursToNearest(middle, solunar.major),
           hoursToMinorPeriod: hoursToNearest(middle, solunar.minor),
-          moonIlluminationPct: moonIlluminationPct(middle),
-          moonAgeDays: moonAgeDays(middle),
+          moonIlluminationPct: slotMoon.illuminationPct,
+          moonAgeDays: slotMoon.ageDays,
         },
         light: { phase: lightPhaseAt(middle, sun) },
       });
@@ -133,6 +178,10 @@ export function buildForecastDays(
       });
     }
 
+    // La phase affichée est celle de MIDI local, pas de minuit : c'est la Lune
+    // de la journée dont on parle, et non celle de la nuit qui la précède.
+    const phase = moonPhase(addHours(dayStart, 12));
+
     days.push({
       date: dayStart.toISOString(),
       slots,
@@ -142,8 +191,11 @@ export function buildForecastDays(
         const t = new Date(event.time).getTime();
         return t >= dayStart.getTime() && t < dayEnd.getTime();
       }),
-      moonIlluminationPct: moonIlluminationPct(dayStart),
-      moonAgeDays: moonAgeDays(dayStart),
+      moonrise: moon.rise?.toISOString() ?? null,
+      moonset: moon.set?.toISOString() ?? null,
+      moonIlluminationPct: phase.illuminationPct,
+      moonAgeDays: phase.ageDays,
+      moonWaxing: phase.waxing,
       best: bestSlot(slots),
     });
   }

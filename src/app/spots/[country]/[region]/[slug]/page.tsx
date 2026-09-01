@@ -8,6 +8,7 @@ import { WindCompass } from '@/components/marine/WindCompass';
 import { ScoreCartouche } from '@/components/v3/ScoreCartouche';
 import { SlotRow } from '@/components/v3/SlotRow';
 import { SeaStateCard } from '@/components/v3/SeaStateCard';
+import { MoonTimeCells } from '@/components/v3/MoonTimes';
 import { WaterValue } from '@/components/v3/WaterValue';
 import { ScoreReasons } from '@/components/score/ScoreReasons';
 import { SpotTabs } from '@/components/spot/SpotTabs';
@@ -20,6 +21,7 @@ import {
   TECHNIQUE_LABELS,
 } from '@/data/spots';
 import { sourceList } from '@/lib/forecast';
+import { moonPhase } from '@/lib/astro';
 import { tidalRangeOf } from '@/lib/forecast/tide-curve';
 import { absoluteUrl, spotPath } from '@/lib/routes';
 import { formatMeasure, formatScore } from '@/lib/score-display';
@@ -49,6 +51,16 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
   const { spot, forecast, now } = await resolveSpot(params);
   const current = forecast.current;
   const today = forecast.days[0];
+
+  /*
+    La phase affichée dans « Lune et lumière » est celle de MAINTENANT, pas
+    celle de midi. La carte annonçait 81 % pendant que la phrase du score, tirée
+    du créneau en cours, disait 76 % : deux chiffres justes, dix heures d'écart,
+    et un lecteur qui ne peut que conclure que l'un des deux est faux. La
+    journée garde sa valeur de midi, qui résume bien une journée ; cet écran-ci
+    décrit l'instant.
+  */
+  const phaseNow = moonPhase(new Date(forecast.generatedAt));
 
   const tideIsSimulated = simulatedSources([forecast.sources.tide.source]).length > 0;
   const weatherIsSimulated = simulatedSources([forecast.sources.weather.source]).length > 0;
@@ -327,15 +339,13 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
               <>
                 <div className="mt-4">
                   <MoonPhase
-                    ageDays={today.moonAgeDays}
-                    illuminationPct={today.moonIlluminationPct}
+                    ageDays={phaseNow.ageDays}
+                    illuminationPct={phaseNow.illuminationPct}
                   />
                 </div>
                 <dl className="mt-4 grid grid-cols-2 gap-3 text-meta nums">
                   <div>
-                    <dt className="text-meta text-fg-faint">
-                      Lever du soleil
-                    </dt>
+                    <dt className="text-meta text-fg-muted">Lever du soleil</dt>
                     <dd className="mt-0.5 text-fg-muted" data-numeric="">
                       {today.sunrise
                         ? formatTime(new Date(today.sunrise), spot.timezone)
@@ -343,13 +353,16 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-meta text-fg-faint">
-                      Coucher du soleil
-                    </dt>
+                    <dt className="text-meta text-fg-muted">Coucher du soleil</dt>
                     <dd className="mt-0.5 text-fg-muted" data-numeric="">
                       {today.sunset ? formatTime(new Date(today.sunset), spot.timezone) : 'Indispo.'}
                     </dd>
                   </div>
+                  <MoonTimeCells
+                    moonrise={today.moonrise}
+                    moonset={today.moonset}
+                    timeZone={spot.timezone}
+                  />
                 </dl>
                 {current && (
                   <p className="mt-3 text-meta nums text-fg-muted">

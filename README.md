@@ -10,7 +10,7 @@ solunaires et lumière, pondérés et expliqués.
 | Vent, houle, températures, pression | Open-Meteo (modèles Marine & Forecast) | **Prévision réelle** |
 | Marées et coefficients | Stormglass, *si `STORMGLASS_API_KEY` est définie* | **Prévision réelle** |
 | Marées, sans clé | Modèle de démonstration Moonfish | **Simulé** |
-| Lever/coucher du Soleil, phase de Lune | Calcul local (NOAA + lunaison) | **Calculé** |
+| Soleil, Lune, périodes solunaires | Calcul local (NOAA + Meeus ELP-2000 abrégée) | **Calculé** |
 
 Les avertissements de démonstration sont pilotés par la source réellement
 utilisée : ils disparaissent d'eux-mêmes quand un fournisseur passe au réel, et
@@ -113,6 +113,9 @@ src/
     │   ├── reasons.ts            Génération des 2–3 phrases explicatives
     │   └── math.ts               Trapèzes, rampes, formatage français
     ├── astro/                    Soleil (NOAA) et Lune — CALCULÉS, pas simulés
+    │   ├── sun.ts                Lever, coucher, aube et crépuscule civils
+    │   ├── moon-position.ts      Séries de Meeus 47.A/47.B : position lunaire
+    │   └── moon.ts               Phase vraie, lever, coucher, méridiens
     ├── forecast/                 Assemblage providers → créneaux scorés
     │   ├── tide-context.ts       Contexte de marée reconstruit depuis les extremums
     │   ├── tide-curve.ts         Interpolation cosinusoïdale entre extremums
@@ -429,6 +432,63 @@ le build, et ces exceptions sont elles-mêmes sous surveillance :
 
 ---
 
+## Le Soleil et la Lune
+
+Les deux sont calculés dans `src/lib/astro`, sans réseau, sans clé et sans
+cache : rien à brancher, rien qui puisse tomber.
+
+**Soleil** — algorithme NOAA. Lever, coucher, aube et crépuscule civils, à la
+minute.
+
+**Lune** — séries périodiques de Meeus (*Astronomical Algorithms*, tables 47.A
+et 47.B : l'abrégé de la théorie ELP-2000/82). Le module donne la position, et
+`moon.ts` en tire :
+
+- la **phase vraie**, par l'élongation Soleil–Lune, et non par un compteur de
+  jours depuis une nouvelle lune de référence. Les lunaisons réelles vont de
+  29,25 à 29,71 jours ; un modèle à période constante se trompe jusqu'à
+  quatorze heures sur la date d'une pleine lune ;
+- le **lever et le coucher**, cherchés par balayage de la hauteur puis
+  dichotomie à la seconde, avec parallaxe et réfraction. Ils dépendent de la
+  latitude — l'ancien modèle les posait à ±6 h 12 du passage au méridien, ce
+  qui n'est exact qu'à l'équateur et à l'équinoxe ;
+- les **passages au méridien**, supérieur et inférieur, qui sont les périodes
+  solunaires majeures.
+
+Un lever peut valoir `null` : la Lune se lève environ cinquante minutes plus
+tard chaque jour et saute donc une journée civile deux fois par mois. Ce n'est
+pas une panne, et l'interface écrit « pas de lever » plutôt qu'un tiret.
+
+### Comment on sait que les tables sont justes
+
+Cent vingt lignes de coefficients recopiées à la main ne se vérifient pas en les
+relisant. `moon-position.test.ts` rejoue **l'exemple 47.a de Meeus** (12 avril
+1992), dont les résultats sont publiés au millionième de degré :
+
+| | Calculé | Publié |
+| --- | --- | --- |
+| Longitude λ | 133,162655° | 133,162655° |
+| Latitude β | −3,229126° | −3,229126° |
+| Distance Δ | 368 409,7 km | 368 409,7 km |
+| Parallaxe π | 0,991990° | 0,991990° |
+
+Le temps sidéral est vérifié de la même façon sur l'exemple 12.a. Et la période
+synodique est mesurée **sur dix-neuf ans** — pas sur une année, où la moyenne
+des lunaisons ne vaut pas 29,53 j et où un test naïf échouerait à raison.
+
+En contre-épreuve, les horaires ont été comparés à une série lunaire
+indépendante et beaucoup plus grossière : l'écart va de 0 à 10 minutes, sans
+biais systématique, ce qui est exactement l'erreur propre de cette série-là.
+
+### Ce que ça coûte
+
+Chercher un lever demande une centaine d'évaluations des séries. Sur un build
+complet — douze spots, sept jours, cinq pages par spot — c'est environ
+**1,7 seconde**, après trois optimisations qui ont divisé le surcoût par trois :
+une seule évaluation des séries par échantillon au lieu de trois, la phase
+calculée une fois par créneau au lieu de deux, et une mémoïsation par journée
+(fonction pure, clé complète : un souvenir de calcul, pas un cache de données).
+
 ## Le score
 
 `computeScore(input: ScoreInput): ScoreResult` dans `src/lib/scoring/`.
@@ -518,7 +578,7 @@ sous le seuil AA sur les deux pages légales, dans les deux thèmes, à 390 et
 1440 px.
 
 `npm run build`, `npm run typecheck` et `npm run lint` passent sans erreur ni
-avertissement. 315 tests unitaires. Aucun débordement horizontal à 375 px.
+avertissement. 340 tests unitaires. Aucun débordement horizontal à 375 px.
 
 ## Pages légales
 

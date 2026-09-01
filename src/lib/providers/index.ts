@@ -101,7 +101,7 @@ export const ASTRO_SOURCE = {
   name: 'Calcul astronomique local',
   kind: 'computed' as const,
   precision:
-    'Lever et coucher du Soleil selon l’algorithme NOAA, précision de l’ordre de la minute. Périodes solunaires approchées à ±20 min.',
+    'Soleil : algorithme NOAA. Lune : séries de Meeus (ELP-2000 abrégée), lever, coucher et passages au méridien à la minute. Aucun réseau, aucun cache : recalculé à chaque affichage.',
 } as const;
 
 export type {

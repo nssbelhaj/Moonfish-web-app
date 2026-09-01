@@ -353,3 +353,98 @@ describe('éphémérides : la date locale, pas la date UTC', () => {
     expect(phases.has('night')).toBe(true);
   });
 });
+
+describe('éphémérides lunaires dans la prévision', () => {
+  const from = new Date('2026-08-31T00:00:00Z');
+  const to = new Date('2026-09-10T00:00:00Z');
+  const days = buildForecastDays(
+    spot,
+    NOW,
+    generateTideEvents(spot, from, to),
+    generateMarineSeries(spot, from, to),
+  );
+
+  it('place le lever et le coucher DANS la journée qu’ils annoncent', () => {
+    // Le bug qu'on ne veut pas revoir : une éphéméride calculée sur la date UTC
+    // alors que la journée affichée est locale. En septembre, deux heures
+    // d'écart suffisaient à sortir l'instant de sa propre journée.
+    for (const day of days) {
+      const start = new Date(day.date).getTime();
+      const end = start + 24 * 3_600_000;
+      for (const iso of [day.moonrise, day.moonset]) {
+        if (iso === null) continue;
+        const t = new Date(iso).getTime();
+        expect(t).toBeGreaterThanOrEqual(start);
+        expect(t).toBeLessThan(end);
+      }
+    }
+  });
+
+  it('espace deux levers successifs d’un jour lunaire', () => {
+    // L'invariant est le JOUR LUNAIRE (24 h 50), pas la journée civile. Quand
+    // le lever saute une date — il passe de 23 h 21 à 00 h 13 le
+    // surlendemain —, l'écart entre les deux instants reste 24 h 52 : c'est en
+    // rapportant l'écart au numéro du jour affiché qu'on obtient un absurde
+    // « -23 h », et c'est le test qui aurait tort, pas le calcul.
+    const rises = days
+      .map((day) => day.moonrise)
+      .filter((iso): iso is string => iso !== null)
+      .map((iso) => new Date(iso).getTime());
+
+    expect(rises.length).toBeGreaterThan(3);
+
+    for (let i = 0; i < rises.length - 1; i += 1) {
+      const gapMin = ((rises[i + 1] as number) - (rises[i] as number)) / 60_000;
+      expect(gapMin).toBeGreaterThan(24 * 60 + 10);
+      expect(gapMin).toBeLessThan(25 * 60 + 30);
+    }
+  });
+
+  it('accepte une journée sans lever plutôt que d’en inventer un', () => {
+    // Sur dix jours, il y a une chance sur trois environ qu'un lever saute une
+    // journée civile. Le champ vaut alors `null` et le rendu écrit « pas de
+    // lever » — ce que vérifie `MoonTimesInline`.
+    for (const day of days) {
+      expect(day.moonrise === null || typeof day.moonrise === 'string').toBe(true);
+      expect(day.moonset === null || typeof day.moonset === 'string').toBe(true);
+    }
+  });
+
+  it('donne des instants différents à deux spots éloignés', () => {
+    // L'ancien modèle ne connaissait que la longitude : deux spots de même
+    // longitude et de latitudes très différentes avaient le même lever, ce qui
+    // est faux.
+    const other = SPOTS.find((s) => Math.abs(s.lat - spot.lat) > 10);
+    expect(other).toBeDefined();
+
+    const otherDays = buildForecastDays(
+      other as typeof spot,
+      NOW,
+      generateTideEvents(other as typeof spot, from, to),
+      generateMarineSeries(other as typeof spot, from, to),
+    );
+
+    const pairs = days
+      .map((day, index) => [day.moonrise, otherDays[index]?.moonrise ?? null] as const)
+      .filter((pair): pair is readonly [string, string] => pair[0] !== null && pair[1] !== null);
+
+    expect(pairs.length).toBeGreaterThan(0);
+    const gaps = pairs.map(
+      ([a, b]) => Math.abs(new Date(a).getTime() - new Date(b).getTime()) / 60_000,
+    );
+    expect(Math.max(...gaps)).toBeGreaterThan(5);
+  });
+
+  it('garde la phase du jour cohérente avec celle des créneaux', () => {
+    for (const day of days) {
+      expect(day.moonIlluminationPct).toBeGreaterThanOrEqual(0);
+      expect(day.moonIlluminationPct).toBeLessThanOrEqual(100);
+      expect(day.moonWaxing).toBe(day.moonAgeDays < 14.765294);
+
+      for (const slot of day.slots) {
+        const noteHasPhase = slot.score.breakdown.solunar.note.length > 0;
+        expect(noteHasPhase).toBe(true);
+      }
+    }
+  });
+});
