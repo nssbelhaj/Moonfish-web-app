@@ -6,7 +6,7 @@ import { formatScore, litNotches, tierFor } from '@/lib/score-display';
 
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
-export const alt = 'Score surfcasting du spot, marée, vent et houle';
+export const alt = 'Score de pêche du spot, marée, vent et houle';
 
 interface RouteParams {
   country: string;

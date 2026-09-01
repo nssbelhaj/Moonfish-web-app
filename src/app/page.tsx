@@ -15,12 +15,12 @@ import { formatDateTime } from '@/lib/time';
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: 'Moonfish — les meilleurs créneaux surfcasting, spot par spot',
+  title: 'Moonfish — les meilleurs créneaux de pêche en mer, spot par spot',
   description:
-    'Un score sur 10 par créneau de 3 heures, sur 7 jours, pour 12 spots de surfcasting en France et au Maroc. Marée, vent, houle et périodes solunaires, expliqués et pondérés.',
+    'Un score sur 10 par créneau de 3 heures, sur 7 jours, pour 12 spots de pêche du bord en France et au Maroc. Surfcasting, lancer-ramener, rockfishing, shore-jigging. Marée, vent, houle et périodes solunaires, expliqués et pondérés.',
   alternates: { canonical: absoluteUrl('/') },
   openGraph: {
-    title: 'Moonfish — les meilleurs créneaux surfcasting, spot par spot',
+    title: 'Moonfish — les meilleurs créneaux de pêche en mer, spot par spot',
     description:
       'Score de pêche du bord sur 7 jours : marée, vent, houle, lune. 12 spots en France et au Maroc.',
     url: absoluteUrl('/'),
@@ -84,12 +84,12 @@ export default async function HomePage() {
 
       <div className="mx-auto w-full max-w-shell px-4 pb-4 pt-8 md:px-8 md:pt-12">
         <h1 className="max-w-[16ch] text-h1 font-700 md:text-display">
-          Les meilleurs créneaux surfcasting, spot par spot
+          Les meilleurs créneaux de pêche en mer, spot par spot
         </h1>
         <p className="mt-4 max-w-measure text-body text-fg-muted">
           Un score sur 10 par tranche de trois heures, sur sept jours. Marée, vent, houle, lune et
           lumière, pondérés et expliqués — pour choisir quand y aller, pas pour vous promettre une
-          prise.
+          prise. Surfcasting, lancer-ramener, rockfishing : chaque spot indique ce qui s’y pratique.
         </p>
 
         <div className="mt-6 max-w-[42rem]">

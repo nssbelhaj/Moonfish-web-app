@@ -21,6 +21,24 @@ export const spotExposureSchema = z.enum(['abrite', 'semi-abrite', 'expose', 'tr
 export const spotBottomSchema = z.enum(['sable', 'sable-roche', 'roche', 'galets', 'vase-estuaire']);
 export const spotTypeSchema = z.enum(['plage', 'estran-rocheux', 'pointe', 'estuaire', 'digue']);
 
+/**
+ * Techniques praticables depuis le bord sur un spot.
+ *
+ * Moonfish ne parle pas que de surfcasting : un estran rocheux se pêche au
+ * rockfishing ou au shore-jigging, un estran sableux découvrant se pêche aussi
+ * à pied. La technique dépend du fond, de l'exposition et de l'accès — elle est
+ * donc une propriété du spot, pas une préférence de l'utilisateur.
+ */
+export const fishingTechniqueSchema = z.enum([
+  'surfcasting',
+  'lancer-ramener',
+  'rockfishing',
+  'shore-jigging',
+  'peche-a-soutenir',
+  'peche-au-flotteur',
+  'peche-a-pied',
+]);
+
 export const spotSchema = z.object({
   /** Slug sans accent, stable, utilisé dans l'URL. */
   slug: z.string().regex(/^[a-z0-9-]+$/),
@@ -38,6 +56,8 @@ export const spotSchema = z.object({
   exposure: spotExposureSchema,
   bottom: spotBottomSchema,
   type: spotTypeSchema,
+  /** Techniques réellement praticables depuis le bord, de la plus courante à la plus occasionnelle. */
+  techniques: z.array(fishingTechniqueSchema).min(1),
   /** Espèces cibles, de la plus régulière à la plus occasionnelle. */
   species: z.array(z.string().min(2)).min(2),
   /** Marnage moyen en mètres — sert à mettre à l'échelle les hauteurs d'eau. */
@@ -50,6 +70,7 @@ export type Spot = z.infer<typeof spotSchema>;
 export type SpotExposure = z.infer<typeof spotExposureSchema>;
 export type SpotBottom = z.infer<typeof spotBottomSchema>;
 export type SpotType = z.infer<typeof spotTypeSchema>;
+export type FishingTechnique = z.infer<typeof fishingTechniqueSchema>;
 
 export const tideEventSchema = z.object({
   time: isoDateTime,

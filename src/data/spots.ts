@@ -25,6 +25,7 @@ const RAW_SPOTS: Spot[] = [
     exposure: 'tres-expose',
     bottom: 'sable-roche',
     type: 'plage',
+    techniques: ['surfcasting', 'lancer-ramener', 'rockfishing'],
     species: ['Bar', 'Lieu jaune', 'Vieille', 'Maquereau'],
     meanTideRangeM: 5.6,
     summary:
@@ -46,6 +47,7 @@ const RAW_SPOTS: Spot[] = [
     exposure: 'expose',
     bottom: 'sable',
     type: 'plage',
+    techniques: ['surfcasting', 'lancer-ramener', 'peche-a-pied'],
     species: ['Bar', 'Sole', 'Turbot', 'Raie bouclée'],
     meanTideRangeM: 6.8,
     summary:
@@ -67,6 +69,7 @@ const RAW_SPOTS: Spot[] = [
     exposure: 'tres-expose',
     bottom: 'sable',
     type: 'pointe',
+    techniques: ['surfcasting', 'lancer-ramener'],
     species: ['Bar', 'Maigre', 'Sole', 'Bar moucheté'],
     meanTideRangeM: 4.9,
     summary:
@@ -88,6 +91,7 @@ const RAW_SPOTS: Spot[] = [
     exposure: 'expose',
     bottom: 'galets',
     type: 'plage',
+    techniques: ['surfcasting', 'rockfishing', 'peche-a-soutenir', 'peche-a-pied'],
     species: ['Bar', 'Maquereau', 'Congre', 'Dorade grise'],
     meanTideRangeM: 7.2,
     summary:
@@ -109,6 +113,7 @@ const RAW_SPOTS: Spot[] = [
     exposure: 'expose',
     bottom: 'roche',
     type: 'estran-rocheux',
+    techniques: ['rockfishing', 'shore-jigging', 'lancer-ramener', 'peche-a-soutenir'],
     species: ['Bar', 'Lieu jaune', 'Congre', 'Vieille'],
     meanTideRangeM: 5.4,
     summary:
@@ -130,6 +135,7 @@ const RAW_SPOTS: Spot[] = [
     exposure: 'semi-abrite',
     bottom: 'sable',
     type: 'plage',
+    techniques: ['surfcasting', 'peche-a-pied', 'lancer-ramener'],
     species: ['Bar', 'Sole', 'Plie', 'Merlan'],
     meanTideRangeM: 8.1,
     summary:
@@ -151,6 +157,7 @@ const RAW_SPOTS: Spot[] = [
     exposure: 'expose',
     bottom: 'sable',
     type: 'plage',
+    techniques: ['surfcasting', 'lancer-ramener', 'peche-a-pied'],
     species: ['Bar', 'Sole', 'Turbot', 'Raie bouclée'],
     meanTideRangeM: 7.4,
     summary:
@@ -172,6 +179,7 @@ const RAW_SPOTS: Spot[] = [
     exposure: 'tres-expose',
     bottom: 'sable',
     type: 'plage',
+    techniques: ['surfcasting', 'lancer-ramener'],
     species: ['Bar', 'Maigre', 'Sole', 'Marbré'],
     meanTideRangeM: 3.9,
     summary:
@@ -193,6 +201,7 @@ const RAW_SPOTS: Spot[] = [
     exposure: 'tres-expose',
     bottom: 'sable',
     type: 'pointe',
+    techniques: ['surfcasting', 'lancer-ramener', 'peche-a-soutenir'],
     species: ['Bar', 'Maigre', 'Sole', 'Dorade royale'],
     meanTideRangeM: 4.1,
     summary:
@@ -214,6 +223,7 @@ const RAW_SPOTS: Spot[] = [
     exposure: 'semi-abrite',
     bottom: 'sable',
     type: 'plage',
+    techniques: ['surfcasting', 'lancer-ramener', 'peche-au-flotteur'],
     species: ['Loup', 'Daurade royale', 'Sar', 'Marbré'],
     meanTideRangeM: 0.35,
     summary:
@@ -235,6 +245,7 @@ const RAW_SPOTS: Spot[] = [
     exposure: 'expose',
     bottom: 'sable',
     type: 'plage',
+    techniques: ['surfcasting', 'lancer-ramener', 'peche-au-flotteur'],
     species: ['Loup', 'Ombrine', 'Sar', 'Pageot'],
     meanTideRangeM: 2.4,
     summary:
@@ -256,6 +267,7 @@ const RAW_SPOTS: Spot[] = [
     exposure: 'expose',
     bottom: 'sable-roche',
     type: 'estran-rocheux',
+    techniques: ['rockfishing', 'shore-jigging', 'lancer-ramener', 'surfcasting'],
     species: ['Loup', 'Sar', 'Mérou brun', 'Bonite'],
     meanTideRangeM: 2.2,
     summary:
@@ -283,6 +295,34 @@ export const BOTTOM_LABELS: Record<Spot['bottom'], string> = {
   roche: 'Roche',
   galets: 'Galets',
   'vase-estuaire': 'Vase d’estuaire',
+};
+
+export const TECHNIQUE_LABELS: Record<Spot['techniques'][number], string> = {
+  surfcasting: 'Surfcasting',
+  'lancer-ramener': 'Lancer-ramener',
+  rockfishing: 'Rockfishing',
+  'shore-jigging': 'Shore-jigging',
+  'peche-a-soutenir': 'Pêche à soutenir',
+  'peche-au-flotteur': 'Pêche au flotteur',
+  'peche-a-pied': 'Pêche à pied',
+};
+
+/** Une phrase par technique, pour que le tag ne soit pas qu'un mot-clé. */
+export const TECHNIQUE_DESCRIPTIONS: Record<Spot['techniques'][number], string> = {
+  surfcasting:
+    'Lancer lourd depuis la plage, appâts naturels posés au fond. La technique de référence sur les grands estrans de sable.',
+  'lancer-ramener':
+    'Leurres ramenés depuis le bord, en prospection. Efficace sur les prédateurs qui chassent dans le ressac.',
+  rockfishing:
+    'Pêche légère aux leurres souples le long des roches et des platiers, sur les postes accidentés.',
+  'shore-jigging':
+    'Jigs lancés loin et animés verticalement depuis la roche, là où le fond décroche vite près du bord.',
+  'peche-a-soutenir':
+    'Ligne tenue à la main ou à la canne courte, à l’aplomb d’une digue ou d’une cassure.',
+  'peche-au-flotteur':
+    'Esche présentée entre deux eaux sous un flotteur, adaptée aux eaux calmes et aux fonds propres.',
+  'peche-a-pied':
+    'Récolte à marée basse sur l’estran découvert. Réglementée : tailles, quotas et zones varient selon les départements.',
 };
 
 export const SPOT_TYPE_LABELS: Record<Spot['type'], string> = {

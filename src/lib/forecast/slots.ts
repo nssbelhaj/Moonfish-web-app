@@ -130,6 +130,26 @@ export function bestSlot(slots: readonly ForecastSlot[]): ForecastSlot | null {
   );
 }
 
+/** Palier à partir duquel un créneau est signalé comme favorable à l'utilisateur. */
+export const FAVOURABLE_FROM = 6;
+
+/**
+ * Créneaux favorables d'une journée.
+ *
+ * Un créneau dangereux est exclu quel que soit son score : signaler comme
+ * « favorable » un créneau où l'on ne doit pas descendre serait le pire usage
+ * possible de ce produit. C'est la même règle que `bestSlot`, énoncée une seule
+ * fois plutôt que réécrite dans chaque composant qui l'affiche.
+ */
+export function favourableSlots(
+  slots: readonly ForecastSlot[],
+  threshold: number = FAVOURABLE_FROM,
+): ForecastSlot[] {
+  return slots.filter(
+    (slot) => slot.score.value >= threshold && slot.score.safety.level !== 'danger',
+  );
+}
+
 /** Premier créneau à venir dont le score atteint le palier « Bon » et qui n'est pas dangereux. */
 export function nextGoodWindow(days: readonly ForecastDay[], now: Date): ForecastSlot | null {
   for (const day of days) {

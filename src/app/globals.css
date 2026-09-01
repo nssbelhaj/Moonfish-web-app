@@ -32,6 +32,11 @@
   --ok-bg: #0d2620;
   --ok-line: #1e5c4a;
 
+  /* Non-couleur de la nuit et fond des fenêtres favorables : utilisés par les
+     instruments, où ce sont des DONNÉES et non de la décoration. */
+  --night: #152b29;
+  --best-bg: #0d2620;
+
   --focus: #2fe39a;
 }
 
@@ -65,6 +70,9 @@
   --vigil-ink: #573600;
   --ok-bg: #e3efe7;
   --ok-line: #04695a;
+
+  --night: #e7e0ce;
+  --best-bg: #dcece2;
 
   /* Le vert #2FE39A tombe sous 4.5:1 sur #FBF8F1 : en clair, le focus prend
      l'accent clair du handoff pour tenir la garantie AA de la §1. */

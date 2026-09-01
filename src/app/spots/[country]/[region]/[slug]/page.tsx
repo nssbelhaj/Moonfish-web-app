@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { DataSourceTag } from '@/components/data/DataSourceTag';
 import { DemoDataNotice, simulatedSources } from '@/components/data/DemoDataNotice';
 import { EmailCaptureForm } from '@/components/forms/EmailCaptureForm';
+import { DayActivityChart } from '@/components/marine/DayActivityChart';
 import { MoonPhase } from '@/components/marine/MoonPhase';
 import { TideChart } from '@/components/marine/TideChart';
 import { TimeWindowBar } from '@/components/marine/TimeWindowBar';
@@ -15,7 +16,13 @@ import { ScoreReasons } from '@/components/score/ScoreReasons';
 import { SafetyBanner } from '@/components/spot/SafetyBanner';
 import { Card } from '@/components/ui/Card';
 import { Tag } from '@/components/ui/Tag';
-import { BOTTOM_LABELS, EXPOSURE_LABELS, SPOT_TYPE_LABELS } from '@/data/spots';
+import {
+  BOTTOM_LABELS,
+  EXPOSURE_LABELS,
+  SPOT_TYPE_LABELS,
+  TECHNIQUE_DESCRIPTIONS,
+  TECHNIQUE_LABELS,
+} from '@/data/spots';
 import { getSpotForecast, referenceNow, type ForecastSlot } from '@/lib/forecast';
 import { shelteredNearby } from '@/lib/geo';
 import { spots as spotRepository } from '@/lib/providers';
@@ -52,14 +59,15 @@ export async function generateMetadata({
 
   const path = spotPath(spot);
   const species = spot.species.slice(0, 3).join(', ').toLowerCase();
+  const techniqueList = spot.techniques.map((technique) => TECHNIQUE_LABELS[technique]).join(', ');
 
   return {
-    title: `${spot.name} — score surfcasting, marées et vent sur 7 jours`,
-    description: `Conditions de pêche du bord à ${spot.name} (${spot.regionName}) : score par créneau de 3 h sur 7 jours, marées, vent, houle et périodes solunaires. Fond de ${BOTTOM_LABELS[spot.bottom].toLowerCase()}, ${species}.`,
+    title: `${spot.name} — score de pêche, marées et vent sur 7 jours`,
+    description: `Conditions de pêche du bord à ${spot.name} (${spot.regionName}) : score par créneau de 3 h sur 7 jours, marées, vent, houle et périodes solunaires. ${techniqueList}. Fond de ${BOTTOM_LABELS[spot.bottom].toLowerCase()}, ${species}.`,
     alternates: { canonical: absoluteUrl(path) },
     openGraph: {
       type: 'article',
-      title: `${spot.name} — conditions surfcasting`,
+      title: `${spot.name} — conditions de pêche du bord`,
       description: `${EXPOSURE_LABELS[spot.exposure]}, fond de ${BOTTOM_LABELS[spot.bottom].toLowerCase()}. Score, marées et vent sur 7 jours.`,
       url: absoluteUrl(path),
     },
@@ -134,6 +142,11 @@ export default async function SpotPage({ params }: { params: Promise<RouteParams
       { '@type': 'PropertyValue', name: 'Type de fond', value: BOTTOM_LABELS[spot.bottom] },
       { '@type': 'PropertyValue', name: 'Marnage moyen', value: `${spot.meanTideRangeM} m` },
       { '@type': 'PropertyValue', name: 'Espèces cibles', value: spot.species.join(', ') },
+      {
+        '@type': 'PropertyValue',
+        name: 'Techniques praticables',
+        value: spot.techniques.map((technique) => TECHNIQUE_LABELS[technique]).join(', '),
+      },
     ],
   };
 
@@ -201,6 +214,9 @@ export default async function SpotPage({ params }: { params: Promise<RouteParams
           <Tag>{BOTTOM_LABELS[spot.bottom]}</Tag>
           <Tag>{EXPOSURE_LABELS[spot.exposure]}</Tag>
           <Tag>Marnage {spot.meanTideRangeM.toFixed(1).replace('.', ',')} m</Tag>
+          {spot.techniques.map((technique) => (
+            <Tag key={technique}>{TECHNIQUE_LABELS[technique]}</Tag>
+          ))}
         </div>
       </div>
 
@@ -251,6 +267,27 @@ export default async function SpotPage({ params }: { params: Promise<RouteParams
               </p>
             )}
           </section>
+
+          {today && (
+            <section aria-labelledby="journee" className="mt-10">
+              <h2 id="journee" className="text-h2 font-600">
+                La journée d’un coup d’œil
+              </h2>
+              <p className="mt-2 max-w-measure text-body text-fg-muted">
+                La hauteur d’eau, les huit créneaux de trois heures et ceux qui ressortent. Les
+                marées de cette version sont simulées ; le lever et le coucher du soleil, eux, sont
+                calculés.
+              </p>
+              <div className="mt-4">
+                <DayActivityChart
+                  day={today}
+                  tideEvents={forecast.tideEvents}
+                  timeZone={spot.timezone}
+                  now={forecast.generatedAt}
+                />
+              </div>
+            </section>
+          )}
 
           <section aria-labelledby="detail" className="mt-10">
             <h2 id="detail" className="text-h2 font-600">
@@ -422,6 +459,26 @@ export default async function SpotPage({ params }: { params: Promise<RouteParams
               </>
             )}
             <DataSourceTag source={forecast.sources.astro} refreshedAt={forecast.generatedAt} timeZone={spot.timezone} />
+          </section>
+
+          <section aria-labelledby="techniques" className="mt-6 rounded-card border border-edge p-4">
+            <h2 id="techniques" className="text-h2 font-600">
+              Techniques praticables
+            </h2>
+            <p className="mt-2 text-body text-fg-muted">
+              Ce qui se pratique réellement ici, selon le fond et l’accès. Le score, lui, est
+              calibré pour la pêche du bord en général : il ne se décline pas encore par technique.
+            </p>
+            <dl className="mt-4 divide-y divide-edge">
+              {spot.techniques.map((technique) => (
+                <div key={technique} className="py-3">
+                  <dt className="text-h3 font-600">{TECHNIQUE_LABELS[technique]}</dt>
+                  <dd className="mt-1 text-body text-fg-muted">
+                    {TECHNIQUE_DESCRIPTIONS[technique]}
+                  </dd>
+                </div>
+              ))}
+            </dl>
           </section>
 
           <section aria-labelledby="acces" className="mt-6 rounded-card border border-edge p-4">

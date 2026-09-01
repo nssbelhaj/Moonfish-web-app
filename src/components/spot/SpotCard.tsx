@@ -4,7 +4,7 @@ import { formatMeasure } from '@/lib/score-display';
 import { spotPath } from '@/lib/routes';
 import { classifyWind, WIND_EXPOSURE_LABEL } from '@/lib/scoring';
 import { formatDateTime } from '@/lib/time';
-import { BOTTOM_LABELS, SPOT_TYPE_LABELS } from '@/data/spots';
+import { SPOT_TYPE_LABELS, TECHNIQUE_LABELS } from '@/data/spots';
 import { ScoreBadge } from '@/components/score/ScoreBadge';
 import { Card } from '@/components/ui/Card';
 import { Tag } from '@/components/ui/Tag';
@@ -74,7 +74,11 @@ export function SpotCard({ summary }: { summary: SpotSummary }) {
 
       <div className="mt-4 flex flex-wrap gap-2">
         <Tag>{SPOT_TYPE_LABELS[spot.type]}</Tag>
-        <Tag>{BOTTOM_LABELS[spot.bottom]}</Tag>
+        {/* Deux techniques au plus : la carte doit rester lisible à 375 px. */}
+        {spot.techniques.slice(0, 2).map((technique) => (
+          <Tag key={technique}>{TECHNIQUE_LABELS[technique]}</Tag>
+        ))}
+        {spot.techniques.length > 2 && <Tag>+{spot.techniques.length - 2}</Tag>}
       </div>
     </Card>
   );

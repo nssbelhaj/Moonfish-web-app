@@ -83,7 +83,7 @@ export function SiteFooter() {
         </nav>
 
         <p className="mt-4 font-mono text-[0.6875rem] text-fg-dim">
-          Moonfish — les meilleurs créneaux surfcasting, spot par spot. Aucune promesse de prise :
+          Moonfish — les meilleurs créneaux de pêche en mer, spot par spot. Aucune promesse de prise :
           la mer décide.
         </p>
       </div>

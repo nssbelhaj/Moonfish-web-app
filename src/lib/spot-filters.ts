@@ -1,5 +1,5 @@
 import type { Spot } from '@/data/schemas';
-import { spotBottomSchema, spotTypeSchema } from '@/data/schemas';
+import { fishingTechniqueSchema, spotBottomSchema, spotTypeSchema } from '@/data/schemas';
 
 /**
  * Filtres de la page /spots.
@@ -13,9 +13,16 @@ export interface SpotFilters {
   region: string | null;
   type: string | null;
   bottom: string | null;
+  technique: string | null;
 }
 
-export const EMPTY_FILTERS: SpotFilters = { country: null, region: null, type: null, bottom: null };
+export const EMPTY_FILTERS: SpotFilters = {
+  country: null,
+  region: null,
+  type: null,
+  bottom: null,
+  technique: null,
+};
 
 function firstValue(value: string | string[] | undefined): string | null {
   if (Array.isArray(value)) return value[0] ?? null;
@@ -30,6 +37,7 @@ export function parseFilters(
   const region = firstValue(params.region);
   const type = firstValue(params.type);
   const bottom = firstValue(params.fond);
+  const technique = firstValue(params.technique);
 
   // Une valeur inconnue est ignorée plutôt que de rendre une liste vide sans
   // explication : /spots?pays=narnia doit afficher les 12 spots, pas une page morte.
@@ -38,6 +46,7 @@ export function parseFilters(
     region: spots.some((spot) => spot.regionSlug === region) ? region : null,
     type: spotTypeSchema.safeParse(type).success ? type : null,
     bottom: spotBottomSchema.safeParse(bottom).success ? bottom : null,
+    technique: fishingTechniqueSchema.safeParse(technique).success ? technique : null,
   };
 }
 
@@ -47,7 +56,9 @@ export function applyFilters(spots: readonly Spot[], filters: SpotFilters): Spot
       (filters.country === null || spot.countrySlug === filters.country) &&
       (filters.region === null || spot.regionSlug === filters.region) &&
       (filters.type === null || spot.type === filters.type) &&
-      (filters.bottom === null || spot.bottom === filters.bottom),
+      (filters.bottom === null || spot.bottom === filters.bottom) &&
+      (filters.technique === null ||
+        spot.techniques.includes(filters.technique as Spot['techniques'][number])),
   );
 }
 
@@ -57,6 +68,7 @@ export function filtersToSearchParams(filters: SpotFilters): URLSearchParams {
   if (filters.region) params.set('region', filters.region);
   if (filters.type) params.set('type', filters.type);
   if (filters.bottom) params.set('fond', filters.bottom);
+  if (filters.technique) params.set('technique', filters.technique);
   return params;
 }
 
@@ -68,9 +80,16 @@ export function hasAnyFilter(filters: SpotFilters): boolean {
 export function describeFilters(
   filters: SpotFilters,
   spots: readonly Spot[],
-  labels: { type: Record<string, string>; bottom: Record<string, string> },
+  labels: {
+    type: Record<string, string>;
+    bottom: Record<string, string>;
+    technique: Record<string, string>;
+  },
 ): string | null {
   const parts: string[] = [];
+  if (filters.technique) {
+    parts.push(`au ${labels.technique[filters.technique]?.toLowerCase() ?? filters.technique}`);
+  }
   if (filters.type) parts.push(labels.type[filters.type]?.toLowerCase() ?? filters.type);
   if (filters.bottom) parts.push(`fond de ${labels.bottom[filters.bottom]?.toLowerCase() ?? filters.bottom}`);
   if (filters.region) {

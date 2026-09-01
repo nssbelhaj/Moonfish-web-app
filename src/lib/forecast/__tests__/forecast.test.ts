@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { SPOTS } from '@/data/spots';
 import { generateMarineSeries } from '@/data/generators/marine';
 import { generateTideEvents, tidalRangeFor, tideCoefficientFor } from '@/data/generators/tide';
-import { getSpotForecast, referenceNow } from '@/lib/forecast';
+import { favourableSlots, getSpotForecast, referenceNow } from '@/lib/forecast';
 import { tideContextAt } from '../tide-context';
 
 const NOW = new Date('2026-09-01T09:00:00Z');
@@ -179,5 +179,36 @@ describe('hauteurs d’eau simulées', () => {
     // Proportionnel donnerait un rapport de 2,9 ; la réalité est bien plus plate.
     expect(spring / neap).toBeLessThan(2);
     expect(tidalRangeFor(spot, 70)).toBeCloseTo(spot.meanTideRangeM, 6);
+  });
+});
+
+describe('créneaux favorables', () => {
+  const slot = (value: number, level: 'ok' | 'prudence' | 'danger') =>
+    ({
+      start: '2026-09-01T00:00:00.000Z',
+      end: '2026-09-01T03:00:00.000Z',
+      score: { value, label: 'Bon', reasons: [], breakdown: {}, safety: { level } },
+    }) as unknown as Parameters<typeof favourableSlots>[0][number];
+
+  it('retient les créneaux au moins « Bon »', () => {
+    const slots = [slot(5.9, 'ok'), slot(6, 'ok'), slot(9.1, 'ok')];
+    expect(favourableSlots(slots)).toHaveLength(2);
+  });
+
+  /**
+   * La règle qui compte : un créneau dangereux n'est jamais « favorable », quel
+   * que soit son score. Le signaler comme tel serait le pire usage du produit.
+   */
+  it('exclut un créneau dangereux même avec un score maximal', () => {
+    expect(favourableSlots([slot(10, 'danger')])).toHaveLength(0);
+  });
+
+  it('garde un créneau en simple vigilance', () => {
+    expect(favourableSlots([slot(7.5, 'prudence')])).toHaveLength(1);
+  });
+
+  it('accepte un seuil explicite', () => {
+    const slots = [slot(6.5, 'ok'), slot(8.2, 'ok')];
+    expect(favourableSlots(slots, 8)).toHaveLength(1);
   });
 });

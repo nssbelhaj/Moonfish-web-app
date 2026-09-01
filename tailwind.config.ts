@@ -36,12 +36,12 @@ const config: Config = {
         'ink-3': '#5C6B66',
         // --- Marque ---
         sonde: '#0B5E80',
-        night: '#152B29',
+        night: 'var(--night)',
         'danger-bg': '#2A0F0D',
         'danger-ink': '#FFD9D6',
         'warn-bg': '#241A05',
         'warn-ink': '#FFD9A0',
-        'best-bg': '#0D2620',
+        'best-bg': 'var(--best-bg)',
         'best-line': '#1E5C4A',
         score: {
           bad: { DEFAULT: 'var(--score-bad)', dark: '#FF5A52', light: '#B3251C' },

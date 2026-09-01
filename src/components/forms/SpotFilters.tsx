@@ -23,10 +23,12 @@ export interface SpotFiltersProps {
   regions: FilterOption[];
   types: FilterOption[];
   bottoms: FilterOption[];
+  techniques: FilterOption[];
   total: number;
 }
 
 const FIELDS = [
+  { name: 'technique', label: 'Technique', key: 'techniques' },
   { name: 'pays', label: 'Pays', key: 'countries' },
   { name: 'region', label: 'Région', key: 'regions' },
   { name: 'type', label: 'Type de spot', key: 'types' },
@@ -39,6 +41,7 @@ export function SpotFilters(props: SpotFiltersProps) {
   const formRef = useRef<HTMLFormElement>(null);
 
   const current: Record<string, string | null> = {
+    technique: filters.technique,
     pays: filters.country,
     region: filters.region,
     type: filters.type,
@@ -50,6 +53,7 @@ export function SpotFilters(props: SpotFiltersProps) {
     regions: props.regions,
     types: props.types,
     bottoms: props.bottoms,
+    techniques: props.techniques,
   };
 
   function submitNow(): void {
@@ -66,7 +70,7 @@ export function SpotFilters(props: SpotFiltersProps) {
 
   return (
     <form ref={formRef} method="GET" action="/spots" className="rounded-card border border-edge bg-card p-4">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {FIELDS.map((field) => (
           <div key={field.name}>
             <label

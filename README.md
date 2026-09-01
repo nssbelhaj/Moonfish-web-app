@@ -45,7 +45,7 @@ Node 20 ou plus. Aucune variable d'environnement n'est requise pour démarrer.
 | `npm start` | Sert le build de production |
 | `npm run typecheck` | `tsc --noEmit` en mode strict renforcé |
 | `npm run lint` | ESLint (config `next/core-web-vitals` + `next/typescript`) |
-| `npm test` | 95 tests unitaires (Vitest), hermétiques — aucun accès réseau |
+| `npm test` | 121 tests unitaires (Vitest), hermétiques — aucun accès réseau |
 | `npm run test:watch` | Tests en mode surveillance |
 
 ---
@@ -71,7 +71,9 @@ src/
 ├── components/
 │   ├── score/                    ScoreGauge, ScoreBadge, ScoreShape, ScoreReasons,
 │   │                             ScoreBreakdown — les 4 canaux redondants du palier
-│   ├── marine/                   TideChart, WindCompass, MoonPhase, TimeWindowBar
+│   ├── marine/                   DayActivityChart (marée + score + créneaux),
+│   │                             TideChart, WindCompass, MoonPhase, TimeWindowBar,
+│   │                             FishGlyph
 │   ├── spot/                     SpotCard, SpotResults, SafetyBanner
 │   ├── data/                     DataSourceTag, DemoDataNotice ← honnêteté des données
 │   ├── forms/                    EmailCaptureForm, SpotSearch, SpotFilters (les 3
@@ -94,6 +96,7 @@ src/
     ├── astro/                    Soleil (NOAA) et Lune — CALCULÉS, pas simulés
     ├── forecast/                 Assemblage providers → créneaux scorés
     │   ├── tide-context.ts       Contexte de marée reconstruit depuis les extremums
+    │   ├── tide-curve.ts         Interpolation cosinusoïdale entre extremums
     │   └── slots.ts              Découpage en 8 créneaux de 3 h, journée LOCALE
     ├── providers/                ← LE POINT DE BASCULE (voir plus bas)
     ├── guides.ts, markdown.ts    Chargement et rendu des articles
@@ -273,10 +276,10 @@ Lighthouse mobile, build de production, 8 URL couvrant les 5 pages :
 
 | | Performance | Accessibilité | SEO | Bonnes pratiques |
 | --- | --- | --- | --- | --- |
-| Toutes les pages | 97–98 | 100 | 100 | 100 |
+| Toutes les pages | 94–98 | 100 | 100 | 100 |
 
 `npm run build`, `npm run typecheck` et `npm run lint` passent sans erreur ni
-avertissement. 95 tests unitaires. Aucun débordement horizontal à 375 px.
+avertissement. 121 tests unitaires. Aucun débordement horizontal à 375 px.
 
 ## Déploiement
 
