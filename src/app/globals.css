@@ -13,8 +13,10 @@
   body {
     background-color: var(--page);
     color: var(--fg);
-    font-size: 15px;
-    line-height: 1.55;
+    /* Échelle v3 : 13,5 px / 1,6 pour l'interface. La lecture, elle, monte à
+       15,5 px (`text-read`) sur les guides — le seul écran de lecture suivie. */
+    font-size: 13.5px;
+    line-height: 1.6;
     text-rendering: optimizeLegibility;
   }
 
@@ -40,7 +42,7 @@
   }
 
   ::selection {
-    background: var(--accent-data);
+    background: var(--accent);
     color: var(--fg-on-accent);
   }
 
@@ -59,33 +61,49 @@
 
 @layer components {
   /*
-   * Élévation par REMPLISSAGE (§2.2). Zéro bordure de carte, zéro ombre.
+   * Élévation v3 (R4) : remplissage ET filet 1 px. C'est l'inverse du v2, qui
+   * proscrivait la bordure de carte.
    *
-   * À la densité visée — jusqu'à neuf cartes sur une page Live desktop — le
-   * liseré devient la texture dominante et écrase la hiérarchie : tout a le
-   * même poids de contour.
+   * La raison de suivre le v3 ici est mesurable : le remplissage seul ne fait
+   * que 1,05:1 entre --card et --page en thème clair, autrement dit la carte est
+   * invisible sans son filet. En v2 les fonds étaient assez éloignés pour se
+   * passer de bordure ; ils ne le sont plus.
    *
-   * Trois exceptions, exhaustives et non extensibles : le SafetyBanner, l'anneau
-   * de focus, et les hairlines internes des graphiques et tableaux — qui
-   * séparent des données, pas des conteneurs.
+   * Un rayon unique partout : 12 px, 20 px pour un cadre d'écran.
    */
   .surface {
     background-color: var(--card);
+    border: 1px solid var(--edge);
     border-radius: 12px;
   }
 
   .surface-2 {
-    background-color: var(--card-2);
-    border-radius: 10px;
+    background-color: var(--surface-2);
+    border-radius: 9px;
   }
 
   /* Étiquette de zone 1 d'une carte de données. */
   .label {
     font-size: 11px;
-    line-height: 1.3;
+    line-height: 1.45;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--fg-faint);
+    color: var(--fg-muted);
+  }
+
+  /*
+   * D20 : TOUTE grandeur d'eau — coefficient, hauteur, houle, période, sonde,
+   * température — en Spectral italique accent, y compris dans les SVG.
+   *
+   * C'est la seule convention qui permet de repérer une valeur hydrographique
+   * dans un tableau dense sans ajouter d'icône ni de couleur supplémentaire.
+   * Elle est ici plutôt que répétée dans chaque composant : une convention
+   * dispersée en vingt endroits cesse d'en être une.
+   */
+  .water-value {
+    font-family: var(--font-spectral), Spectral, Georgia, serif;
+    font-style: italic;
+    color: var(--accent);
   }
 
   /*
@@ -94,8 +112,8 @@
    * les données bougent.
    */
   .skeleton {
-    background-color: var(--chip);
-    border-radius: 8px;
+    background-color: var(--surface-2);
+    border-radius: 9px;
   }
 
   /* Données de démonstration (D21) : une capture de maquette finit toujours par

@@ -60,10 +60,10 @@ export interface Freshness {
 }
 
 const PRESENTATION: Record<FreshnessState, { label: string; colorVar: string }> = {
-  fresh: { label: 'À jour', colorVar: 'var(--accent-data)' },
+  fresh: { label: 'À jour', colorVar: 'var(--accent)' },
   stale: { label: 'Ancien', colorVar: 'var(--warn)' },
   interrupted: { label: 'Interrompu', colorVar: 'var(--danger)' },
-  pending: { label: 'En attente', colorVar: 'var(--fg-faint)' },
+  pending: { label: 'En attente', colorVar: 'var(--edge-strong)' },
 };
 
 /**

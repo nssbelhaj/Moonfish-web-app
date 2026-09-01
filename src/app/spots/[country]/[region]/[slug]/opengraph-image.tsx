@@ -80,7 +80,7 @@ export default async function OpengraphImage({ params }: { params: RouteParams }
               fontSize: 22,
               letterSpacing: 4,
               textTransform: 'uppercase',
-              color: COLORS.fgFaint,
+              color: COLORS.fgMuted,
             }}
           >
             Moonfish · {spot.regionName}, {spot.countryName}
@@ -99,7 +99,7 @@ export default async function OpengraphImage({ params }: { params: RouteParams }
               <span style={{ fontSize: 150, color: accent, fontWeight: 700, lineHeight: 1 }}>
                 {formatScore(value)}
               </span>
-              <span style={{ fontSize: 40, color: COLORS.fgFaint, marginLeft: 10 }}>/10</span>
+              <span style={{ fontSize: 40, color: COLORS.fgMuted, marginLeft: 10 }}>/10</span>
             </div>
             <div style={{ display: 'flex', fontSize: 28, color: COLORS.fgMuted, marginTop: 8, letterSpacing: 3 }}>
               {isDanger ? 'CONDITIONS DANGEREUSES' : (tier?.label.toUpperCase() ?? 'INDISPONIBLE')}
@@ -128,11 +128,11 @@ export default async function OpengraphImage({ params }: { params: RouteParams }
             borderTop: `1px solid ${COLORS.edge}`,
             paddingTop: 22,
             fontSize: 22,
-            color: COLORS.fgFaint,
+            color: COLORS.fgMuted,
           }}
         >
           <span>Marée · vent · houle · lune</span>
-          <span style={{ color: COLORS.accentScore }}>DONNÉES DE DÉMONSTRATION</span>
+          <span style={{ color: COLORS.accent }}>DONNÉES DE DÉMONSTRATION</span>
         </div>
       </div>
     ),

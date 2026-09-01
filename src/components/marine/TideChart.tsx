@@ -102,9 +102,10 @@ export function TideChart({
                 x={px}
                 y={height - 8}
                 textAnchor={hour === 0 ? 'start' : hour === 24 ? 'end' : 'middle'}
-                fill="var(--fg-dim)"
+                fill="var(--fg-muted)"
                 fontSize="11"
-                fontFamily="var(--font-plex-mono), ui-monospace, monospace"
+                fontFamily="var(--font-archivo), Archivo, system-ui, sans-serif"
+                style={{ fontVariantNumeric: 'tabular-nums' }}
               >
                 {String(hour % 24).padStart(2, '0')}h
               </text>
@@ -132,7 +133,8 @@ export function TideChart({
                 textAnchor="middle"
                 fill="var(--fg-muted)"
                 fontSize="11"
-                fontFamily="var(--font-plex-mono), ui-monospace, monospace"
+                fontFamily="var(--font-archivo), Archivo, system-ui, sans-serif"
+                style={{ fontVariantNumeric: 'tabular-nums' }}
               >
                 {formatTime(new Date(event.time), timeZone)}
               </text>

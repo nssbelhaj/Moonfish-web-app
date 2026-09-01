@@ -66,7 +66,7 @@ export default async function GuidePage({ params }: { params: Promise<RouteParam
       longue et de jour. Ce n'est pas un mode d'affichage de l'app — le sondeur
       ne s'inverse pas, et prefers-color-scheme ne le déclenche pas.
     */
-    <div data-theme="guide" className="bg-page">
+    <div className="bg-page">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}

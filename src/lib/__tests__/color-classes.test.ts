@@ -34,8 +34,8 @@ describe('classes de couleur', () => {
   const declared = declaredColors();
   const files = sources(path.join(process.cwd(), 'src'));
 
-  it('déclare les tokens sémantiques du handoff v2', () => {
-    for (const name of ['page', 'card', 'card-2', 'chip', 'edge', 'fg', 'fg-muted', 'fg-faint', 'accent-score', 'accent-data', 'danger']) {
+  it('déclare les tokens sémantiques du handoff v3', () => {
+    for (const name of ['page', 'card', 'surface-2', 'edge', 'edge-strong', 'water', 'accent', 'fg', 'fg-muted', 'fg-on-accent', 'danger', 'warn']) {
       expect(declared, `token absent de tailwind.config.ts : ${name}`).toContain(name);
     }
   });

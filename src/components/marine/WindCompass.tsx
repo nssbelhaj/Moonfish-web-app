@@ -60,8 +60,9 @@ export function WindCompass({
               y={center + Math.sin(a) * (radius + 9) + 4}
               textAnchor="middle"
               fontSize="10"
-              fill="var(--fg-dim)"
-              fontFamily="var(--font-plex-mono), ui-monospace, monospace"
+              fill="var(--fg-muted)"
+              fontFamily="var(--font-archivo), Archivo, system-ui, sans-serif"
+                style={{ fontVariantNumeric: 'tabular-nums' }}
             >
               {name}
             </text>

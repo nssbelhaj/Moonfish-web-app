@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Archivo, IBM_Plex_Mono, Spectral } from 'next/font/google';
+import { Archivo, Spectral } from 'next/font/google';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { MobileNav, SiteHeader } from '@/components/layout/SiteHeader';
 import { SITE_URL } from '@/lib/routes';
@@ -13,13 +13,6 @@ const archivo = Archivo({
   display: 'swap',
   variable: '--font-archivo',
   weight: ['400', '500', '600', '700'],
-});
-
-const plexMono = IBM_Plex_Mono({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-plex-mono',
-  weight: ['400', '500', '600'],
 });
 
 const spectral = Spectral({
@@ -55,7 +48,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" className={`${archivo.variable} ${plexMono.variable} ${spectral.variable}`}>
+    <html lang="fr" className={`${archivo.variable} ${spectral.variable}`}>
       <body className="flex min-h-dvh flex-col font-sans antialiased">
         <a
           href="#contenu"

@@ -8,6 +8,9 @@
  * trouvable au lieu d'être oubliée dans un coin de `layout.tsx` le jour d'un
  * changement de direction artistique.
  *
- * Doit toujours refléter `--page` du thème sombre.
+ * Doit toujours refléter `--page` du thème CLAIR, qui est le défaut du v3.
+ * Sa synchronisation avec tokens.css est vérifiée par `og-palette.test.ts` :
+ * elle valait encore `#0A0B0D` alors que le thème sombre du v2 était passé à
+ * `#0b0d0f`, sans que rien ne le signale.
  */
-export const BROWSER_THEME_COLOR = '#0A0B0D';
+export const BROWSER_THEME_COLOR = '#f7f4ed';

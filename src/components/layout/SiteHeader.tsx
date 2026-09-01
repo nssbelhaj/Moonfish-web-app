@@ -17,8 +17,8 @@ export function SiteHeader() {
       <div className="mx-auto flex max-w-shell items-center justify-between gap-4 px-4 py-3 md:px-6">
         <Link href="/" className="flex min-h-tap items-center gap-2 font-semibold">
           <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <circle cx="12" cy="12" r="10" fill="none" stroke="var(--accent-data)" strokeWidth="2" />
-            <circle cx="12" cy="12" r="4" fill="var(--accent-data)" />
+            <circle cx="12" cy="12" r="10" fill="none" stroke="var(--accent)" strokeWidth="2" />
+            <circle cx="12" cy="12" r="4" fill="var(--accent)" />
           </svg>
           <span className="text-val-sm">Moonfish</span>
         </Link>

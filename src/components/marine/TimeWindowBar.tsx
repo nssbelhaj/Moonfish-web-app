@@ -6,7 +6,7 @@ function slotColor(slot: ForecastSlot, isPast: boolean): string {
   // Un créneau écoulé n'est pas un mauvais créneau : il n'a plus de créneau du
   // tout. Il prend `night`, une non-couleur, pour ne pas être lu comme un échec
   // (handoff §5).
-  if (isPast) return 'var(--night)';
+  if (isPast) return 'var(--surface-2)';
   if (slot.score.safety.level === 'danger') return 'var(--score-1)';
   return tierForOrNull(slot.score.value)?.colorVar ?? UNAVAILABLE_COLOR_VAR;
 }

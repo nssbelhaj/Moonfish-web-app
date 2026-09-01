@@ -35,7 +35,7 @@ export function ScoreBreakdown({ score }: { score: ScoreResult }) {
               <h3 className="text-body font-semibold font-600">{FACTOR_LABELS[factor]}</h3>
               <p className="text-meta nums" data-numeric="">
                 <span
-                  style={{ color: tier ? tier.colorVar : 'var(--fg-faint)', fontWeight: 600 }}
+                  style={{ color: tier ? tier.colorVar : 'var(--fg-muted)', fontWeight: 600 }}
                 >
                   {formatScore(entry.score)}
                 </span>

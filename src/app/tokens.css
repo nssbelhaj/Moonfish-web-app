@@ -1,122 +1,133 @@
 /**
- * Tokens Moonfish — handoff design v2.
+ * Tokens Moonfish — handoff design v3.
  *
  * SEULE source de vérité des couleurs, avec la section `colors` de
  * tailwind.config.ts. Aucun composant ne contient de littéral : la règle D22
  * est vérifiée par `src/lib/__tests__/color-literals.test.ts`, qui fait échouer
  * le build si un `#rrggbb` apparaît ailleurs.
  *
- * Les littéraux ne sont jamais utilisés directement. Les composants n'écrivent
- * que des noms sémantiques — `bg-card`, `text-fg-muted` — qui fonctionnent dans
- * les deux thèmes sans condition.
+ * Le thème CLAIR est le défaut (renversement par rapport au v2, où le sombre
+ * l'était). Le thème NUIT s'obtient par [data-theme="night"] et ne réassigne que
+ * des variables : aucun composant ne connaît le thème courant.
+ *
+ * ─────────────────────────────────────────────────────────────────────────
+ *  ÉCARTS MESURÉS AVEC LE HANDOFF — chaque valeur ci-dessous a été calculée,
+ *  pas recopiée. Le handoff D21 annonce « paliers ≥ 4,5:1 sur var(--card) » ;
+ *  trois des huit ne l'étaient pas, et deux paires de paliers VOISINS étaient
+ *  perceptuellement indistinguables. Détail dans contrast.test.ts.
+ * ─────────────────────────────────────────────────────────────────────────
  */
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  /* ── littéraux — ne jamais utiliser dans un composant ── */
-  --ink-950: #0b0d0f;
-  --ink-900: #12151a;
-  --ink-850: #191d23;
-  --ink-800: #21262e;
-  --ink-700: #2c333c;
-  --ink-600: #3a424d;
-  --ink-300: #7c8695;
-  --ink-200: #8b95a1;
-  --ink-050: #e8ebef;
+  /* ── littéraux clairs — ne jamais utiliser dans un composant ── */
+  --nacre-100: #f7f4ed;
+  --nacre-050: #fbfaf6;
+  --sable-200: #e7dcc4;
+  --sable-400: #c9b992;
+  /* Le filet du handoff mesure 1,76:1 sur la page, alors que le remplissage de
+     carte n'en fait que 1,05 : la bordure porte donc SEULE la frontière, sous le
+     seuil non-textuel de 3:1. `sable-600` est sa version qui le tient, réservée
+     aux cartes cliquables et au focus ; le filet décoratif garde sable-400. */
+  --sable-600: #9c8c67;
+  --lagon-300: #8fbfcb;
+  /* Handoff : #2A7089. Mesure 4,09:1 sur sable-200, où D20 pose pourtant les
+     grandeurs d'eau en italique accent. Assombri jusqu'à 4,51:1 — l'accent tient
+     désormais sur les trois surfaces. Écart perceptuel 0,024, invisible. */
+  --sonde-700: #276980;
+  --encre-900: #123b4c;
+  /* Handoff : #5A7683, annoncé 5,3:1, mesuré 4,62:1 sur la carte et 4,39:1 sur
+     la PAGE — que le handoff ne teste pas, alors que c'est le fond le plus
+     fréquent du texte secondaire. Assombri : 5,58 page / 5,87 carte / 4,51 s-2. */
+  --encre-500: #4f656f;
+  --balise-600: #a83e63;
+  /* Texte posé SUR l'accent (boutons pleins). Le handoff ne le nomme pas, mais
+     un bouton d'accent sans couleur de texte déclarée hérite du `color` ambiant
+     — en v2 ce silence a produit un primaire à 1,62:1 que ni tsc ni le test de
+     tokens ne pouvaient voir. Il est donc nommé. */
+  --nacre-on-accent: #fbfaf6;
 
-  --paper-100: #f4f1e9;
-  --paper-050: #fbfaf5;
-  --paper-200: #efebe0;
-  --paper-300: #ded7c7;
+  /* ── littéraux nuit ── */
+  --abysse-900: #0b222c;
+  --fosse-800: #122d38;
+  --talus-600: #254e5d;
+  --talus-400: #4f7888;
+  --lagon-300n: #8fc3d2;
+  --sable-050n: #ede6d6;
+  --brume-400: #93a9b2;
+  /* Handoff : #E0658D, mesuré 4,40:1 sur fosse-800. Sous AA pour la couleur de
+     la sécurité — le pire endroit où être court. Éclairci à 4,53:1. */
+  --balise-400: #e46690;
+  --abysse-on-accent: #0b222c;
 
-  --slate-900: #14181c;
-  --slate-500: #55605e;
-  /* Le handoff annonce 4,7:1 pour fg-faint en thème guide ; #6B7570 mesure
-     4,22:1 sur --paper-100. Assombri jusqu'à 5,34:1 pour tenir le plancher AA
-     que la §2.6 déclare sans exception. */
-  --slate-400: #5c6560;
-
-  --amber-400: #ffb020;
-  --amber-800: #8a4b00;
-  --azure-400: #4fa8ff;
-  --azure-800: #0b5e80;
-  --mint-400: #46e0b0;
-  /* #04695A et --azure-800 sont deux bleu-vert à 0,081 de distance
-     perceptuelle : les paliers Bon et Excellent y étaient indiscernables.
-     Vrai vert, distance portée à 0,153. */
-  --mint-800: #2a6b26;
-  --coral-400: #ff6b60;
-  --coral-800: #b3261e;
+  /* ── paliers de score ──
+     Recalculés sous TROIS contraintes simultanées : ≥ 4,5:1 sur --card ET sur
+     --page, et séparation perceptuelle OKLab ≥ 0,13 entre paliers VOISINS. Le
+     contraste de luminance ne dit rien de la distinguabilité de deux couleurs
+     catégorielles : le handoff donnait « bon » et « excellent » à 0,087 l'un de
+     l'autre, soit deux teintes que l'œil ne sépare pas. L'accent (--sonde-700)
+     est resté figé, c'est la couleur de marque ; les trois autres ont bougé du
+     minimum nécessaire. */
+  --score-1-l: #5f5749;
+  --score-2-l: #9f6100;
+  --score-4-l: #3b7e37;
+  --score-1-n: #869297;
+  --score-2-n: #daa54e;
+  --score-4-n: #6daf78;
 
   /* ── sémantiques — la seule surface d'API des composants ── */
-  --page: var(--ink-950);
-  --card: var(--ink-900);
-  --card-2: var(--ink-850);
-  --chip: var(--ink-800);
-  --edge: var(--ink-700);
-  --edge-strong: var(--ink-600);
+  --page: var(--nacre-100);
+  --card: var(--nacre-050);
+  --surface-2: var(--sable-200);
+  --edge: var(--sable-400);
+  --edge-strong: var(--sable-600);
+  --water: var(--lagon-300);
+  --accent: var(--sonde-700);
+  --fg: var(--encre-900);
+  --fg-muted: var(--encre-500);
+  --danger: var(--balise-600);
+  --focus: var(--sonde-700);
+  --fg-on-accent: var(--nacre-on-accent);
+  /* Fraîcheur des données uniquement. Même teinte que le palier « moyen » mais
+     nommé à part : le jour où l'échelle de score changera, un voyant « donnée
+     ancienne » ne doit pas changer avec elle. */
+  --warn: var(--score-2-l);
 
-  --fg: var(--ink-050);
-  --fg-muted: var(--ink-200);
-  --fg-faint: var(--ink-300);
-  --fg-on-accent: var(--ink-950);
-
-  --accent-score: var(--amber-400);
-  --accent-data: var(--azure-400);
-  --danger: var(--coral-400);
-  /* Fraîcheur des données uniquement (R9). Ambre comme l'accent de score, mais
-     nommé à part : les deux ne se déplacent pas ensemble, et un jour où l'accent
-     de score changera, un voyant « donnée ancienne » ne devra pas changer avec
-     lui. Ne jamais l'employer pour autre chose qu'un état de fraîcheur. */
-  --warn: var(--amber-400);
-
-  /* Namespace SÉPARÉ des accents (D4) : un bouton n'est jamais vert parce que
-     c'est positif, un onglet jamais ambre. Ces couleurs ne peuvent apparaître
-     que portées par une valeur de score. */
-  --score-1: var(--ink-200);
-  --score-2: var(--amber-400);
-  --score-3: var(--azure-400);
-  --score-4: var(--mint-400);
-
-  --focus: var(--azure-400);
+  --score-1: var(--score-1-l);
+  --score-2: var(--score-2-l);
+  --score-3: var(--sonde-700);
+  --score-4: var(--score-4-l);
 }
 
 /**
- * Thème guide — pages éditoriales uniquement (D6).
+ * Thème nuit.
  *
- * Ce n'est PAS un mode d'affichage de l'app : le sondeur ne s'inverse pas.
- * `prefers-color-scheme: light` ne le déclenche pas.
+ * Il porte `color` et `background-color` sur lui-même : les descendants héritent
+ * de la couleur CALCULÉE sur son ancêtre, et sans ces deux lignes le contenu
+ * sortirait en encre sombre sur fond d'abysse. La leçon a coûté une page de
+ * guide illisible à 1,1:1 en v2.
  */
-[data-theme='guide'] {
-  color-scheme: light;
-
-  /* Les descendants héritent de la couleur CALCULÉE sur <body>, où --fg valait
-     encore la valeur sombre : sans ces deux lignes, le contenu sortirait en
-     texte clair sur fond clair. */
+[data-theme='night'] {
+  color-scheme: dark;
   color: var(--fg);
   background-color: var(--page);
 
-  --page: var(--paper-100);
-  --card: var(--paper-050);
-  --card-2: var(--paper-200);
-  --chip: var(--paper-200);
-  --edge: var(--paper-300);
-  --edge-strong: var(--slate-400);
+  --page: var(--abysse-900);
+  --card: var(--fosse-800);
+  --surface-2: var(--talus-600);
+  --edge: var(--talus-600);
+  --edge-strong: var(--talus-400);
+  --water: var(--lagon-300n);
+  --accent: var(--lagon-300n);
+  --fg: var(--sable-050n);
+  --fg-muted: var(--brume-400);
+  --danger: var(--balise-400);
+  --focus: var(--lagon-300n);
+  --fg-on-accent: var(--abysse-on-accent);
+  --warn: var(--score-2-n);
 
-  --fg: var(--slate-900);
-  --fg-muted: var(--slate-500);
-  --fg-faint: var(--slate-400);
-  --fg-on-accent: var(--paper-050);
-
-  --accent-score: var(--amber-800);
-  --accent-data: var(--azure-800);
-  --danger: var(--coral-800);
-  --warn: var(--amber-800);
-
-  --score-1: var(--slate-500);
-  --score-2: var(--amber-800);
-  --score-3: var(--azure-800);
-  --score-4: var(--mint-800);
-
-  --focus: var(--azure-800);
+  --score-1: var(--score-1-n);
+  --score-2: var(--score-2-n);
+  --score-3: var(--lagon-300n);
+  --score-4: var(--score-4-n);
 }

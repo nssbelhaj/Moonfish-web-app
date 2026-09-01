@@ -28,7 +28,7 @@ export function ScoreGauge({
   const lit = score.value === null ? 0 : litNotches(score.value);
   const isDanger = score.safety.level === 'danger';
   const color =
-    tier === null ? 'var(--fg-faint)' : isDanger ? 'var(--fg-muted)' : tier.colorVar;
+    tier === null ? 'var(--fg-muted)' : isDanger ? 'var(--fg-muted)' : tier.colorVar;
 
   // Handoff §3 : en danger, la jauge « passe à opacity .5 et perd sa couleur
   // d'accent ». Appliquée au bloc entier, cette opacité fait passer le chiffre

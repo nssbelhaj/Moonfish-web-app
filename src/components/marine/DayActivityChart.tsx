@@ -163,7 +163,7 @@ export function DayActivityChart({
               y={0}
               width={((band.toPct - band.fromPct) / 100) * VIEW_W}
               height={VIEW_H}
-              fill="var(--night)"
+              fill="var(--surface-2)"
             />
           ))}
 
@@ -174,7 +174,7 @@ export function DayActivityChart({
                 y={0}
                 width={((band.toPct - band.fromPct) / 100) * VIEW_W}
                 height={VIEW_H}
-                fill="var(--best-bg)"
+                fill="var(--surface-2)"
               />
               {/* Le liseré est ce qui rend la fenêtre repérable : le fond seul se
                   confond avec la bande de nuit, tous deux verts sombres. */}

@@ -33,7 +33,7 @@ export function MoonPhase({
         role="img"
         aria-label={`${phase}, ${Math.round(illuminationPct)} pour cent du disque éclairé.`}
       >
-        <circle cx="32" cy="32" r={radius} fill="var(--card-raised)" stroke="var(--edge-strong)" strokeWidth="1" />
+        <circle cx="32" cy="32" r={radius} fill="var(--surface-2)" stroke="var(--edge-strong)" strokeWidth="1" />
         <path
           d={`M 32 2
               A ${radius} ${radius} 0 0 ${waxing ? 1 : 0} 32 62

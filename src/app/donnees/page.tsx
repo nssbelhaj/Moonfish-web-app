@@ -45,7 +45,7 @@ const BLOCKS = [
 const STATES = [
   {
     label: 'À jour',
-    colorVar: 'var(--accent-data)',
+    colorVar: 'var(--accent)',
     text: 'La donnée est dans sa fenêtre de validité, celle indiquée pour son bloc.',
   },
   {
@@ -60,7 +60,7 @@ const STATES = [
   },
   {
     label: 'En attente',
-    colorVar: 'var(--fg-faint)',
+    colorVar: 'var(--fg-muted)',
     text: 'Nous ne savons pas de quand date cette donnée. Ce n’est pas la même chose qu’à jour, et nous refusons de l’écrire ainsi.',
   },
 ] as const;

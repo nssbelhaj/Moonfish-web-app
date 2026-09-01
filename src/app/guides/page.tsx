@@ -15,7 +15,7 @@ export default async function GuidesPage() {
   const guides = await listGuides();
 
   return (
-    <div data-theme="guide" className="bg-page">
+    <div className="bg-page">
       <div className="mx-auto w-full max-w-shell px-4 pt-8 md:px-8 md:pt-12">
         <h1 className="text-val font-700">Guides</h1>
         <p className="mt-3 max-w-prose text-body text-fg-muted">
