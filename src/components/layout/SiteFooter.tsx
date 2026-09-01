@@ -75,6 +75,7 @@ export function SiteFooter() {
           <ul className="flex flex-wrap gap-x-6 gap-y-2">
             {[
               { href: '/spots', label: 'Tous les spots' },
+              { href: '/carte', label: 'Carte' },
               { href: '/guides', label: 'Guides' },
               { href: '/donnees', label: 'Données et sources' },
             ].map((item) => (

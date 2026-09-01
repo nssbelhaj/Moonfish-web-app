@@ -3,6 +3,7 @@ import { NavLink } from './NavLink';
 
 const NAV = [
   { href: '/spots', label: 'Spots' },
+  { href: '/carte', label: 'Carte' },
   { href: '/guides', label: 'Guides' },
   { href: '/donnees', label: 'Données' },
 ] as const;
