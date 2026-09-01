@@ -61,25 +61,84 @@
 
 @layer components {
   /*
-   * Élévation v3 (R4) : remplissage ET filet 1 px. C'est l'inverse du v2, qui
-   * proscrivait la bordure de carte.
+   * Élévation v3 (R4) : remplissage ET filet 1 px, aucune ombre portée.
    *
-   * La raison de suivre le v3 ici est mesurable : le remplissage seul ne fait
-   * que 1,05:1 entre --card et --page en thème clair, autrement dit la carte est
-   * invisible sans son filet. En v2 les fonds étaient assez éloignés pour se
-   * passer de bordure ; ils ne le sont plus.
+   * Le filet passe par `box-shadow: 0 0 0 1px`, exactement comme dans les
+   * maquettes, et non par `border` : il ne prend pas de place dans la boîte, si
+   * bien qu'une carte et un graphe de même largeur restent alignés au pixel.
+   * Une bordure réelle décalerait le contenu d'un pixel et ferait respirer les
+   * grilles différemment selon qu'un élément est encadré ou non.
    *
-   * Un rayon unique partout : 12 px, 20 px pour un cadre d'écran.
+   * Le filet d'une carte est `--surface-2`, plus discret que celui d'un cadre
+   * d'écran qui, lui, prend `--edge`.
    */
   .surface {
     background-color: var(--card);
-    border: 1px solid var(--edge);
     border-radius: 12px;
+    box-shadow: 0 0 0 1px var(--surface-2);
+  }
+
+  /* Cadre d'écran ou de bloc majeur : rayon 20, filet plus affirmé. */
+  .frame {
+    background-color: var(--page);
+    border-radius: 20px;
+    box-shadow: 0 0 0 1px var(--edge);
   }
 
   .surface-2 {
     background-color: var(--surface-2);
     border-radius: 9px;
+  }
+
+  /*
+   * Anatomie de carte (R3), dans cet ordre : titre · valeur principale ·
+   * valeurs secondaires · graphe optionnel · filet + source.
+   * La source est OBLIGATOIRE et n'est jamais tronquée.
+   */
+  .card-title {
+    font-family: var(--font-spectral), Spectral, Georgia, serif;
+    font-size: 17px;
+    line-height: 1.25;
+    font-weight: 600;
+    color: var(--fg);
+  }
+
+  .card-source {
+    border-top: 1px solid var(--edge);
+    padding-top: 9px;
+    font-size: 11px;
+    line-height: 1.45;
+    color: var(--fg-muted);
+  }
+
+  /*
+   * Boutons. Le primaire est en ENCRE, pas en accent : l'accent est réservé aux
+   * grandeurs d'eau et aux liens (D20), et un bouton plein d'accent le banaliserait.
+   * 56 px pour le primaire, 48 pour le reste (R10).
+   */
+  .btn-primary {
+    min-height: 56px;
+    border-radius: 28px;
+    background-color: var(--fg);
+    color: var(--page);
+    font-weight: 600;
+    font-size: 16px;
+  }
+
+  .btn-secondary {
+    min-height: 48px;
+    border-radius: 24px;
+    background-color: var(--card);
+    box-shadow: 0 0 0 1px var(--edge);
+    color: var(--accent);
+    font-size: 15px;
+  }
+
+  /* Pastille : rayon plein, filet, jamais de remplissage coloré. */
+  .pill {
+    border-radius: 999px;
+    background-color: var(--card);
+    box-shadow: 0 0 0 1px var(--edge);
   }
 
   /* Étiquette de zone 1 d'une carte de données. */
@@ -148,8 +207,18 @@
 }
 
 @layer components {
+  /*
+   * D11 : le guide est le SEUL écran dont le corps est en Spectral. C'est de la
+   * lecture suivie, pas de la consultation — colonne étroite, 15,5 px, 1,7.
+   */
+  .guide-prose {
+    font-family: var(--font-spectral), Spectral, Georgia, serif;
+    font-size: 15.5px;
+    line-height: 1.7;
+  }
+
   .guide-prose h2 {
-    font-family: var(--font-archivo), system-ui, sans-serif;
+    font-family: var(--font-spectral), Spectral, Georgia, serif;
     font-size: 1.375rem;
     line-height: 1.2;
     letter-spacing: -0.015em;
@@ -158,7 +227,7 @@
   }
 
   .guide-prose h3 {
-    font-family: var(--font-archivo), system-ui, sans-serif;
+    font-family: var(--font-spectral), Spectral, Georgia, serif;
     font-size: 1.0625rem;
     line-height: 1.3;
     font-weight: 600;

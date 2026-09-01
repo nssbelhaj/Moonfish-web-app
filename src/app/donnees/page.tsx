@@ -68,7 +68,7 @@ const STATES = [
 export default function DonneesPage() {
   return (
     <div className="mx-auto w-full max-w-shell px-4 py-8 md:px-8 md:py-12">
-      <h1 className="text-val font-700">D’où viennent les données</h1>
+      <h1 className="font-serif text-h1 font-semibold">D’où viennent les données</h1>
 
       <p className="mt-4 max-w-prose text-body text-fg-muted">
         Moonfish calcule un score à partir de sources extérieures. Aucune n’est parfaite, et une
@@ -78,7 +78,7 @@ export default function DonneesPage() {
       </p>
 
       <section aria-labelledby="blocs" className="mt-10">
-        <h2 id="blocs" className="text-val-sm font-600">
+        <h2 id="blocs" className="font-serif text-h2 font-semibold">
           Les trois blocs
         </h2>
 
@@ -116,7 +116,7 @@ export default function DonneesPage() {
       </section>
 
       <section aria-labelledby="etats" className="mt-10">
-        <h2 id="etats" className="text-val-sm font-600">
+        <h2 id="etats" className="font-serif text-h2 font-semibold">
           Ce que veut dire la puce de fraîcheur
         </h2>
         <p className="mt-2 max-w-prose text-body text-fg-muted">
@@ -143,7 +143,7 @@ export default function DonneesPage() {
       </section>
 
       <section aria-labelledby="limites" className="mt-10">
-        <h2 id="limites" className="text-val-sm font-600">
+        <h2 id="limites" className="font-serif text-h2 font-semibold">
           Ce que Moonfish ne sait pas faire
         </h2>
         <ul className="mt-4 max-w-prose space-y-2 text-body text-fg-muted">
@@ -173,7 +173,7 @@ export default function DonneesPage() {
       </section>
 
       <section aria-labelledby="officiel" className="mt-10">
-        <h2 id="officiel" className="text-val-sm font-600">
+        <h2 id="officiel" className="font-serif text-h2 font-semibold">
           Les références officielles
         </h2>
         <p className="mt-2 max-w-prose text-body text-fg-muted">

@@ -104,7 +104,7 @@ export default async function HomePage() {
       />
 
       <div className="mx-auto w-full max-w-shell px-4 pb-4 pt-8 md:px-8 md:pt-12">
-        <h1 className="max-w-[16ch] text-val font-700 md:text-val">
+        <h1 className="max-w-[16ch] font-serif text-h1 font-semibold">
           Les meilleurs créneaux de pêche en mer, spot par spot
         </h1>
         <p className="mt-4 max-w-prose text-body text-fg-muted">
@@ -192,7 +192,7 @@ export default async function HomePage() {
             <li key={factor.title} className="py-6">
               <div className="flex items-baseline gap-4">
                 <span
-                  className="w-16 shrink-0 nums text-val font-700 text-fg"
+                  className="w-16 shrink-0 nums font-serif text-h1 font-semibold text-fg"
                   data-numeric=""
                 >
                   {factor.weight}

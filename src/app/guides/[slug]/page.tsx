@@ -82,7 +82,7 @@ export default async function GuidePage({ params }: { params: Promise<RouteParam
         </nav>
 
         <header className="mt-4 max-w-prose">
-          <h1 className="text-val font-700">{guide.title}</h1>
+          <h1 className="font-serif text-h1 font-semibold">{guide.title}</h1>
           <p className="mt-3 text-meta nums text-fg-muted" data-numeric="">
             <time dateTime={guide.published}>
               {new Intl.DateTimeFormat('fr-FR', {
@@ -117,7 +117,7 @@ export default async function GuidePage({ params }: { params: Promise<RouteParam
             .
           </p>
 
-          <h2 className="mt-8 text-val-sm font-600">À lire ensuite</h2>
+          <h2 className="mt-8 font-serif text-h2 font-semibold">À lire ensuite</h2>
           <ul className="mt-4 grid gap-4 sm:grid-cols-2">
             {others.map((other) => (
               <li key={other.slug}>

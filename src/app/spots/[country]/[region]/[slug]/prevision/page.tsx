@@ -53,7 +53,7 @@ export default async function SpotForecastPage({ params }: { params: Promise<Rou
 
       <div className="mx-auto w-full max-w-shell px-4 py-8 md:px-8 md:py-12">
         <section aria-labelledby="fenetres">
-          <h2 id="fenetres" className="text-val-sm font-600">
+          <h2 id="fenetres" className="font-serif text-h2 font-semibold">
             Les meilleurs créneaux des 7 jours
           </h2>
           <p className="mt-2 max-w-prose text-body text-fg-muted">
@@ -86,7 +86,7 @@ export default async function SpotForecastPage({ params }: { params: Promise<Rou
         </section>
 
         <section aria-labelledby="jours" className="mt-12">
-          <h2 id="jours" className="text-val-sm font-600">
+          <h2 id="jours" className="font-serif text-h2 font-semibold">
             Jour par jour
           </h2>
           <p className="mt-2 max-w-prose text-body text-fg-muted">
@@ -126,7 +126,7 @@ export default async function SpotForecastPage({ params }: { params: Promise<Rou
         </section>
 
         <section aria-labelledby="tous" className="mt-12">
-          <h2 id="tous" className="text-val-sm font-600">
+          <h2 id="tous" className="font-serif text-h2 font-semibold">
             Tous les créneaux
           </h2>
           <div className="mt-6">

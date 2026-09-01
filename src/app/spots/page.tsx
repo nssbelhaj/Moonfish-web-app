@@ -111,7 +111,7 @@ export default async function SpotsPage({
   return (
     <>
       <div className="mx-auto w-full max-w-shell px-4 pt-8 md:px-8 md:pt-12">
-        <h1 className="text-val font-700">
+        <h1 className="font-serif text-h1 font-semibold">
           {description ? `Spots de pêche ${description}` : 'Les 12 spots suivis par Moonfish'}
         </h1>
         <p className="mt-3 max-w-prose text-body text-fg-muted">
@@ -158,7 +158,7 @@ export default async function SpotsPage({
           </div>
         ) : (
           <>
-            <h2 className="mt-8 text-val-sm font-600">
+            <h2 className="mt-8 font-serif text-h2 font-semibold">
               {matching.length} spot{matching.length > 1 ? 's' : ''}
               {description ? ` ${description}` : ''}
             </h2>

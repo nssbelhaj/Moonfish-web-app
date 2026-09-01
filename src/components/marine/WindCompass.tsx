@@ -82,7 +82,7 @@ export function WindCompass({
       </svg>
 
       <div>
-        <p className="nums text-val font-600" data-numeric="">
+        <p className="nums text-score-sm" data-numeric="">
           {Math.round(speedKmh)}
           <span className="text-body font-semibold font-500 text-fg-faint"> km/h</span>
         </p>

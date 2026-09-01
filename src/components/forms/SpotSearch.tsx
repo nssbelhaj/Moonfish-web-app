@@ -92,7 +92,7 @@ export function SpotSearch({ spots }: { spots: readonly SearchableSpot[] }) {
                     </span>
                   </span>
                   <span
-                    className="nums text-val font-600"
+                    className="nums text-score-sm"
                     style={{ color: tier?.colorVar ?? 'var(--fg-muted)' }}
                     data-numeric=""
                   >

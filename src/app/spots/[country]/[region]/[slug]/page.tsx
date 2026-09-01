@@ -2,11 +2,13 @@ import type { Metadata } from 'next';
 
 import { DataSourceTag } from '@/components/data/DataSourceTag';
 import { DemoDataNotice, simulatedSources } from '@/components/data/DemoDataNotice';
-import { DayActivityChart } from '@/components/marine/DayActivityChart';
+import { TideActivityChart } from '@/components/v3/TideActivityChart';
 import { MoonPhase } from '@/components/marine/MoonPhase';
 import { TideChart } from '@/components/marine/TideChart';
 import { WindCompass } from '@/components/marine/WindCompass';
-import { ScoreGauge } from '@/components/score/ScoreGauge';
+import { ScoreCartouche } from '@/components/v3/ScoreCartouche';
+import { SlotRow } from '@/components/v3/SlotRow';
+import { WaterValue } from '@/components/v3/WaterValue';
 import { ScoreReasons } from '@/components/score/ScoreReasons';
 import { SpotTabs } from '@/components/spot/SpotTabs';
 import { Card } from '@/components/ui/Card';
@@ -86,7 +88,7 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
         <div>
           {isDanger && (
             <section aria-labelledby="repli" className="mb-8">
-              <h2 id="repli" className="text-val-sm font-600">
+              <h2 id="repli" className="font-serif text-h2 font-semibold">
                 Prochain créneau praticable
               </h2>
               <Card className="mt-4 p-4">
@@ -112,20 +114,28 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
           )}
 
           <section aria-labelledby="score">
-            <h2 id="score" className="text-val-sm font-600">
+            <h2 id="score" className="font-serif text-h2 font-semibold">
               Créneau en cours
             </h2>
 
             {current ? (
               <div className="mt-4">
-                <p className="text-meta nums text-fg-faint" data-numeric="">
-                  {formatDayLong(new Date(current.start), spot.timezone)} ·{' '}
-                  {formatTime(new Date(current.start), spot.timezone)}–
-                  {formatTime(new Date(current.end), spot.timezone)} (heure locale)
-                </p>
-                <div className="mt-3">
-                  <ScoreGauge score={current.score} />
-                </div>
+                <ScoreCartouche
+                  score={current.score}
+                  title={spot.name}
+                  eyebrow={`${formatDayLong(new Date(current.start), spot.timezone)} · ${formatTime(new Date(current.start), spot.timezone)}–${formatTime(new Date(current.end), spot.timezone)}`}
+                  meta={
+                    <>
+                      {BOTTOM_LABELS[spot.bottom].toLowerCase()}
+                      {current.tide ? (
+                        <>
+                          {' · '}
+                          <WaterValue>coef. {current.tide.coefficient}</WaterValue>
+                        </>
+                      ) : null}
+                    </>
+                  }
+                />
                 <ScoreReasons reasons={current.score.reasons} />
               </div>
             ) : (
@@ -137,7 +147,7 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
 
           {today && (
             <section aria-labelledby="journee" className="mt-10">
-              <h2 id="journee" className="text-val-sm font-600">
+              <h2 id="journee" className="font-serif text-h2 font-semibold">
                 La journée d’un coup d’œil
               </h2>
               <p className="mt-2 max-w-prose text-body text-fg-muted">
@@ -147,12 +157,31 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
                   : 'Marées et météo sont réelles ; le lever et le coucher du soleil sont calculés localement.'}
               </p>
               <div className="mt-4">
-                <DayActivityChart
+                <TideActivityChart
                   day={today}
                   tideEvents={forecast.tideEvents}
                   timeZone={spot.timezone}
                   now={forecast.generatedAt}
+                  coefficient={today.tideEvents[0]?.coefficient ?? null}
                 />
+              </div>
+
+              <div className="surface mt-4 p-[14px]">
+                <h3 className="card-title">Les créneaux de la journée</h3>
+                <div className="mt-2">
+                  {today.slots.map((slot, index) => (
+                    <SlotRow
+                      key={slot.start}
+                      slot={slot}
+                      timeZone={spot.timezone}
+                      active={slot.start === current?.start}
+                      last={index === today.slots.length - 1}
+                    />
+                  ))}
+                </div>
+                <p className="card-source mt-2">
+                  Score Moonfish · marée, vent, houle, solunaire, lumière · recalculé à l’heure.
+                </p>
               </div>
             </section>
           )}
@@ -164,7 +193,7 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
             className={tideIsSimulated ? 'demo-frame p-4' : 'surface p-4'}
           >
             <DemoDataNotice sources={[forecast.sources.tide.source]} compact />
-            <h2 id="marees" className="mt-2 text-val-sm font-600">
+            <h2 id="marees" className="mt-2 font-serif text-h2 font-semibold">
               Marées du jour
             </h2>
             {today && (
@@ -201,7 +230,7 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
             }
           >
             <DemoDataNotice sources={[forecast.sources.weather.source]} compact />
-            <h2 id="meteo" className="mt-2 text-val-sm font-600">
+            <h2 id="meteo" className="mt-2 font-serif text-h2 font-semibold">
               Vent et état de mer
             </h2>
             {current && current.conditions ? (
@@ -245,7 +274,7 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
           </section>
 
           <section aria-labelledby="lune" className="mt-6 surface p-4">
-            <h2 id="lune" className="text-val-sm font-600">
+            <h2 id="lune" className="font-serif text-h2 font-semibold">
               Lune et lumière
             </h2>
             {today && (

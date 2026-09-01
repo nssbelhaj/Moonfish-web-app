@@ -133,7 +133,7 @@ export default async function SpotLayout({
           repoussait la navigation sous la ligne de flottaison, et l'utilisateur
           ne pouvait pas voir qu'il y avait autre chose que la page courante.
         */}
-        <h1 className="mt-3 text-val font-700">{spot.name}</h1>
+        <h1 className="mt-3 font-serif text-h1 font-semibold">{spot.name}</h1>
       </div>
 
       {children}

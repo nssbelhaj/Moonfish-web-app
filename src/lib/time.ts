@@ -103,6 +103,18 @@ export function formatDayShort(date: Date, timeZone: string): string {
   }).format(date);
 }
 
+/** « mar », « mer » — la graduation de la règle des jours (D1). */
+export function formatWeekdayShort(date: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat('fr-FR', { timeZone, weekday: 'short' })
+    .format(date)
+    .replace('.', '');
+}
+
+/** « 02 » — le quantième, sur deux chiffres, aligné en chasse tabulaire. */
+export function formatDayNumber(date: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat('fr-FR', { timeZone, day: '2-digit' }).format(date);
+}
+
 export function formatDayLong(date: Date, timeZone: string): string {
   return new Intl.DateTimeFormat('fr-FR', {
     timeZone,

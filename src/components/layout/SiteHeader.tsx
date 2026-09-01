@@ -20,7 +20,7 @@ export function SiteHeader() {
             <circle cx="12" cy="12" r="10" fill="none" stroke="var(--accent)" strokeWidth="2" />
             <circle cx="12" cy="12" r="4" fill="var(--accent)" />
           </svg>
-          <span className="text-val-sm">Moonfish</span>
+          <span className="font-serif text-[19px] font-semibold">Moonfish</span>
         </Link>
 
         <nav aria-label="Navigation principale" className="hidden md:block">

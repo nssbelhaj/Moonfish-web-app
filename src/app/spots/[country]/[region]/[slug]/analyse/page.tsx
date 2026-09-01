@@ -52,7 +52,7 @@ export default async function SpotAnalysisPage({ params }: { params: Promise<Rou
       <div className="mx-auto w-full max-w-shell px-4 py-8 md:px-8 md:py-12 xl:grid xl:grid-cols-[1fr_400px] xl:gap-12">
         <div>
           <section aria-labelledby="detail">
-            <h2 id="detail" className="text-val-sm font-600">
+            <h2 id="detail" className="font-serif text-h2 font-semibold">
               Le détail du calcul
             </h2>
             <p className="mt-2 max-w-prose text-body text-fg-muted">
@@ -79,7 +79,7 @@ export default async function SpotAnalysisPage({ params }: { params: Promise<Rou
           </section>
 
           <section aria-labelledby="techniques" className="mt-12">
-            <h2 id="techniques" className="text-val-sm font-600">
+            <h2 id="techniques" className="font-serif text-h2 font-semibold">
               Techniques praticables
             </h2>
             <p className="mt-2 max-w-prose text-body text-fg-muted">
@@ -101,7 +101,7 @@ export default async function SpotAnalysisPage({ params }: { params: Promise<Rou
 
         <aside className="mt-12 xl:mt-0">
           <section aria-labelledby="spot" className="surface p-4">
-            <h2 id="spot" className="text-val-sm font-600">
+            <h2 id="spot" className="font-serif text-h2 font-semibold">
               Le spot
             </h2>
             <dl className="mt-4 grid grid-cols-2 gap-3 text-meta nums">
@@ -131,14 +131,14 @@ export default async function SpotAnalysisPage({ params }: { params: Promise<Rou
           </section>
 
           <section aria-labelledby="acces" className="mt-6 surface p-4">
-            <h2 id="acces" className="text-val-sm font-600">
+            <h2 id="acces" className="font-serif text-h2 font-semibold">
               Accès et sécurité
             </h2>
             <p className="mt-2 text-body text-fg-muted">{spot.access}</p>
           </section>
 
           <section aria-labelledby="alerte" className="mt-6 surface p-4">
-            <h2 id="alerte" className="text-val-sm font-600">
+            <h2 id="alerte" className="font-serif text-h2 font-semibold">
               Être prévenu pour ce spot
             </h2>
             <p className="mt-2 text-body text-fg-muted">

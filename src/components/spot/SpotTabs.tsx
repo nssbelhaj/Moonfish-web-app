@@ -22,7 +22,7 @@ const TABS: { id: SpotTab; label: string; segment: string; hint: string }[] = [
 export function SpotTabs({ basePath, active }: { basePath: string; active: SpotTab }) {
   return (
     <nav aria-label="Sections du spot" className="border-b border-edge">
-      <ul className="-mb-px flex gap-1 overflow-x-auto">
+      <ul className="-mb-px flex gap-[22px] overflow-x-auto">
         {TABS.map((tab) => {
           const isActive = tab.id === active;
           return (
@@ -30,11 +30,10 @@ export function SpotTabs({ basePath, active }: { basePath: string; active: SpotT
               <Link
                 href={`${basePath}${tab.segment}`}
                 aria-current={isActive ? 'page' : undefined}
-                className={`inline-flex min-h-[48px] items-center whitespace-nowrap border-b-2 px-4 font-600 ${
-                  isActive
-                    ? 'border-accent-data text-fg'
-                    : 'border-transparent text-fg-muted hover:text-fg'
+                className={`inline-flex min-h-[48px] items-center whitespace-nowrap px-0 text-body tappable ${
+                  isActive ? 'font-semibold text-fg' : 'text-fg-muted hover:text-fg'
                 }`}
+                style={isActive ? { boxShadow: 'inset 0 -2px 0 var(--accent)' } : undefined}
               >
                 {tab.label}
                 <span className="sr-only"> — {tab.hint}</span>
