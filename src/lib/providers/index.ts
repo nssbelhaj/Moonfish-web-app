@@ -2,11 +2,21 @@ import { TideProviderWithFallback, WeatherProviderWithFallback } from './fallbac
 import { MockSpotRepository } from './mock/spots';
 import { MockTideProvider } from './mock/tide';
 import { MockWeatherProvider } from './mock/weather';
+import { ClosedContributionsRepository } from './closed/contributions';
 import { FileWaitlistRepository } from './mock/waitlist';
 import { OpenMeteoWeatherProvider } from './open-meteo/weather';
 import { SelectiveTideProvider, parseAllowedSpots } from './selective-tide';
 import { StormglassTideProvider } from './stormglass/tide';
-import type { SpotRepository, TideProvider, WaitlistRepository, WeatherProvider } from './types';
+import { SupabaseContributionsRepository } from './supabase/contributions';
+import { SupabaseWaitlistRepository } from './supabase/waitlist';
+import type {
+  ContributionsRepository,
+  SpotRepository,
+  TideProvider,
+  WaitlistRepository,
+  WeatherProvider,
+} from './types';
+import { accountsEnabled } from '@/lib/supabase/config';
 
 /**
  * ═══════════════════════════════════════════════════════════════════════
@@ -18,13 +28,18 @@ import type { SpotRepository, TideProvider, WaitlistRepository, WeatherProvider 
  * module de scoring n'importe une implémentation directement : tous passent
  * par les interfaces exportées ici.
  *
+ * Marées, météo, liste d'attente et contributions basculent tous sur détection
+ * d'une variable d'environnement : aucune modification de code n'est nécessaire
+ * pour passer en réel, et un déploiement sans configuration reste fonctionnel
+ * en le DISANT.
+ *
  * Reste à brancher :
  *
  *   import { SupabaseSpotRepository } from './supabase/spots';
- *   import { SupabaseWaitlistRepository } from './supabase/waitlist';
- *
  *   export const spots: SpotRepository = new SupabaseSpotRepository();
- *   export const waitlist: WaitlistRepository = new SupabaseWaitlistRepository();
+ *
+ * Les spots sont du contenu éditorial écrit à la main : les mettre en base
+ * n'apporterait rien tant qu'ils ne sont pas modifiables depuis une interface.
  */
 
 /**
@@ -90,7 +105,26 @@ export const weather: WeatherProvider =
       );
 
 export const spots: SpotRepository = new MockSpotRepository();
-export const waitlist: WaitlistRepository = new FileWaitlistRepository();
+
+/**
+ * Liste d'attente : Supabase dès qu'un projet est configuré, sinon le fichier
+ * local — éphémère sur un hébergeur serverless, et annoncé comme tel.
+ */
+export const waitlist: WaitlistRepository = accountsEnabled()
+  ? new SupabaseWaitlistRepository()
+  : new FileWaitlistRepository();
+
+/**
+ * Contributions : Supabase, ou l'implémentation FERMÉE.
+ *
+ * Pas de mode démonstration ici, à la différence de la marée et de la météo.
+ * Une marée simulée illustre le fonctionnement du site ; un avis simulé serait
+ * un faux témoignage signé d'un faux pêcheur, sur une page qui promet
+ * précisément de rapporter ce que de vraies personnes ont déclaré.
+ */
+export const contributions: ContributionsRepository = accountsEnabled()
+  ? new SupabaseContributionsRepository()
+  : new ClosedContributionsRepository();
 
 /**
  * Le soleil et la Lune ne sont pas un fournisseur : ils sont calculés localement
@@ -105,6 +139,11 @@ export const ASTRO_SOURCE = {
 } as const;
 
 export type {
+  AccountExport,
+  Author,
+  ContributionResult,
+  ContributionsRepository,
+  SpotContributions,
   DateRange,
   DataKind,
   SourceMeta,

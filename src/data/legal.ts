@@ -77,12 +77,23 @@ export const HOST = {
  * Open-Meteo. Écrire l'inverse par prudence serait faux, et le dire juste est
  * plus rassurant que toute formule vague.
  */
+/**
+ * Quand une ligne s'applique.
+ *
+ * `always` : sur tout déploiement. `accounts` : seulement là où les comptes
+ * sont ouverts, c'est-à-dire là où un projet Supabase est configuré. La page
+ * FILTRE sur ce champ plutôt que de tout afficher : décrire des comptes sur un
+ * site qui n'en a pas serait aussi faux que taire ceux qui existent.
+ */
+export type Scope = 'always' | 'accounts';
+
 export interface Processor {
   readonly name: string;
   readonly role: string;
   readonly data: string;
   readonly location: string;
   readonly browserContact: boolean;
+  readonly scope: Scope;
 }
 
 export const PROCESSORS: readonly Processor[] = [
@@ -92,6 +103,15 @@ export const PROCESSORS: readonly Processor[] = [
     data: 'Adresse IP, date, page demandée, user-agent, dans les journaux de service',
     location: 'États-Unis, avec clauses contractuelles types',
     browserContact: true,
+    scope: 'always',
+  },
+  {
+    name: 'Supabase',
+    role: 'Base de données des comptes, des avis et des prises ; envoi des liens de connexion ; stockage des photos',
+    data: 'Adresse e-mail, nom affiché, contenu des contributions, photos. Le navigateur dialogue directement avec ce service pour la connexion et l’envoi des photos.',
+    location: 'Région choisie à la création du projet — prendre une région de l’Union européenne',
+    browserContact: true,
+    scope: 'accounts',
   },
   {
     name: 'Stormglass AB',
@@ -99,6 +119,7 @@ export const PROCESSORS: readonly Processor[] = [
     data: 'Aucune donnée personnelle : nous demandons des coordonnées de spot depuis notre serveur',
     location: 'Suède (Union européenne)',
     browserContact: false,
+    scope: 'always',
   },
   {
     name: 'Open-Meteo',
@@ -106,6 +127,7 @@ export const PROCESSORS: readonly Processor[] = [
     data: 'Aucune donnée personnelle : mêmes appels, depuis notre serveur',
     location: 'Allemagne (Union européenne)',
     browserContact: false,
+    scope: 'always',
   },
 ];
 
@@ -125,6 +147,7 @@ export interface ClientStorageEntry {
   readonly retention: string;
   /** Un stockage strictement nécessaire ou demandé par l'utilisateur est dispensé de consentement. */
   readonly consentRequired: boolean;
+  readonly scope: Scope;
 }
 
 export const CLIENT_STORAGE: readonly ClientStorageEntry[] = [
@@ -135,6 +158,62 @@ export const CLIENT_STORAGE: readonly ClientStorageEntry[] = [
       'Retenir si vous avez choisi l’affichage clair ou l’affichage de nuit, pour ne pas vous éblouir au chargement suivant.',
     retention: 'Jusqu’à ce que vous effaciez les données du site dans votre navigateur.',
     consentRequired: false,
+    scope: 'always',
+  },
+  {
+    key: 'sb-…-auth-token',
+    kind: 'cookie',
+    purpose:
+      'Vous garder connecté d’une page à l’autre. Il est posé à la connexion et n’existe pas tant que vous ne vous connectez pas.',
+    retention:
+      'Jusqu’à la déconnexion, ou son expiration. Se déconnecter le supprime immédiatement.',
+    // Dispensé de consentement, et ce n'est pas une facilité : un cookie
+    // strictement nécessaire à un service EXPRESSÉMENT DEMANDÉ par
+    // l'utilisateur — ici, rester connecté — est exempté par l'article 82 de la
+    // loi Informatique et Libertés. Il ne sert à aucun suivi, aucune mesure,
+    // aucune publicité, et il n'apparaît que si vous vous connectez.
+    consentRequired: false,
+    scope: 'accounts',
+  },
+];
+
+/**
+ * OÙ le code écrit dans le navigateur — la contrepartie vérifiable de la liste
+ * ci-dessus.
+ *
+ * `src/lib/__tests__/privacy-claims.test.ts` compare cette déclaration au
+ * résultat d'un balayage du dépôt : un `setItem` ou un cookie ajouté dans un
+ * fichier non listé, ou en nombre différent, fait échouer les tests. C'est ce
+ * qui empêche la page de confidentialité de devenir fausse par simple oubli —
+ * le mode de péremption normal de ces pages.
+ */
+export interface StorageWriteSite {
+  readonly file: string;
+  /** Nombre d'écritures attendues dans ce fichier. */
+  readonly writes: number;
+  /** Entrée de `CLIENT_STORAGE` concernée. */
+  readonly entry: string;
+  readonly why: string;
+}
+
+export const CLIENT_STORAGE_WRITE_SITES: readonly StorageWriteSite[] = [
+  {
+    file: 'src/components/layout/ThemeToggle.tsx',
+    writes: 1,
+    entry: 'moonfish-theme',
+    why: 'Mémorise le thème choisi.',
+  },
+  {
+    file: 'src/middleware.ts',
+    writes: 2,
+    entry: 'sb-…-auth-token',
+    why: 'Renouvelle le cookie de session : une fois sur la requête, une fois sur la réponse.',
+  },
+  {
+    file: 'src/lib/supabase/server.ts',
+    writes: 1,
+    entry: 'sb-…-auth-token',
+    why: 'Tentative d’écriture depuis un composant serveur, sans effet : c’est le middleware qui pose le cookie.',
   },
 ];
 

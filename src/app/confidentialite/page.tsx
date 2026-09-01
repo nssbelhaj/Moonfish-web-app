@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { LegalDraftNotice, LegalValue } from '@/components/legal/LegalValue';
 import { CLIENT_STORAGE, CNIL, LEGAL_UPDATED, PROCESSORS, PUBLISHER } from '@/data/legal';
 import { absoluteUrl } from '@/lib/routes';
+import { accountsEnabled } from '@/lib/supabase/config';
 import { formatDateLong } from '@/lib/time';
 
 export const metadata: Metadata = {
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
 };
 
 /** Chaque ligne du tableau des traitements. Une colonne « base légale » vide serait un aveu. */
-const TREATMENTS = [
+const ALWAYS_TREATMENTS = [
   {
     what: 'Liste d’attente',
     data: 'Votre adresse e-mail, la page depuis laquelle vous l’avez saisie, la date et l’heure.',
@@ -23,7 +24,7 @@ const TREATMENTS = [
     keep: 'Jusqu’à l’ouverture annoncée, ou jusqu’à votre demande de suppression si elle vient avant. Au plus tard trois ans après votre inscription.',
   },
   {
-    what: 'Protection du formulaire',
+    what: 'Protection des formulaires',
     data: 'Une empreinte de votre adresse IP (SHA-256 tronquée), jamais l’adresse elle-même.',
     why: 'Limiter à cinq envois par quart d’heure, pour qu’un script ne remplisse pas la liste.',
     basis: 'Notre intérêt légitime à protéger un formulaire public des envois automatisés.',
@@ -38,7 +39,43 @@ const TREATMENTS = [
   },
 ] as const;
 
+/** Traitements qui n'existent QUE là où les comptes sont ouverts. */
+const ACCOUNT_TREATMENTS = [
+  {
+    what: 'Compte',
+    data: 'Votre adresse e-mail, le nom affiché que vous choisissez, la date du consentement et sa version.',
+    why: 'Vous reconnaître d’une visite à l’autre et signer vos contributions. Il n’y a pas de mot de passe : nous ne détenons donc aucun secret vous concernant.',
+    basis: 'L’exécution du service que vous demandez en créant le compte, et votre consentement pour la conservation de l’adresse.',
+    keep: 'Tant que le compte existe. Sa suppression est immédiate et sans copie de sauvegarde.',
+  },
+  {
+    what: 'Avis et notes',
+    data: 'Note de 1 à 5, commentaire, spot concerné, nom affiché, dates.',
+    why: 'Renseigner les autres pêcheurs sur un spot. Ces avis sont PUBLICS et lisibles sans compte.',
+    basis: 'L’exécution du service : publier ce que vous choisissez de publier.',
+    keep: 'Jusqu’à ce que vous les supprimiez, ou jusqu’à la suppression de votre compte, qui les emporte.',
+  },
+  {
+    what: 'Prises déclarées',
+    data: 'Espèce, taille, poids, date de la prise, note libre, photo éventuelle, spot, nom affiché. Aucune coordonnée : une prise est rattachée à un spot, jamais à une position.',
+    why: 'Constituer, déclaration après déclaration, ce qu’aucune source publique ne donne : ce qui se prend réellement à un endroit, et quand.',
+    basis: 'L’exécution du service : publier ce que vous choisissez de publier.',
+    keep: 'Jusqu’à ce que vous les supprimiez, ou jusqu’à la suppression de votre compte, photos comprises.',
+  },
+] as const;
+
 export default function ConfidentialitePage() {
+  /*
+    La page décrit CE DÉPLOIEMENT-CI. Là où aucune base n'est configurée, il n'y
+    a ni compte, ni contribution, ni cookie : les décrire quand même serait
+    exactement le genre de politique passe-partout, écrite pour tous les cas et
+    juste pour aucun, que ce site refuse ailleurs.
+  */
+  const accounts = accountsEnabled();
+  const treatments = accounts ? [...ALWAYS_TREATMENTS, ...ACCOUNT_TREATMENTS] : ALWAYS_TREATMENTS;
+  const storage = CLIENT_STORAGE.filter((entry) => accounts || entry.scope === 'always');
+  const processors = PROCESSORS.filter((entry) => accounts || entry.scope === 'always');
+
   return (
     <div className="bg-page">
       <div className="mx-auto w-full max-w-shell px-4 py-8 md:px-8 md:py-12">
@@ -59,9 +96,11 @@ export default function ConfidentialitePage() {
             En une phrase
           </h2>
           <p className="mt-3 text-read text-fg-muted">
-            Moonfish ne collecte rien tant que vous ne saisissez rien. Il n’y a ni compte, ni
-            mesure d’audience, ni publicité, ni traceur, ni cookie. La seule donnée personnelle que
-            nous conservons est l’adresse e-mail que vous nous laissez, si vous nous la laissez.
+            Moonfish ne collecte rien tant que vous ne saisissez rien. Il n’y a ni mesure
+            d’audience, ni publicité, ni traceur, ni géolocalisation à notre profit.{' '}
+            {accounts
+              ? 'Un compte est facultatif : il ne sert qu’à publier des avis et des prises, et se supprime en une minute, avec tout ce qu’il contient.'
+              : 'Il n’y a même pas de compte : rien à créer, aucun cookie déposé.'}
           </p>
         </section>
 
@@ -95,12 +134,12 @@ export default function ConfidentialitePage() {
             Ce que nous traitons, et à quel titre
           </h2>
           <p className="mt-2 max-w-prose text-read text-fg-muted">
-            Trois traitements, et la liste est exhaustive. S’il y en avait un quatrième, il serait
-            écrit ici.
+            <span className="nums">{treatments.length}</span> traitements, et la liste est
+            exhaustive. S’il y en avait un de plus, il serait écrit ici.
           </p>
 
-          <ul className="mt-6 grid gap-4 lg:grid-cols-3">
-            {TREATMENTS.map((item) => (
+          <ul className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {treatments.map((item) => (
               <li key={item.what} className="surface p-4">
                 <h3 className="card-title">{item.what}</h3>
                 <dl className="mt-3 space-y-3">
@@ -135,13 +174,25 @@ export default function ConfidentialitePage() {
             Cookies et stockage du navigateur
           </h2>
           <p className="mt-2 max-w-prose text-read text-fg-muted">
-            Le site ne dépose <strong className="font-600 text-fg">aucun cookie</strong>. Il n’y a
-            donc pas de bandeau de consentement : il n’y aurait rien à consentir. Voici, en
-            revanche, tout ce que le site écrit dans votre navigateur.
+            {accounts ? (
+              <>
+                Il n’y a <strong className="font-600 text-fg">pas de bandeau de consentement</strong>,
+                et ce n’est pas un oubli : le seul cookie du site vous garde connecté, à votre
+                demande. Un cookie strictement nécessaire au service demandé est dispensé de
+                consentement — celui d’une mesure d’audience ne l’aurait pas été, et nous n’en
+                avons pas. Voici tout ce que le site écrit dans votre navigateur, sans exception.
+              </>
+            ) : (
+              <>
+                Le site ne dépose <strong className="font-600 text-fg">aucun cookie</strong>. Il n’y
+                a donc pas de bandeau de consentement : il n’y aurait rien à consentir. Voici, en
+                revanche, tout ce que le site écrit dans votre navigateur.
+              </>
+            )}
           </p>
 
           <ul className="mt-4 space-y-3">
-            {CLIENT_STORAGE.map((entry) => (
+            {storage.map((entry) => (
               <li key={entry.key} className="surface max-w-prose p-4">
                 <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                   <h3 className="text-body font-600 text-fg nums">{entry.key}</h3>
@@ -171,7 +222,7 @@ export default function ConfidentialitePage() {
           </p>
 
           <ul className="mt-4 grid gap-4 lg:grid-cols-3">
-            {PROCESSORS.map((processor) => (
+            {processors.map((processor) => (
               <li key={processor.name} className="surface p-4">
                 <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                   <h3 className="text-body font-600 text-fg">{processor.name}</h3>
@@ -205,10 +256,13 @@ export default function ConfidentialitePage() {
           </h2>
           <ul className="mt-3 space-y-2">
             {[
-              'Aucun compte utilisateur : il n’y a rien à créer, rien à connecter.',
+              ...(accounts
+                ? ['Aucun mot de passe : la connexion se fait par un lien envoyé par courriel.']
+                : ['Aucun compte utilisateur : il n’y a rien à créer, rien à connecter.']),
               'Aucune mesure d’audience, aucun outil d’analyse, aucun pixel de suivi.',
               'Aucune publicité, aucun lien rémunéré, aucun revendeur de données.',
-              'Aucune géolocalisation : le site ne demande jamais votre position.',
+              'Aucune position enregistrée : la recherche de spots proches calcule tout dans votre navigateur, et aucun de nos points d’accès ne sait recevoir une position.',
+              'Aucune coordonnée GPS dans les photos : les métadonnées sont retirées sur votre appareil, avant l’envoi.',
               'Aucun profilage, aucune décision automatisée vous concernant.',
             ].map((line) => (
               <li key={line} className="text-read text-fg-muted">
@@ -225,18 +279,24 @@ export default function ConfidentialitePage() {
 
         <section aria-labelledby="avenir" className="mt-10 max-w-prose">
           <h2 id="avenir" className="font-serif text-h2 font-semibold">
-            Les fonctions annoncées, et les règles déjà fixées
+            {accounts ? 'Trois règles que nous nous imposons' : 'Les fonctions annoncées, et les règles déjà fixées'}
           </h2>
-          <p className="mt-3 text-read text-fg-muted">
-            Des comptes, des avis sur les spots et un carnet de prises sont en préparation. Rien de
-            tout cela n’est en service : aucun de ces traitements n’existe aujourd’hui. Trois
-            décisions sont néanmoins déjà prises, et cette page les inscrit maintenant pour qu’on
-            puisse nous les opposer plus tard.
-          </p>
+          {!accounts && (
+            <p className="mt-3 text-read text-fg-muted">
+              Des comptes, des avis sur les spots et un carnet de prises sont en préparation. Rien
+              de tout cela n’est en service ici : aucun de ces traitements n’existe sur ce
+              déploiement. Trois décisions sont néanmoins déjà prises, et cette page les inscrit
+              pour qu’on puisse nous les opposer.
+            </p>
+          )}
           <ul className="mt-3 space-y-2">
             {[
-              'La position de votre appareil, si vous l’autorisez un jour pour trouver les spots proches, sera utilisée dans le navigateur et ne sera pas envoyée à nos serveurs. Une position de pêcheur est une information sensible.',
-              'Les photos de prises seront débarrassées de leurs métadonnées avant enregistrement. Une photo de téléphone porte les coordonnées GPS de la prise — donc, parfois, celles d’un spot que vous vouliez garder, ou de votre domicile.',
+              accounts
+                ? 'La position de votre appareil, quand vous demandez les spots proches, est utilisée dans le navigateur et n’est pas envoyée à nos serveurs. Une position de pêcheur est une information sensible.'
+                : 'La position de votre appareil, si vous l’autorisez un jour pour trouver les spots proches, sera utilisée dans le navigateur et ne sera pas envoyée à nos serveurs.',
+              accounts
+                ? 'Les photos de prises sont débarrassées de leurs métadonnées sur votre appareil, avant l’envoi. Une photo de téléphone porte les coordonnées GPS de la prise — donc, parfois, celles d’un spot que vous vouliez garder, ou de votre domicile.'
+                : 'Les photos de prises seront débarrassées de leurs métadonnées avant enregistrement.',
               'Toute mesure d’audience, si elle arrive, sera soit sans cookie et sans identifiant, soit soumise à votre consentement préalable et explicite. Pas de bandeau qui pré-coche.',
             ].map((line) => (
               <li key={line} className="text-read text-fg-muted">
@@ -257,6 +317,17 @@ export default function ConfidentialitePage() {
             aussi simplement qu’il a été donné, et son retrait ne remet pas en cause ce qui a été
             fait avant.
           </p>
+          {accounts && (
+            <p className="mt-3 text-read text-fg-muted">
+              Deux de ces droits ne demandent aucune démarche : depuis{' '}
+              <Link href="/compte" className="underline decoration-dotted underline-offset-4">
+                votre compte
+              </Link>
+              , vous téléchargez l’intégralité de vos données en un fichier, et vous supprimez le
+              compte — profil, avis, prises et photos — sans nous écrire ni attendre.
+            </p>
+          )}
+
           <p className="mt-3 text-read text-fg-muted">
             En pratique, un message à{' '}
             {PUBLISHER.email !== null ? (
@@ -269,8 +340,7 @@ export default function ConfidentialitePage() {
             ) : (
               <LegalValue value={null} hint="adresse e-mail de contact" />
             )}{' '}
-            suffit : nous n’avons qu’une adresse e-mail à votre sujet, et la supprimer nous prend
-            moins d’une minute. Réponse sous un mois. Nous ne vous demanderons pas de pièce
+            suffit pour tout le reste. Réponse sous un mois. Nous ne vous demanderons pas de pièce
             d’identité pour effacer une adresse e-mail — ce serait collecter davantage pour
             supprimer moins.
           </p>

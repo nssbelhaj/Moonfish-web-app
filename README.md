@@ -35,7 +35,10 @@ Node 20 ou plus. Aucune variable d'environnement n'est requise pour démarrer.
 | `WEATHER_PROVIDER` | non | Open-Meteo | `mock` force les données simulées : build hors ligne, démonstration sans réseau, tests. |
 | `OPEN_METEO_MARINE_URL` | non | API publique | Redirige vers une instance Open-Meteo auto-hébergée ou le stub local. |
 | `OPEN_METEO_FORECAST_URL` | non | API publique | Idem pour le modèle atmosphérique. |
-| `WAITLIST_FILE` | non | `var/waitlist.jsonl` | Chemin du fichier d'inscriptions. Bascule automatiquement dans le répertoire temporaire sur Vercel. |
+| `WAITLIST_FILE` | non | `var/waitlist.jsonl` | Chemin du fichier d'inscriptions, utilisé tant que Supabase n'est pas configuré. |
+| `NEXT_PUBLIC_SUPABASE_URL` | non | — | Ouvre les comptes et les contributions. Absente, le site le dit et n'affiche aucun formulaire de connexion. |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | non | — | Clé publique du projet. Ce qu'elle autorise est décidé par les politiques RLS, pas par son secret. |
+| `SUPABASE_SERVICE_ROLE_KEY` | non | — | Uniquement pour effacer un compte dans `auth.users`. Sans elle, la suppression refuse explicitement plutôt que de faire semblant. |
 
 ## Scripts
 
@@ -293,23 +296,31 @@ ce sont les clés d'URL, et les changer casserait l'indexation.
 `generateStaticParams` du détail spot appelle `spots.list()` : le build ira donc
 chercher les spots en base. Prévoir `export const revalidate` en conséquence.
 
-### 4. Liste d'attente → Supabase
+### 4. Liste d'attente → Supabase ✅ FAIT
 
 | | |
 | --- | --- |
 | **Interface** | `WaitlistRepository` |
-| **À implémenter** | `add(input, context)`, `count()` |
-| **Mock à remplacer** | `src/lib/providers/mock/waitlist.ts` |
-| **Nouveau fichier** | `src/lib/providers/supabase/waitlist.ts` |
-| **Ligne à changer** | `export const waitlist: WaitlistRepository = new SupabaseWaitlistRepository()` |
+| **Implémentation** | `src/lib/providers/supabase/waitlist.ts` |
+| **Repli** | `src/lib/providers/mock/waitlist.ts` — fichier, éphémère, tant que Supabase n'est pas configuré |
+| **Bascule** | automatique : `accountsEnabled()` dans `src/lib/providers/index.ts` |
 
-`insert into waitlist (email, source) values (...) on conflict (email) do nothing`,
-puis renvoyer `{ ok: true, alreadyRegistered: <aucune ligne insérée> }`. Le route
-handler `src/app/api/waitlist/route.ts` ne change pas d'une ligne.
+Le route handler `src/app/api/waitlist/route.ts` n'a pas changé d'une ligne :
+c'était l'objet de l'interface.
 
-**À remplacer en même temps :** le limiteur de débit de `src/lib/rate-limit.ts`
-est en mémoire de processus. Il ne protège rien dès qu'il y a plusieurs
-instances ou du serverless. Le remplacer par un compteur Redis.
+Deux détails imposés par la sécurité de la table, qui est en écriture seule :
+
+- une adresse déjà inscrite ne peut pas être détectée par une lecture préalable.
+  C'est la contrainte de clé primaire qui la rejette, et son code d'erreur
+  (`23505`) qui nous dit « déjà inscrite » ;
+- `count()` rend `null`. Voir plus haut : ne pas avoir le droit de compter n'est
+  pas la même chose que compter zéro.
+
+**Reste à faire, et ce n'est pas cosmétique :** le limiteur de débit de
+`src/lib/rate-limit.ts` est en mémoire de processus. Il ne protège rien dès
+qu'il y a plusieurs instances ou du serverless — chaque instance a son propre
+compteur. Le remplacer par un compteur partagé (Redis, ou une table Supabase
+avec une fenêtre glissante).
 
 ### 5. Les avertissements de démonstration se retirent seuls
 
@@ -431,6 +442,123 @@ le build, et ces exceptions sont elles-mêmes sous surveillance :
 | `og-palette.test.ts` | La palette de l'image OG désynchronisée des tokens. |
 
 ---
+
+## Comptes, contributions et RGPD
+
+Trois choses que le site ne savait pas faire : ouvrir un compte, recueillir un
+avis, enregistrer une prise. Elles arrivent ensemble parce qu'elles posent la
+même question — que détenons-nous sur quelqu'un, et comment le lui rendre ou
+l'effacer.
+
+### Ce qui s'ouvre avec deux variables
+
+`NEXT_PUBLIC_SUPABASE_URL` et `NEXT_PUBLIC_SUPABASE_ANON_KEY` suffisent.
+Absentes, le site **fonctionne entièrement** et annonce que les comptes ne sont
+pas ouverts : ni formulaire de connexion qui échouerait, ni avis d'exemple pour
+meubler. C'est la seule partie du projet sans mode démonstration, et c'est
+délibéré — une marée simulée illustre un mécanisme, un faux avis serait un faux
+témoignage sur la page qui promet précisément de rapporter ce que de vraies
+personnes ont déclaré.
+
+### La sécurité est dans la base, pas dans le code
+
+`supabase/migrations/0001_comptes_et_contributions.sql` crée les tables ET leurs
+politiques de sécurité au niveau des lignes. Toutes les écritures de
+l'application passent par le client de session : c'est PostgreSQL qui refuse
+qu'on écrive au nom d'autrui, pas une condition dans un fichier TypeScript
+qu'un jour on oubliera.
+
+| Table | Lecture | Écriture |
+| --- | --- | --- |
+| `waitlist` | **personne** | tout le monde (formulaire public) |
+| `profiles` | soi-même | soi-même |
+| `spot_reviews` | tout le monde | soi-même |
+| `catches` | tout le monde | soi-même |
+| photos (`prises`) | tout le monde | son propre dossier, préfixé par son identifiant |
+
+La liste d'attente est en écriture seule : la clé publique, qui part dans chaque
+navigateur, ne permet pas d'aspirer les adresses. Conséquence acceptée —
+`count()` rend `null`, pas `0`, parce que « je n'ai pas le droit de savoir » et
+« il n'y a personne » ne sont pas la même chose.
+
+Ces politiques ne peuvent pas être exécutées ici (aucun projet Supabase
+n'est joignable depuis cet environnement), mais elles sont **vérifiées
+statiquement** : `src/lib/supabase/__tests__/schema.test.ts` échoue si une table
+oublie `enable row level security`, si une politique d'écriture ne compare pas
+`auth.uid()`, si une politique de lecture apparaît sur la liste d'attente, ou si
+le SQL et les types TypeScript cessent de décrire les mêmes colonnes.
+
+### Photos : les métadonnées ne partent jamais
+
+Une photo de téléphone porte les coordonnées GPS de la prise de vue. Publier une
+photo de bar sans y toucher, c'est publier la position d'un poste — ou, si la
+photo a été prise en rentrant, celle d'un domicile.
+
+Le nettoyage a donc lieu **dans le navigateur, avant l'envoi** : décodage,
+réencodage dans un canevas, puis retrait des segments APP1–APP15 et des
+commentaires. L'original ne quitte pas l'appareil.
+
+`node scripts/verifier-exif.mjs` le prouve plutôt que de l'affirmer : il
+fabrique un JPEG portant des coordonnées GPS, le passe dans la fonction réelle
+du site au sein de Chromium, et inspecte les octets de sortie.
+
+```
+before: ["APP1","APP2"]   after: []   foundExifString: false
+54 535 octets → 24 134,  2400×1800 → 1600×1200
+```
+
+Le réencodage seul ne suffisait pas : mesuré, Chromium laisse un profil
+colorimétrique en APP2. Il ne contient aucune donnée personnelle, mais le
+garder aurait obligé à écrire « presque toutes les métadonnées sont retirées ».
+Il part aussi.
+
+### Géolocalisation : nous ne la recevons pas
+
+« Les spots près de moi » calcule les distances **dans le navigateur**, contre
+la liste des spots qui est déjà publique. Aucun point d'accès du serveur ne sait
+recevoir une position — c'est plus solide qu'une promesse de ne pas s'en servir.
+La demande d'autorisation part d'un clic, jamais du chargement de la page.
+
+### Droits, et ce qu'ils coûtent en clics
+
+| Droit | Comment |
+| --- | --- |
+| Accès et portabilité | `/compte` → un fichier JSON complet, immédiat, sans demande |
+| Effacement | `/compte` → suppression du compte, des avis, des prises et des photos |
+| Rectification | modification d'un avis, renommage du profil |
+| Retrait du consentement | la suppression du compte l'emporte |
+
+L'effacement passe par la cascade `on delete cascade` du schéma : c'est la base
+qui garantit qu'il ne reste rien, pas une suite d'appels qu'on pourrait oublier.
+Les photos, non liées par une clé étrangère, sont supprimées explicitement juste
+avant. Et si la clé de service manque, la suppression **refuse** au lieu
+d'annoncer un effacement qui n'a pas eu lieu.
+
+### Un rendu statique préservé
+
+La page des espèces reste pré-rendue et mise en cache une heure, comptes ouverts
+ou non. Lire une session veut dire lire les cookies, et lire les cookies bascule
+toute la route en rendu dynamique dans Next. Les avis et les prises sont donc
+lus **sans session** (ils sont publics et identiques pour tous), et chaque
+écriture révalide le chemin du spot. Seule la zone « contribuer » résout la
+session côté navigateur, et apparaît après l'hydratation — compromis explicite :
+ce qui doit être lisible sans JavaScript et indexable, ce sont les listes, pas
+les formulaires.
+
+### Ce qui n'a pas été exercé
+
+Aucun projet Supabase n'est joignable depuis cet environnement. Sont donc
+vérifiés : la compilation, le typage de bout en bout, la cohérence SQL/types,
+les règles de sécurité par lecture du SQL, la validation des saisies, le retrait
+des métadonnées dans un vrai navigateur, la préservation des champs après un
+échec, et le rendu des deux états (comptes ouverts, comptes fermés).
+
+**N'a pas été exercé** : un aller-retour réel avec Supabase — envoi du lien de
+connexion, échange du code, écriture d'une ligne sous RLS, envoi d'une photo
+dans le seau. Ces chemins sont écrits d'après le contrat documenté du service,
+pas contre le service lui-même. La première mise en service demandera de le
+vérifier, et le premier point à regarder sera la liste des « Redirect URLs »
+dans Authentication.
 
 ## Le Soleil et la Lune
 
@@ -578,7 +706,7 @@ sous le seuil AA sur les deux pages légales, dans les deux thèmes, à 390 et
 1440 px.
 
 `npm run build`, `npm run typecheck` et `npm run lint` passent sans erreur ni
-avertissement. 340 tests unitaires. Aucun débordement horizontal à 375 px.
+avertissement. 388 tests unitaires. Aucun débordement horizontal à 375 px.
 
 ## Pages légales
 

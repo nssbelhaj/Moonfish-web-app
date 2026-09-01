@@ -23,6 +23,32 @@ const nextConfig: NextConfig = {
    * À réévaluer le jour où les métadonnées dépendront d'un appel réseau.
    */
   htmlLimitedBots: /.*/,
+
+  /**
+   * Photos de prises servies depuis le stockage Supabase.
+   *
+   * Le motif est construit à partir de la variable d'environnement plutôt
+   * qu'écrit en dur : chaque projet Supabase a son propre sous-domaine, et un
+   * motif figé casserait le rendu d'images sur tout déploiement autre que le
+   * nôtre. Sans projet configuré, la liste reste vide — et aucune image
+   * distante n'est autorisée, ce qui est exactement l'état du site aujourd'hui.
+   */
+  images: {
+    remotePatterns: supabaseImagePattern(),
+  },
 };
+
+function supabaseImagePattern(): { protocol: 'https'; hostname: string; pathname: string }[] {
+  const raw = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  if (!raw) return [];
+
+  try {
+    const { hostname } = new URL(raw);
+    return [{ protocol: 'https', hostname, pathname: '/storage/v1/object/public/**' }];
+  } catch {
+    console.warn(`[config] NEXT_PUBLIC_SUPABASE_URL inexploitable ("${raw}") : photos désactivées.`);
+    return [];
+  }
+}
 
 export default nextConfig;

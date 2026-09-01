@@ -4,8 +4,10 @@ import { DemoDataNotice } from '@/components/data/DemoDataNotice';
 import { EmailCaptureForm } from '@/components/forms/EmailCaptureForm';
 import { SpotTabs } from '@/components/spot/SpotTabs';
 import { SpeciesCard } from '@/components/v3/SpeciesCard';
-import { SPECIES_BY_NAME, seaOf } from '@/data/species';
+import { SpotContributionsSection } from '@/components/contributions/SpotContributions';
+import { SPECIES, SPECIES_BY_NAME, seaOf } from '@/data/species';
 import { sourceList } from '@/lib/forecast';
+import { contributions } from '@/lib/providers';
 import { absoluteUrl, spotPath } from '@/lib/routes';
 import { findSpot, resolveSpot, type RouteParams } from '../spot-page-data';
 
@@ -31,6 +33,26 @@ export async function generateMetadata({
 export default async function SpotSpeciesPage({ params }: { params: Promise<RouteParams> }) {
   const { spot, forecast } = await resolveSpot(params);
   const sea = seaOf(spot.regionSlug);
+
+  /*
+    Les contributions sont lues SANS session, ce qui laisse la page pré-rendue
+    et mise en cache une heure : elles sont publiques et identiques pour tout le
+    monde. Chaque écriture révalide ce chemin, donc rien ne traîne.
+
+    `forSpot` avale ses erreurs et rend des listes vides : une panne de base
+    laisse la page des espèces entière. C'est le contenu éditorial qui la porte,
+    les contributions la complètent.
+  */
+  const spotContributions = await contributions.forSpot(spot.slug);
+
+  // Suggestions du champ « espèce » : celles du spot d'abord, puis le reste du
+  // catalogue. Une liste ouverte, jamais fermée : un pêcheur peut avoir pris
+  // quelque chose que nous n'avons pas répertorié, et le lui interdire
+  // fabriquerait un silence dans nos propres données.
+  const suggestions = [
+    ...spot.species,
+    ...SPECIES.map((species) => species.name).filter((name) => !spot.species.includes(name)),
+  ];
 
   const known = spot.species
     .map((name) => SPECIES_BY_NAME.get(name.toLowerCase()))
@@ -85,34 +107,27 @@ export default async function SpotSpeciesPage({ params }: { params: Promise<Rout
           )}
         </section>
 
-        <section aria-labelledby="contributions" className="mt-10">
-          <h2 id="contributions" className="font-serif text-h2 font-semibold">
-            Vos prises sur ce spot
-          </h2>
+        <SpotContributionsSection
+          contributions={spotContributions}
+          available={contributions.available}
+          spotSlug={spot.slug}
+          spotPath={spotPath(spot)}
+          spotName={spot.name}
+          speciesSuggestions={suggestions}
+        />
 
-          {/*
-            D12 : le bloc existe AVANT la fonctionnalité, et annonce qu'elle est
-            en préparation. Il mesure l'intention de contribuer sans mentir sur
-            la disponibilité — un formulaire qui ferait semblant d'enregistrer
-            serait pire que pas de formulaire du tout.
-          */}
-          <div className="demo-frame mt-4 p-4">
+        {!contributions.available && (
+          <div className="demo-frame mt-8 max-w-prose p-4">
             <p className="font-serif text-[13px] italic text-accent">En préparation</p>
-            <p className="mt-2 max-w-prose text-body text-fg-muted">
-              Le carnet de prises n’est pas encore ouvert. Il permettra de déclarer une prise —
-              espèce, taille, moment de la marée, photo — et de noter le spot. Ce sont ces
-              déclarations qui diront un jour ce qui se prend réellement ici, et à quel moment :
-              c’est la seule source honnête pour cette information.
-            </p>
-            <p className="mt-3 max-w-prose text-body text-fg-muted">
-              Il demandera un compte, parce qu’une prise anonyme n’est pas vérifiable et qu’une
-              note anonyme ne vaut rien.
+            <p className="mt-2 text-read text-fg-muted">
+              Laissez votre adresse pour être prévenu à l’ouverture des comptes.
             </p>
             <div className="mt-4">
               <EmailCaptureForm source={`especes:${spot.slug}`} />
             </div>
           </div>
-        </section>
+        )}
+
       </div>
     </>
   );

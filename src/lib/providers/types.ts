@@ -1,4 +1,15 @@
-import type { MarinePoint, Spot, TideEvent, WaitlistEntry, WaitlistInput } from '@/data/schemas';
+import type {
+  Catch,
+  CatchInput,
+  MarinePoint,
+  Profile,
+  Spot,
+  SpotReview,
+  SpotReviewInput,
+  TideEvent,
+  WaitlistEntry,
+  WaitlistInput,
+} from '@/data/schemas';
 
 export interface DateRange {
   from: Date;
@@ -88,7 +99,81 @@ export type WaitlistResult =
 export interface WaitlistRepository {
   readonly source: SourceMeta;
   add(input: WaitlistInput, context: { ip: string }): Promise<WaitlistResult>;
-  count(): Promise<number>;
+  /**
+   * Nombre d'inscrits, ou `null` quand le dépôt n'a pas le DROIT de le savoir.
+   *
+   * Le dépôt Supabase est dans ce cas : la table est en écriture seule pour le
+   * public, ce qui empêche d'aspirer les adresses — et donc aussi de les
+   * compter. Rendre `0` ferait passer une absence de droit pour une liste vide.
+   */
+  count(): Promise<number | null>;
   /** Uniquement pour les tests : la production n'a pas à relire la liste. */
   listForTests?(): Promise<WaitlistEntry[]>;
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Contributions des pêcheurs : avis et prises déclarées.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/** Qui écrit. Le nom est recopié dans la ligne, voir la migration SQL. */
+export interface Author {
+  userId: string;
+  displayName: string;
+}
+
+export type ContributionFailure =
+  /** Les comptes ne sont pas ouverts sur ce déploiement. */
+  | 'not-available'
+  /** Session absente ou expirée. */
+  | 'not-authenticated'
+  /** Saisie refusée par le schéma. */
+  | 'invalid'
+  /** La base a refusé ou n'a pas répondu. */
+  | 'storage-error';
+
+export type ContributionResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; reason: ContributionFailure; message: string };
+
+export interface SpotContributions {
+  reviews: SpotReview[];
+  catches: Catch[];
+  /** Moyenne des notes, `null` s'il n'y en a aucune — jamais 0, qui se lirait comme une mauvaise note. */
+  averageRating: number | null;
+  reviewCount: number;
+}
+
+/** Tout ce qu'un compte contient, pour l'export du droit d'accès. */
+export interface AccountExport {
+  exportedAt: string;
+  account: { id: string; email: string | null };
+  profile: Profile | null;
+  reviews: SpotReview[];
+  catches: Catch[];
+}
+
+export interface ContributionsRepository {
+  /** `false` quand les comptes ne sont pas configurés : l'interface le DIT au lieu d'échouer. */
+  readonly available: boolean;
+  readonly source: SourceMeta;
+
+  forSpot(spotSlug: string): Promise<SpotContributions>;
+  /** Contributions d'une personne, pour son écran de compte. */
+  listForUser(userId: string): Promise<{ reviews: SpotReview[]; catches: Catch[] }>;
+
+  getProfile(userId: string): Promise<Profile | null>;
+  createProfile(userId: string, displayName: string): Promise<ContributionResult<Profile>>;
+  renameProfile(userId: string, displayName: string): Promise<ContributionResult<Profile>>;
+
+  saveReview(input: SpotReviewInput, author: Author): Promise<ContributionResult<SpotReview>>;
+  deleteReview(reviewId: string): Promise<ContributionResult<null>>;
+
+  addCatch(input: CatchInput, author: Author): Promise<ContributionResult<Catch>>;
+  deleteCatch(catchId: string): Promise<ContributionResult<null>>;
+
+  /** Droit d'accès et de portabilité : tout ce que nous détenons, en une fois. */
+  exportAccount(userId: string, email: string | null): Promise<ContributionResult<AccountExport>>;
+
+  /** Droit à l'effacement. Supprime le compte ET, par cascade, ses contributions. */
+  deleteAccount(userId: string): Promise<ContributionResult<null>>;
 }

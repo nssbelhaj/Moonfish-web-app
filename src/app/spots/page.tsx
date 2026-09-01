@@ -2,12 +2,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { SpotFilters, type FilterOption } from '@/components/forms/SpotFilters';
+import { NearbySpots } from '@/components/spot/NearbySpots';
 import { SpotResults, SpotResultsSkeleton } from '@/components/spot/SpotResults';
 import { Section } from '@/components/ui/Section';
 import { BOTTOM_LABELS, SPOT_TYPE_LABELS, TECHNIQUE_LABELS } from '@/data/spots';
 import type { Spot } from '@/data/schemas';
 import { spots as spotRepository } from '@/lib/providers';
-import { absoluteUrl } from '@/lib/routes';
+import { absoluteUrl, spotPath } from '@/lib/routes';
 import {
   applyFilters,
   describeFilters,
@@ -122,6 +123,25 @@ export default async function SpotsPage({
       </div>
 
       <Section>
+        {/*
+          Bloc de proximité AVANT les filtres : c'est la question la plus
+          fréquente (« qu'y a-t-il près de moi ? ») et la plus vite répondue.
+          Il ne demande rien tant qu'on ne clique pas, et la position ne quitte
+          pas le navigateur.
+        */}
+        <div className="mb-8 max-w-prose">
+          <NearbySpots
+            spots={all.map((spot) => ({
+              slug: spot.slug,
+              name: spot.name,
+              regionLabel: spot.regionName,
+              path: spotPath(spot),
+              lat: spot.lat,
+              lng: spot.lng,
+            }))}
+          />
+        </div>
+
         <h2 className="sr-only">Filtrer les spots</h2>
         <SpotFilters
           filters={filters}

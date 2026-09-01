@@ -2,7 +2,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { CLIENT_STORAGE, PROCESSORS } from '@/data/legal';
+import { CLIENT_STORAGE, CLIENT_STORAGE_WRITE_SITES, PROCESSORS } from '@/data/legal';
 import { THEME_STORAGE_KEY } from '@/lib/theme';
 
 /**
@@ -32,44 +32,82 @@ function read(file: string): string {
   return readFileSync(file, 'utf8');
 }
 
-describe('« aucun cookie, un seul stockage »', () => {
+describe('tout ce que le site écrit dans le navigateur est déclaré', () => {
   /**
-   * On compte les points d'ÉCRITURE, pas les clés : la clé du thème est une
-   * constante importée, pas un littéral, et un test qui n'attraperait que les
-   * littéraux laisserait passer exactement la même construction demain.
+   * On compte les points d'ÉCRITURE par fichier, pas les clés.
+   *
+   * Les clés ne suffisent pas : celle du thème est une constante importée, et
+   * celle de la session porte l'identifiant du projet Supabase, inconnu du
+   * dépôt. Le lieu et le nombre des écritures, eux, sont vérifiables — et une
+   * écriture ajoutée quelque part est exactement ce qu'on veut voir échouer.
    */
-  it('ne connaît pas d’écriture dans le navigateur qui ne soit pas déclarée', () => {
-    const writes: string[] = [];
+  function scanWrites(): Map<string, number> {
+    const counts = new Map<string, number>();
 
     for (const file of SOURCES) {
       const source = read(file);
+      let total = 0;
+
       for (const pattern of [
         /\b(?:window\.)?localStorage\.setItem\s*\(/g,
         /\b(?:window\.)?sessionStorage\.setItem\s*\(/g,
         /document\.cookie\s*=/g,
-        /\bcookies\(\)\s*\.\s*set\s*\(/g,
+        /\bcookieStore\.set\s*\(/g,
+        /\.cookies\.set\s*\(/g,
       ]) {
-        writes.push(...Array.from(source.matchAll(pattern), () => path.relative(ROOT, file)));
+        total += Array.from(source.matchAll(pattern)).length;
       }
+
+      if (total > 0) counts.set(path.relative(ROOT, file), total);
     }
 
-    // Le script d'initialisation du thème LIT le stockage sans y écrire : seule
-    // la bascule écrit. Un écart ici veut dire qu'un stockage est apparu et
-    // qu'il doit être décrit dans `CLIENT_STORAGE`, donc sur la page.
-    expect(
-      writes,
-      `stockage navigateur non déclaré dans src/data/legal.ts : ${writes.join(', ')}`,
-    ).toHaveLength(CLIENT_STORAGE.length);
+    return counts;
+  }
+
+  it('n’écrit nulle part ailleurs que dans les fichiers déclarés', () => {
+    const found = scanWrites();
+    const declared = new Set(CLIENT_STORAGE_WRITE_SITES.map((site) => site.file));
+
+    for (const file of found.keys()) {
+      expect(
+        declared.has(file),
+        `écriture navigateur non déclarée dans src/data/legal.ts : ${file}`,
+      ).toBe(true);
+    }
+  });
+
+  it('écrit exactement autant de fois qu’annoncé, fichier par fichier', () => {
+    const found = scanWrites();
+
+    for (const site of CLIENT_STORAGE_WRITE_SITES) {
+      expect(found.get(site.file), `écritures dans ${site.file}`).toBe(site.writes);
+    }
+  });
+
+  it('rattache chaque point d’écriture à un stockage décrit sur la page', () => {
+    const described = new Set(CLIENT_STORAGE.map((entry) => entry.key));
+    for (const site of CLIENT_STORAGE_WRITE_SITES) {
+      expect(described, `stockage non décrit : ${site.entry}`).toContain(site.entry);
+    }
   });
 
   it('déclare la clé réellement employée par la bascule de thème', () => {
     expect(CLIENT_STORAGE.map((entry) => entry.key)).toContain(THEME_STORAGE_KEY);
   });
 
-  it('n’a aucun cookie à déclarer', () => {
-    // La page écrit « aucun cookie » sans nuance. Si un cookie apparaissait, la
-    // phrase deviendrait fausse avant que quiconque y pense.
-    expect(CLIENT_STORAGE.filter((entry) => entry.kind === 'cookie')).toHaveLength(0);
+  it('n’a qu’un seul cookie, dispensé de consentement, et seulement avec les comptes', () => {
+    // La page annonce qu'il n'y a pas de bandeau de consentement. Cela ne tient
+    // que si TOUS les cookies sont strictement nécessaires. Un cookie de mesure
+    // d'audience ajouté ici ferait tomber ce test — et il devrait, puisqu'il
+    // rendrait la phrase fausse.
+    const cookies = CLIENT_STORAGE.filter((entry) => entry.kind === 'cookie');
+    expect(cookies).toHaveLength(1);
+    expect(cookies[0]?.consentRequired).toBe(false);
+    expect(cookies[0]?.scope).toBe('accounts');
+  });
+
+  it('ne déclare aucun stockage soumis à consentement', () => {
+    expect(CLIENT_STORAGE.filter((entry) => entry.consentRequired)).toStrictEqual([]);
   });
 });
 
@@ -95,7 +133,11 @@ describe('« aucune requête vers un tiers depuis votre navigateur »', () => {
     ).toStrictEqual([]);
   });
 
-  it('ne fait partir aucun appel réseau du navigateur vers un domaine extérieur', () => {
+  it('ne fait partir aucun appel réseau du navigateur vers une URL écrite en dur', () => {
+    // Le navigateur joint bien Supabase — pour la connexion et l'envoi des
+    // photos — mais par une adresse VENUE DE LA CONFIGURATION, déclarée sur la
+    // page. Une URL en dur dans un composant client serait, elle, un tiers
+    // qu'aucune déclaration ne couvre.
     const offenders: string[] = [];
 
     for (const file of SOURCES.filter((f) => f.endsWith('.tsx') || f.endsWith('.ts'))) {
@@ -113,8 +155,14 @@ describe('« aucune requête vers un tiers depuis votre navigateur »', () => {
   it('n’annonce comme joignables par le navigateur que les tiers qui le sont', () => {
     // Les fournisseurs de données sont appelés depuis le serveur. Si l'un d'eux
     // passait côté client, sa ligne devrait changer sur la page AVANT le code.
+    // Les fournisseurs de données sont appelés depuis le serveur ; l'hébergeur
+    // et la base, eux, sont bien joints par le navigateur. Si l'un des premiers
+    // passait côté client, sa ligne devrait changer sur la page AVANT le code.
     const browserFacing = PROCESSORS.filter((processor) => processor.browserContact);
-    expect(browserFacing.map((processor) => processor.name)).toStrictEqual(['Vercel Inc.']);
+    expect(browserFacing.map((processor) => processor.name)).toStrictEqual([
+      'Vercel Inc.',
+      'Supabase',
+    ]);
   });
 });
 

@@ -41,17 +41,21 @@ export function Button({
   type = 'button',
   disabled = false,
   className = '',
+  onClick,
 }: {
   children: ReactNode;
   variant?: ButtonVariant;
   type?: 'button' | 'submit';
   disabled?: boolean;
   className?: string;
+  /** Réservé aux composants clients : un composant serveur ne peut pas en passer. */
+  onClick?: () => void;
 }) {
   return (
     <button
       type={type}
       disabled={disabled}
+      {...(onClick ? { onClick } : {})}
       className={`${BASE} ${VARIANTS[variant]} disabled:opacity-60 ${className}`}
     >
       {children}

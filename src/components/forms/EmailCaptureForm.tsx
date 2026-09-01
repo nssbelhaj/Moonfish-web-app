@@ -4,8 +4,11 @@
 // envoi → succès/erreur) et un appel fetch. C'est l'un des trois seuls
 // composants clients du projet.
 
+import Link from 'next/link';
 import { useId, useState } from 'react';
+
 import { Button } from '@/components/ui/Button';
+import { PUBLISHER } from '@/data/legal';
 
 type Status =
   | { kind: 'idle' }
@@ -92,12 +95,23 @@ export function EmailCaptureForm({ source = 'site' }: { source?: string }) {
       )}
 
       {/* Ne promettre que ce qui est réellement implémenté. La désinscription
-          en un clic n'existe pas encore : on donne l'adresse de contact plutôt
-          que d'annoncer une fonctionnalité absente. */}
-      <p className="mt-3 text-meta text-fg-faint nums leading-[1.5]">
+          en un clic n'existe pas encore : on renvoie vers l'adresse de contact
+          PUBLIÉE plutôt que d'annoncer une fonctionnalité absente — et cette
+          adresse vient de `src/data/legal.ts`, pas d'une chaîne écrite ici qui
+          pourrait désigner une boîte inexistante. */}
+      <p className="mt-3 text-meta text-fg-muted leading-[1.5]">
         Seule votre adresse est enregistrée, avec la page d’où vous vous inscrivez. Aucun partage à
-        des tiers. Pour être retiré de la liste, écrivez à contact@moonfish.fish : la suppression
-        est manuelle tant que le produit n’est pas lancé.
+        des tiers. Pour être retiré de la liste, écrivez à{' '}
+        {PUBLISHER.email ? (
+          <a href={`mailto:${PUBLISHER.email}`} className="underline decoration-dotted underline-offset-4">
+            {PUBLISHER.email}
+          </a>
+        ) : (
+          <Link href="/mentions-legales" className="underline decoration-dotted underline-offset-4">
+            l’adresse indiquée dans les mentions légales
+          </Link>
+        )}{' '}
+        : la suppression est manuelle tant que le produit n’est pas lancé.
       </p>
     </form>
   );

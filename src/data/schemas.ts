@@ -145,3 +145,114 @@ export const waitlistInputSchema = z.object({
 });
 
 export type WaitlistInput = z.infer<typeof waitlistInputSchema>;
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Contributions : profils, avis et prises déclarées.
+
+   Ces schémas sont la FRONTIÈRE de confiance : tout ce qui vient d'un
+   formulaire ou de la base y passe. Les bornes reprennent exactement celles
+   des contraintes SQL de `supabase/migrations/0001_comptes_et_contributions.sql`
+   — un écart ferait rejeter par la base ce que le formulaire a accepté, avec
+   une erreur technique en pleine figure de l'utilisateur.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+export const displayNameSchema = z
+  .string({ required_error: 'Choisissez un nom affiché.' })
+  .trim()
+  .min(2, 'Deux caractères au minimum.')
+  .max(40, 'Quarante caractères au maximum.');
+
+export const profileSchema = z.object({
+  id: z.string().uuid(),
+  displayName: displayNameSchema,
+  consentVersion: z.string(),
+  consentAt: isoDateTime,
+  createdAt: isoDateTime,
+});
+
+export type Profile = z.infer<typeof profileSchema>;
+
+export const spotReviewSchema = z.object({
+  id: z.string().uuid(),
+  spotSlug: z.string(),
+  userId: z.string().uuid(),
+  authorName: z.string(),
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().nullable(),
+  createdAt: isoDateTime,
+  updatedAt: isoDateTime,
+});
+
+export type SpotReview = z.infer<typeof spotReviewSchema>;
+
+export const spotReviewInputSchema = z.object({
+  spotSlug: z.string().min(1),
+  rating: z.coerce
+    .number({ required_error: 'Donnez une note.' })
+    .int()
+    .min(1, 'La note va de 1 à 5.')
+    .max(5, 'La note va de 1 à 5.'),
+  comment: z
+    .string()
+    .trim()
+    .max(1200, 'Commentaire trop long (1 200 caractères au maximum).')
+    .optional()
+    .transform((value) => (value === undefined || value.length === 0 ? null : value)),
+});
+
+export type SpotReviewInput = z.infer<typeof spotReviewInputSchema>;
+
+export const catchSchema = z.object({
+  id: z.string().uuid(),
+  spotSlug: z.string(),
+  userId: z.string().uuid(),
+  authorName: z.string(),
+  species: z.string(),
+  lengthCm: z.number().int().nullable(),
+  weightG: z.number().int().nullable(),
+  released: z.boolean(),
+  caughtAt: isoDateTime,
+  note: z.string().nullable(),
+  /** Chemin dans le seau de stockage, jamais une URL : elle se construit au rendu. */
+  photoPath: z.string().nullable(),
+  createdAt: isoDateTime,
+});
+
+export type Catch = z.infer<typeof catchSchema>;
+
+/**
+ * Une taille facultative se saisit comme un champ vide, pas comme un zéro.
+ * `''` doit donc devenir `null` AVANT la validation des bornes, sans quoi le
+ * formulaire refuserait une prise dont on n'a pas mesuré la longueur.
+ */
+const optionalMeasure = (max: number, message: string) =>
+  z
+    .union([z.literal(''), z.coerce.number()])
+    .optional()
+    .transform((value) => (value === '' || value === undefined ? null : Number(value)))
+    .refine((value) => value === null || (Number.isFinite(value) && value >= 1 && value <= max), {
+      message,
+    })
+    .transform((value) => (value === null ? null : Math.round(value)));
+
+export const catchInputSchema = z.object({
+  spotSlug: z.string().min(1),
+  species: z
+    .string({ required_error: 'Quelle espèce ?' })
+    .trim()
+    .min(2, 'Nom d’espèce trop court.')
+    .max(60, 'Nom d’espèce trop long.'),
+  lengthCm: optionalMeasure(400, 'Longueur invalide (1 à 400 cm).'),
+  weightG: optionalMeasure(200_000, 'Poids invalide (1 g à 200 kg).'),
+  released: z.coerce.boolean().default(false),
+  caughtAt: isoDateTime,
+  note: z
+    .string()
+    .trim()
+    .max(600, 'Note trop longue (600 caractères au maximum).')
+    .optional()
+    .transform((value) => (value === undefined || value.length === 0 ? null : value)),
+  photoPath: z.string().max(300).nullable().optional().default(null),
+});
+
+export type CatchInput = z.infer<typeof catchInputSchema>;
