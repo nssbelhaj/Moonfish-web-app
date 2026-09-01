@@ -1,76 +1,58 @@
-import { MAILLE_REFERENCE, MAILLE_SOURCE_URL, type Sea } from '@/data/species';
-import type { SpeciesActivity } from '@/lib/species/activity';
-import { formatScore, tierForOrNull } from '@/lib/score-display';
-import { ScoreScale } from './ScoreScale';
+import { MAILLE_REFERENCE, MAILLE_SOURCE_URL, type SpeciesInfo, type Sea } from '@/data/species';
+import { BOTTOM_LABELS } from '@/data/spots';
+import type { SpotBottom } from '@/data/schemas';
 
 /**
- * Une espèce, avec sa fenêtre, son montage et sa RÉGLEMENTATION (D5).
+ * Une espèce connue sur ce spot, avec sa réglementation (D5).
  *
- * La maille et la limite journalière ne sont pas un détail juridique posé en
- * bas de page : elles sont dans la carte, à côté du montage. Un montage sans sa
- * réglementation est une invitation à l'infraction.
+ * ─────────────────────────────────────────────────────────────────────────
+ *  CE QUE CETTE CARTE NE FAIT PLUS, ET POURQUOI.
  *
- * Quand nous n'avons pas vérifié la maille, la carte le DIT et renvoie à
- * l'arrêté. Elle n'invente pas un chiffre, et elle ne masque pas non plus
- * l'espèce : les deux tromperaient, dans des sens opposés.
+ *  Elle portait un indice d'activité et une fenêtre de marée par espèce
+ *  (« bar : 2,5 h avant PM → 1 h après PM »). Cette donnée n'existe nulle
+ *  part : ni le SHOM, ni les fournisseurs météo, ni aucune source publique ne
+ *  la produisent. Elle était donc fabriquée par un modèle, et affichée avec la
+ *  même autorité qu'un coefficient de marée mesuré.
+ *
+ *  Ce qu'on sait honnêtement d'une espèce sur un spot, c'est : qu'elle y est
+ *  connue, sur quel fond elle se tient, ce qu'on lui présente, et sa taille
+ *  légale. Le reste viendra des prises déclarées par les pêcheurs, pas d'un
+ *  modèle qui aurait deviné à leur place.
+ * ─────────────────────────────────────────────────────────────────────────
  */
 export function SpeciesCard({
-  activity,
+  species,
   sea,
-  expanded = false,
+  spotBottom,
 }: {
-  activity: SpeciesActivity;
+  species: SpeciesInfo;
   sea: Sea;
-  /** La première espèce est dépliée : score en grand, échelle 0–10, latin. */
-  expanded?: boolean;
+  spotBottom: SpotBottom;
 }) {
-  const tier = tierForOrNull(activity.index);
-  const color = tier?.colorVar ?? 'var(--edge-strong)';
-  const maille = activity.species.maille[sea];
-  const width = activity.index === null ? 0 : activity.index * 10;
+  const maille = species.maille[sea];
+  const onThisBottom = species.bottoms.includes(spotBottom);
 
   return (
     <article className="surface flex flex-col gap-3 p-[14px]">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex flex-col gap-[3px]">
-          <h3 className={`font-serif font-semibold ${expanded ? 'text-[22px]' : 'text-[19px]'}`}>
-            {activity.species.name}
-          </h3>
-          {expanded ? (
-            <p className="font-serif text-[13px] italic text-fg-muted">{activity.species.latin}</p>
-          ) : (
-            <p className="text-meta text-fg-muted">{activity.window}</p>
-          )}
-        </div>
-
-        <div className="flex shrink-0 items-center gap-[10px]">
-          <span className="font-serif text-[13px]" style={{ color }}>
-            {activity.label ?? 'Indispo.'}
-          </span>
-          <span
-            className={`nums font-bold leading-none ${expanded ? 'text-[34px]' : 'text-[26px]'}`}
-            style={{ color }}
-            data-numeric=""
-          >
-            {formatScore(activity.index)}
-          </span>
-        </div>
+      <div className="flex flex-col gap-[3px]">
+        <h3 className="font-serif text-[19px] font-semibold">{species.name}</h3>
+        <p className="font-serif text-[13px] italic text-fg-muted">{species.latin}</p>
       </div>
 
-      {expanded ? (
-        <ScoreScale value={activity.index} />
-      ) : (
-        <div className="relative h-[6px] rounded-[3px] bg-surface-2">
-          <div
-            className="absolute inset-y-0 left-0 rounded-[3px]"
-            style={{ width: `${width}%`, backgroundColor: color }}
-          />
-        </div>
-      )}
+      <p className="text-body text-fg-muted">{species.moment}</p>
 
-      {expanded && <p className="text-meta text-fg-muted">{activity.window}</p>}
+      <p className="text-body text-fg-muted">
+        <span className="font-semibold text-fg">Fonds : </span>
+        {species.bottoms.map((b) => BOTTOM_LABELS[b].toLowerCase()).join(', ')}.
+        {!onThisBottom && (
+          <> Le fond de ce spot n’en fait pas partie : cherchez plutôt les structures voisines.</>
+        )}
+      </p>
 
-      <p className="text-body text-fg-muted">{activity.note}</p>
+      <p className="text-body text-fg-muted">
+        <span className="font-semibold text-fg">Montage : </span>
+        {species.rig}
+      </p>
 
       <p className="card-source">
         {maille === null ? (
@@ -89,8 +71,7 @@ export function SpeciesCard({
         ) : (
           <>
             Maille <span className="nums">{maille} cm</span>
-            {activity.species.dailyLimit ? ` · ${activity.species.dailyLimit}` : ''} ·{' '}
-            {MAILLE_REFERENCE}
+            {species.dailyLimit ? ` · ${species.dailyLimit}` : ''} · {MAILLE_REFERENCE}
           </>
         )}
       </p>

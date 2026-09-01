@@ -1,4 +1,3 @@
-import type { LightPhase } from '@/lib/scoring';
 import type { SpotBottom } from './schemas';
 
 /** Façade maritime, qui décide de la maille applicable. */
@@ -21,14 +20,12 @@ export interface SpeciesInfo {
   /** Limite journalière quand elle existe. */
   dailyLimit?: string;
   /**
-   * Fenêtre de marée favorable, en heures signées depuis la pleine mer.
-   * Négatif = avant PM.
+   * Fonds sur lesquels l'espèce se tient. C'est de l'histoire naturelle, pas
+   * une statistique de prise : un congre demande du dur, partout et toujours.
    */
-  window: { fromH: number; toH: number };
-  /** Phases lumineuses où l'espèce est active. */
-  light: LightPhase[];
-  /** Fonds sur lesquels elle se tient. */
   bottoms: SpotBottom[];
+  /** Ce que la pratique enseigne du moment de la journée, sans horaire chiffré. */
+  moment: string;
   /** Montage et appât, en une phrase. */
   rig: string;
 }
@@ -54,9 +51,9 @@ export const SPECIES: readonly SpeciesInfo[] = [
     latin: 'Dicentrarchus labrax',
     maille: { atlantique: 42, mediterranee: 30 },
     dailyLimit: '2 par jour et par pêcheur en Atlantique nord-est, d’avril à octobre',
-    window: { fromH: -2.5, toH: 1 },
-    light: ['dawn', 'dusk', 'night'],
     bottoms: ['sable', 'sable-roche', 'roche', 'galets'],
+    moment:
+      'Chasse surtout dans la lumière basse et le ressac. Les pêcheurs la cherchent autour de la pleine mer, sans que cela vaille règle.',
     rig: 'Empile longue en 35/100, hameçon 2/0, ver ou lançon. Chercher le ressac et les veines de courant.',
   },
   {
@@ -64,9 +61,9 @@ export const SPECIES: readonly SpeciesInfo[] = [
     name: 'Loup',
     latin: 'Dicentrarchus labrax',
     maille: { atlantique: 42, mediterranee: 30 },
-    window: { fromH: -2.5, toH: 1 },
-    light: ['dawn', 'dusk', 'night'],
     bottoms: ['sable', 'sable-roche', 'roche', 'galets'],
+    moment:
+      'Se prend de nuit comme de jour ; la mer légèrement formée le met en confiance.',
     rig: 'Coulissant 28/100, hameçon 1/0, ver de sable ou bibi. Mer légèrement formée.',
   },
   {
@@ -74,9 +71,9 @@ export const SPECIES: readonly SpeciesInfo[] = [
     name: 'Sole',
     latin: 'Solea solea',
     maille: { atlantique: 25, mediterranee: 20 },
-    window: { fromH: 1.5, toH: 4.5 },
-    light: ['dusk', 'night'],
     bottoms: ['sable', 'vase-estuaire'],
+    moment:
+      'Poisson de nuit, sur le sable. Se pêche au ras du fond, à la traîne lente.',
     rig: 'Deux empiles courtes, hameçons 4, ver de vase. Traîner au ras du fond.',
   },
   {
@@ -84,9 +81,9 @@ export const SPECIES: readonly SpeciesInfo[] = [
     name: 'Lieu jaune',
     latin: 'Pollachius pollachius',
     maille: { atlantique: 42, mediterranee: null },
-    window: { fromH: -3, toH: -0.5 },
-    light: ['dawn', 'dusk'],
     bottoms: ['roche', 'sable-roche'],
+    moment:
+      'Le long des roches et des laminaires, dans les premières et les dernières heures du jour.',
     rig: 'Leurre souple sur tête plombée légère, le long des roches et des laminaires.',
   },
   {
@@ -94,9 +91,9 @@ export const SPECIES: readonly SpeciesInfo[] = [
     name: 'Daurade royale',
     latin: 'Sparus aurata',
     maille: { atlantique: null, mediterranee: 23 },
-    window: { fromH: -1, toH: 2 },
-    light: ['day', 'dawn'],
     bottoms: ['sable', 'sable-roche'],
+    moment:
+      'Recherchée de jour sur les fonds mêlés, quand le courant faiblit.',
     rig: 'Bas de ligne 30/100, hameçon 1/0, crabe mou ou couteau. Attendre le calme de l’étale.',
   },
   {
@@ -104,9 +101,9 @@ export const SPECIES: readonly SpeciesInfo[] = [
     name: 'Dorade royale',
     latin: 'Sparus aurata',
     maille: { atlantique: null, mediterranee: 23 },
-    window: { fromH: -1, toH: 2 },
-    light: ['day', 'dawn'],
     bottoms: ['sable', 'sable-roche'],
+    moment:
+      'Recherchée de jour sur les fonds mêlés, quand le courant faiblit.',
     rig: 'Bas de ligne 30/100, hameçon 1/0, crabe mou ou couteau. Attendre le calme de l’étale.',
   },
   {
@@ -114,9 +111,9 @@ export const SPECIES: readonly SpeciesInfo[] = [
     name: 'Sar',
     latin: 'Diplodus sargus',
     maille: { atlantique: 23, mediterranee: 23 },
-    window: { fromH: -2, toH: 1.5 },
-    light: ['day', 'dawn', 'dusk'],
     bottoms: ['roche', 'sable-roche', 'galets'],
+    moment:
+      'Actif de jour le long des enrochements, souvent à quelques mètres du bord.',
     rig: 'Ligne fine 22/100, hameçon 6, crabe ou moule. Le long des enrochements.',
   },
   {
@@ -124,9 +121,9 @@ export const SPECIES: readonly SpeciesInfo[] = [
     name: 'Marbré',
     latin: 'Lithognathus mormyrus',
     maille: { atlantique: 20, mediterranee: 20 },
-    window: { fromH: 1, toH: 4 },
-    light: ['day', 'dawn'],
     bottoms: ['sable'],
+    moment:
+      'De jour, dans la première barre, sur le sable propre.',
     rig: 'Montage à gambes fines, hameçons 8, gravette. Dans la première barre.',
   },
   {
@@ -134,9 +131,9 @@ export const SPECIES: readonly SpeciesInfo[] = [
     name: 'Maigre',
     latin: 'Argyrosomus regius',
     maille: { atlantique: null, mediterranee: null },
-    window: { fromH: -1.5, toH: 0.5 },
-    light: ['night', 'dusk'],
     bottoms: ['sable', 'vase-estuaire'],
+    moment:
+      'Poisson de nuit, près des embouchures et des fosses. Rare et recherché.',
     rig: 'Gros vif ou tête de calamar, hameçon 6/0, 40/100. Marquage de la caudale obligatoire.',
   },
   {
@@ -144,9 +141,9 @@ export const SPECIES: readonly SpeciesInfo[] = [
     name: 'Congre',
     latin: 'Conger conger',
     maille: { atlantique: null, mediterranee: null },
-    window: { fromH: -0.7, toH: 0.7 },
-    light: ['night'],
     bottoms: ['roche', 'sable-roche', 'galets'],
+    moment:
+      'Strictement nocturne, sur les fonds durs. Rien à en attendre sur du sable nu.',
     rig: 'Bas de ligne acier, hameçon 8/0, tête de maquereau. Sur fonds durs uniquement.',
   },
   {
@@ -154,9 +151,9 @@ export const SPECIES: readonly SpeciesInfo[] = [
     name: 'Turbot',
     latin: 'Scophthalmus maximus',
     maille: { atlantique: null, mediterranee: null },
-    window: { fromH: 1.5, toH: 4.5 },
-    light: ['day', 'dawn', 'dusk'],
     bottoms: ['sable'],
+    moment:
+      'Embusqué sur les bancs de sable balayés par le courant.',
     rig: 'Empile longue, hameçon 2/0, lançon vif. Sur les bancs de sable balayés.',
   },
   {
@@ -164,9 +161,9 @@ export const SPECIES: readonly SpeciesInfo[] = [
     name: 'Plie',
     latin: 'Pleuronectes platessa',
     maille: { atlantique: null, mediterranee: null },
-    window: { fromH: 1, toH: 4 },
-    light: ['day', 'dawn'],
     bottoms: ['sable', 'vase-estuaire'],
+    moment:
+      'De jour, sur le sable et la vase, en pêche fine.',
     rig: 'Empiles courtes perlées, hameçons 4, arénicole.',
   },
   {
@@ -174,9 +171,9 @@ export const SPECIES: readonly SpeciesInfo[] = [
     name: 'Merlan',
     latin: 'Merlangius merlangus',
     maille: { atlantique: null, mediterranee: null },
-    window: { fromH: -2, toH: 2 },
-    light: ['night', 'dusk'],
     bottoms: ['sable', 'vase-estuaire'],
+    moment:
+      'Pêche hivernale, souvent de nuit, sur les fonds meubles.',
     rig: 'Deux hameçons 1/0, lanière de maquereau. Pêche hivernale, souvent de nuit.',
   },
   {
@@ -184,9 +181,9 @@ export const SPECIES: readonly SpeciesInfo[] = [
     name: 'Maquereau',
     latin: 'Scomber scombrus',
     maille: { atlantique: 20, mediterranee: 18 },
-    window: { fromH: -2.5, toH: 0.5 },
-    light: ['dawn', 'dusk'],
     bottoms: ['roche', 'sable-roche', 'galets'],
+    moment:
+      'Quand le poisson chasse en surface, surtout au lever et au coucher du jour.',
     rig: 'Train de plumes, lancer léger. Quand le poisson chasse en surface.',
   },
   {
@@ -194,9 +191,9 @@ export const SPECIES: readonly SpeciesInfo[] = [
     name: 'Vieille',
     latin: 'Labrus bergylta',
     maille: { atlantique: null, mediterranee: null },
-    window: { fromH: -2, toH: 1 },
-    light: ['day', 'dawn'],
     bottoms: ['roche', 'sable-roche'],
+    moment:
+      'De jour, à l’aplomb des roches. Ne s’éloigne pas de son abri.',
     rig: 'Ligne courte, hameçon 2, crabe vert. À l’aplomb des roches.',
   },
 ];

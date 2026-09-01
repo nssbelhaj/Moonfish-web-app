@@ -1,14 +1,12 @@
 import type { Metadata } from 'next';
 
-import { DataSourceTag } from '@/components/data/DataSourceTag';
 import { DemoDataNotice } from '@/components/data/DemoDataNotice';
+import { EmailCaptureForm } from '@/components/forms/EmailCaptureForm';
 import { SpotTabs } from '@/components/spot/SpotTabs';
 import { SpeciesCard } from '@/components/v3/SpeciesCard';
-import { SpeciesWindowChart } from '@/components/v3/SpeciesWindowChart';
 import { SPECIES_BY_NAME, seaOf } from '@/data/species';
 import { sourceList } from '@/lib/forecast';
 import { absoluteUrl, spotPath } from '@/lib/routes';
-import { speciesActivity } from '@/lib/species/activity';
 import { findSpot, resolveSpot, type RouteParams } from '../spot-page-data';
 
 export const revalidate = 3600;
@@ -21,29 +19,24 @@ export async function generateMetadata({
   const spot = await findSpot(params);
   if (!spot) return { title: 'Spot introuvable' };
 
+  const names = spot.species.slice(0, 4).join(', ').toLowerCase();
+
   return {
-    title: `${spot.name} — quelles espèces, à quel moment de la marée`,
-    description: `Indice d’activité par espèce à ${spot.name} : fenêtre de marée, montage, appât et taille légale de capture.`,
+    title: `${spot.name} — espèces connues et tailles légales`,
+    description: `Ce qui se pêche à ${spot.name} : ${names}. Fonds, montages et taille minimale de capture.`,
     alternates: { canonical: absoluteUrl(`${spotPath(spot)}/especes`) },
   };
 }
 
 export default async function SpotSpeciesPage({ params }: { params: Promise<RouteParams> }) {
   const { spot, forecast } = await resolveSpot(params);
-  const current = forecast.current;
-  const today = forecast.days[0];
   const sea = seaOf(spot.regionSlug);
 
-  // Le catalogue du spot, dans l'ordre où le modèle les classe. Les mauvais
-  // indices restent affichés : savoir qu'une espèce n'est PAS là fait partie de
-  // la réponse (D4).
-  const activities = current
-    ? spot.species
-        .map((name) => SPECIES_BY_NAME.get(name.toLowerCase()))
-        .filter((s): s is NonNullable<typeof s> => s !== undefined)
-        .map((species) => speciesActivity(species, spot, current))
-        .sort((a, b) => (b.index ?? -1) - (a.index ?? -1))
-    : [];
+  const known = spot.species
+    .map((name) => SPECIES_BY_NAME.get(name.toLowerCase()))
+    .filter((s): s is NonNullable<typeof s> => s !== undefined);
+
+  const unlisted = spot.species.filter((name) => !SPECIES_BY_NAME.has(name.toLowerCase()));
 
   return (
     <>
@@ -55,76 +48,70 @@ export default async function SpotSpeciesPage({ params }: { params: Promise<Rout
       </div>
 
       <div className="mx-auto w-full max-w-shell px-4 py-8 md:px-8 md:py-12">
-        <section aria-labelledby="fenetres">
-          <h2 id="fenetres" className="font-serif text-h2 font-semibold">
-            Fenêtres d’activité
+        <section aria-labelledby="connues">
+          <h2 id="connues" className="font-serif text-h2 font-semibold">
+            Espèces connues sur ce spot
           </h2>
-          <p className="mt-2 max-w-prose text-body text-fg-muted">
-            Une espèce n’est pas « bonne » ou « mauvaise » : elle a une fenêtre. L’indice sert à
-            trier, la fenêtre à décider — elle est posée sur la même courbe de marée que l’onglet
-            Live, pour n’avoir qu’une lecture à apprendre.
-          </p>
 
-          {today && activities.length > 0 ? (
-            <div className="surface mt-4 p-[14px]">
-              <p className="text-[11.5px] text-fg-muted">
-                Fenêtres d’activité sur la marée en cours
-              </p>
-              <div className="mt-2">
-                <SpeciesWindowChart
-                  activities={activities}
-                  tideEvents={forecast.tideEvents}
-                  dayStart={today.date}
-                  timeZone={spot.timezone}
-                  now={forecast.generatedAt}
-                />
-              </div>
-              <p className="card-source mt-2">
-                Modèle espèces Moonfish — fenêtres de marée, lumière et fond. Ce n’est pas une
-                mesure : aucune prise n’est prédite, et rien n’est promis.
-              </p>
-            </div>
-          ) : (
-            <p className="mt-4 text-body text-fg-muted">
-              Indices indisponibles pour ce créneau.
-            </p>
-          )}
-        </section>
-
-        <section aria-labelledby="classement" className="mt-10">
-          <h2 id="classement" className="font-serif text-h2 font-semibold">
-            Le classement du moment
-          </h2>
+          {/*
+            La portée de cette page est écrite AVANT la liste, pas en note de bas
+            de page. C'est ce qui distingue « ce qui se pêche sur cette côte » de
+            « ce qui mord ici, maintenant » — et nous ne savons dire que le
+            premier.
+          */}
           <p className="mt-2 max-w-prose text-body text-fg-muted">
-            Les espèces mal placées restent listées, avec leur indice. Les masquer donnerait
-            l’illusion que tout est possible sur ce spot, à toute heure.
+            Cette liste dit ce qui se pêche sur cette côte, sur ce type de fond. Elle ne dit pas ce
+            qui mord aujourd’hui : aucune source publique ne publie de statistiques de prises spot
+            par spot, et nous préférons l’écrire plutôt que de le deviner. Ce sont les prises
+            déclarées par les pêcheurs qui rempliront ce vide.
           </p>
 
           <div className="mt-4 flex flex-col gap-3">
-            {activities.map((activity, index) => (
+            {known.map((species) => (
               <SpeciesCard
-                key={activity.species.slug}
-                activity={activity}
+                key={species.slug}
+                species={species}
                 sea={sea}
-                expanded={index === 0}
+                spotBottom={spot.bottom}
               />
             ))}
           </div>
 
-          <div className="demo-frame mt-4 p-[13px]">
-            <p className="font-serif text-[13px] italic text-accent">
-              Aucune promesse de prise
+          {unlisted.length > 0 && (
+            <p className="mt-4 text-meta text-fg-muted">
+              Également signalées sur ce spot, sans fiche détaillée pour l’instant :{' '}
+              {unlisted.join(', ')}.
             </p>
-            <p className="mt-1 text-[11.5px] text-fg-muted">
-              Ces indices décrivent des conditions, pas un résultat. La mer décide.
-            </p>
-          </div>
+          )}
+        </section>
 
-          <DataSourceTag
-            status={forecast.sources.tide}
-            serverNow={forecast.generatedAt}
-            timeZone={spot.timezone}
-          />
+        <section aria-labelledby="contributions" className="mt-10">
+          <h2 id="contributions" className="font-serif text-h2 font-semibold">
+            Vos prises sur ce spot
+          </h2>
+
+          {/*
+            D12 : le bloc existe AVANT la fonctionnalité, et annonce qu'elle est
+            en préparation. Il mesure l'intention de contribuer sans mentir sur
+            la disponibilité — un formulaire qui ferait semblant d'enregistrer
+            serait pire que pas de formulaire du tout.
+          */}
+          <div className="demo-frame mt-4 p-4">
+            <p className="font-serif text-[13px] italic text-accent">En préparation</p>
+            <p className="mt-2 max-w-prose text-body text-fg-muted">
+              Le carnet de prises n’est pas encore ouvert. Il permettra de déclarer une prise —
+              espèce, taille, moment de la marée, photo — et de noter le spot. Ce sont ces
+              déclarations qui diront un jour ce qui se prend réellement ici, et à quel moment :
+              c’est la seule source honnête pour cette information.
+            </p>
+            <p className="mt-3 max-w-prose text-body text-fg-muted">
+              Il demandera un compte, parce qu’une prise anonyme n’est pas vérifiable et qu’une
+              note anonyme ne vaut rien.
+            </p>
+            <div className="mt-4">
+              <EmailCaptureForm source={`especes:${spot.slug}`} />
+            </div>
+          </div>
         </section>
       </div>
     </>

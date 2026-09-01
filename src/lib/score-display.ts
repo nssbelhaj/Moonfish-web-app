@@ -42,6 +42,30 @@ export function tierFor(value: number): TierPresentation {
   return TIERS[4];
 }
 
+/**
+ * Activité d'un créneau, codée de 0 à 3 poissons.
+ *
+ * C'est le PALIER moins un : trois poissons pour « Excellent », deux pour
+ * « Bon », un pour « Passable », aucun pour « Médiocre ». Le symbole n'est donc
+ * pas une seconde information à apprendre, c'est le même palier lu autrement —
+ * un canal redondant de plus, lisible d'un coup d'œil et en niveaux de gris.
+ *
+ * Zéro symbole pour le palier bas, plutôt qu'un poisson barré : une activité
+ * faible se lit à l'absence, pas à un signe de plus (R6).
+ */
+export function activityLevel(value: number | null | undefined): 0 | 1 | 2 | 3 {
+  const tier = tierForOrNull(value);
+  if (tier === null) return 0;
+  return (tier.tier - 1) as 0 | 1 | 2 | 3;
+}
+
+export const ACTIVITY_LABELS: Record<0 | 1 | 2 | 3, string> = {
+  0: 'activité faible',
+  1: 'activité modérée',
+  2: 'activité soutenue',
+  3: 'activité maximale',
+};
+
 /** Palier d'une valeur éventuellement absente. `null` = il n'y a rien à qualifier. */
 export function tierForOrNull(value: number | null | undefined): TierPresentation | null {
   if (value === null || value === undefined || !Number.isFinite(value)) return null;

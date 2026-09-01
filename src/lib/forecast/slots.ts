@@ -4,8 +4,15 @@ import { computeScore, type ScoreResult } from '@/lib/scoring';
 import { addHours, localCalendarNoonUtc, startOfLocalDay } from '@/lib/time';
 import { tideContextAt } from './tide-context';
 
-/** Le handoff cadre la TimeWindowBar sur 8 colonnes de 3 h : c'est la granularité du produit. */
-export const SLOT_HOURS = 3;
+/**
+ * Granularité du produit : des créneaux de DEUX heures, soit douze par jour.
+ *
+ * Trois heures était trop large pour une marée : une fenêtre de pleine mer dure
+ * environ trois heures, si bien qu'un créneau de trois heures pouvait mélanger
+ * le meilleur et le pire du cycle en une seule note. Deux heures suivent le
+ * mouvement de l'eau d'assez près pour que la note veuille dire quelque chose.
+ */
+export const SLOT_HOURS = 2;
 export const SLOTS_PER_DAY = 24 / SLOT_HOURS;
 export const FORECAST_DAYS = 7;
 

@@ -109,12 +109,12 @@ describe('contexte de marée reconstruit depuis les extremums', () => {
 });
 
 describe('prévision assemblée', () => {
-  it('rend 7 jours de 8 créneaux pour chacun des 12 spots', async () => {
+  it('rend 7 jours de créneaux pour chacun des 12 spots', async () => {
     for (const s of SPOTS) {
       const forecast = await getSpotForecast(s, NOW);
       expect(forecast.days).toHaveLength(7);
       for (const day of forecast.days) {
-        expect(day.slots).toHaveLength(8);
+        expect(day.slots).toHaveLength(SLOTS_PER_DAY);
       }
     }
   });
