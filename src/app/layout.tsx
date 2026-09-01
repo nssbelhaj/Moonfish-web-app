@@ -3,6 +3,7 @@ import { Archivo, IBM_Plex_Mono, Spectral } from 'next/font/google';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { SiteHeader } from '@/components/layout/SiteHeader';
 import { SITE_URL } from '@/lib/routes';
+import { BROWSER_THEME_COLOR } from '@/lib/theme';
 import './globals.css';
 
 // Les trois familles du handoff §1. `next/font` les auto-héberge : aucune
@@ -47,7 +48,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#05100F',
+  themeColor: BROWSER_THEME_COLOR,
   width: 'device-width',
   initialScale: 1,
 };

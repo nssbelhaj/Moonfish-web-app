@@ -266,16 +266,27 @@ mer » est en bordure pleine et étiqueté *Prévision*, tandis que le bloc
 
 ## Où toucher au design
 
-Deux fichiers, et deux seulement :
+**Deux fichiers portent la totalité de la palette :**
 
 - **`tailwind.config.ts`** — palette, familles, échelle typographique, rayons,
-  ombres. Traduction directe du handoff design v1.
+  ombres.
 - **`src/app/globals.css`** — variables CSS des deux thèmes. Le sombre est le
   défaut (`:root`), le clair est opt-in (`.theme-light`, posé sur les guides).
 
 Les composants n'utilisent que les tokens sémantiques (`bg-card`, `text-fg`,
-`var(--score-best)`…), jamais les littéraux. Changer un thème ne demande donc
-aucune modification de composant.
+`var(--score-best)`…), jamais les littéraux. Vérifié : **aucune couleur en dur
+dans `src/components/` ni `src/app/`**.
+
+### Les deux exceptions, et pourquoi
+
+Deux endroits ne peuvent pas lire une variable CSS. Ils sont donc à mettre à
+jour à la main lors d'un changement de direction artistique — d'où cette liste,
+pour qu'ils ne soient pas oubliés :
+
+| Fichier | Raison |
+| --- | --- |
+| `src/lib/theme.ts` | `<meta name="theme-color">` est lue par le navigateur avant tout rendu, hors cascade CSS. Doit refléter `--page` du thème sombre. |
+| `src/app/spots/[country]/[region]/[slug]/opengraph-image.tsx` | L'image OG est rendue hors du DOM par Satori : pas de cascade, pas de variables. |
 
 ---
 
