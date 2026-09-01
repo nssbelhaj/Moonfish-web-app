@@ -67,7 +67,6 @@ src/
 │   │       ├── spot-page-data.ts Résolution partagée par le layout et les onglets
 │   │       └── opengraph-image.tsx  Image OG dynamique, pré-rendue au build
 │   ├── guides/                   Index + article ([slug])
-│   ├── pricing/                  Gratuit vs Pro, aucun paiement branché
 │   ├── api/waitlist/route.ts     POST — Zod + limiteur de débit + écriture
 │   ├── sitemap.ts, robots.ts     Générés depuis les mêmes sources que les pages
 │   ├── globals.css               Variables CSS des deux thèmes ← POINT D'ENTRÉE DESIGN
@@ -83,7 +82,7 @@ src/
 │   ├── data/                     DataSourceTag, DemoDataNotice ← honnêteté des données
 │   ├── forms/                    EmailCaptureForm, SpotSearch, SpotFilters (les 3
 │   │                             SEULS composants clients du projet)
-│   ├── guides/, pricing/, layout/, ui/
+│   ├── guides/, layout/, ui/
 │
 ├── data/
 │   ├── schemas.ts                Schémas Zod — la FRONTIÈRE avec les futures API

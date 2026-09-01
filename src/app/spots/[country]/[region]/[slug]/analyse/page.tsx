@@ -142,8 +142,8 @@ export default async function SpotAnalysisPage({ params }: { params: Promise<Rou
               Être prévenu pour ce spot
             </h2>
             <p className="mt-2 text-body text-fg-muted">
-              Les alertes sur les bonnes fenêtres font partie du plan Pro, qui n’existe pas encore.
-              Laissez votre adresse pour être prévenu au lancement.
+              Les alertes sur les bonnes fenêtres n’existent pas encore. Laissez votre adresse
+              pour être prévenu quand elles arriveront.
             </p>
             <div className="mt-4">
               <EmailCaptureForm source={`spot:${spot.slug}`} />

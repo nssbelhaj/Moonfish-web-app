@@ -76,7 +76,6 @@ export function SiteFooter() {
             {[
               { href: '/spots', label: 'Tous les spots' },
               { href: '/guides', label: 'Guides' },
-              { href: '/pricing', label: 'Tarifs' },
               { href: '/donnees', label: 'Données et sources' },
             ].map((item) => (
               <li key={item.href}>

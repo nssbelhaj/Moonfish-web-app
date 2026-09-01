@@ -4,7 +4,7 @@ import { NavLink } from './NavLink';
 const NAV = [
   { href: '/spots', label: 'Spots' },
   { href: '/guides', label: 'Guides' },
-  { href: '/pricing', label: 'Tarifs' },
+  { href: '/donnees', label: 'Données' },
 ] as const;
 
 /**

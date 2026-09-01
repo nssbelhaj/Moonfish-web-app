@@ -1,10 +1,6 @@
-import Link from 'next/link';
 import type { ForecastDay, ForecastSlot } from '@/lib/forecast';
 import { UNAVAILABLE_COLOR_VAR, formatScore, tierForOrNull } from '@/lib/score-display';
 import { formatDayShort, formatTime } from '@/lib/time';
-
-/** Au-delà de J+2, la profondeur temporelle passe derrière le mur Pro (handoff §5). */
-export const FREE_DAYS = 3;
 
 function slotColor(slot: ForecastSlot, isPast: boolean): string {
   // Un créneau écoulé n'est pas un mauvais créneau : il n'a plus de créneau du
@@ -37,9 +33,7 @@ export function TimeWindowBar({
   return (
     <div>
       <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 md:snap-none">
-        {days.map((day, dayIndex) => {
-          const locked = dayIndex >= FREE_DAYS;
-
+        {days.map((day) => {
           return (
             <div
               key={day.date}
@@ -50,10 +44,7 @@ export function TimeWindowBar({
               </p>
 
               <div className="relative mt-2">
-                <ul
-                  className={locked ? 'pointer-events-none select-none blur-[5px]' : undefined}
-                  aria-hidden={locked || undefined}
-                >
+                <ul>
                   {day.slots.map((slot) => {
                     const isPast = new Date(slot.end).getTime() <= nowMs;
                     const tier = tierForOrNull(slot.score.value);
@@ -86,28 +77,12 @@ export function TimeWindowBar({
                     );
                   })}
                 </ul>
-
-                {locked && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-meta text-fg-faint nums text-fg-muted">
-                      Pro
-                    </span>
-                  </div>
-                )}
               </div>
             </div>
           );
         })}
       </div>
 
-      <p className="mt-4 text-meta nums text-fg-muted">
-        Les trois premiers jours sont gratuits. Les créneaux de J+3 à J+6 sont réservés au plan
-        Pro —{' '}
-        <Link href="/pricing" className="underline decoration-dotted underline-offset-4">
-          voir les plans
-        </Link>
-        .
-      </p>
     </div>
   );
 }

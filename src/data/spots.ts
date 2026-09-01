@@ -26,7 +26,7 @@ const RAW_SPOTS: Spot[] = [
     bottom: 'sable-roche',
     type: 'plage',
     techniques: ['surfcasting', 'lancer-ramener', 'rockfishing'],
-    species: ['Bar', 'Lieu jaune', 'Vieille', 'Maquereau'],
+    species: ['Bar', 'Lieu jaune', 'Vieille', 'Maquereau', 'Chinchard'],
     meanTideRangeM: 5.6,
     summary:
       'Anse encaissée de la presqu’île de Crozon, ouverte plein ouest sur l’Iroise. La houle atlantique y entre sans obstacle et creuse des baïnes entre les têtes de roche : c’est ce qui fait la qualité du poste et son danger. Le bar y chasse dans le ressac dès que la mer se forme.',
@@ -70,7 +70,7 @@ const RAW_SPOTS: Spot[] = [
     bottom: 'sable',
     type: 'pointe',
     techniques: ['surfcasting', 'lancer-ramener'],
-    species: ['Bar', 'Maigre', 'Sole', 'Bar moucheté'],
+    species: ['Bar', 'Lieu jaune', 'Sole', 'Maquereau'],
     meanTideRangeM: 4.9,
     summary:
       'Pointe de la baie d’Audierne, réputée pour sa houle et fréquentée par les surfeurs. Côté pêche, l’intérêt est dans les courants de retour qui longent la pointe et concentrent la nourriture. Poste à privilégier tôt le matin, avant la fréquentation.',
@@ -92,7 +92,7 @@ const RAW_SPOTS: Spot[] = [
     bottom: 'galets',
     type: 'plage',
     techniques: ['surfcasting', 'rockfishing', 'peche-a-soutenir', 'peche-a-pied'],
-    species: ['Bar', 'Maquereau', 'Congre', 'Dorade grise'],
+    species: ['Bar', 'Maquereau', 'Congre', 'Dorade grise', 'Vieille'],
     meanTideRangeM: 7.2,
     summary:
       'Plage de galets encadrée par les falaises, avec des platiers rocheux découvrant à basse mer de part et d’autre. Le galet impose des plombs lourds et des bas de ligne courts. Le bar suit la laisse de mer sur la montante, très près du bord.',
@@ -114,7 +114,7 @@ const RAW_SPOTS: Spot[] = [
     bottom: 'roche',
     type: 'estran-rocheux',
     techniques: ['rockfishing', 'shore-jigging', 'lancer-ramener', 'peche-a-soutenir'],
-    species: ['Bar', 'Lieu jaune', 'Congre', 'Vieille'],
+    species: ['Bar', 'Lieu jaune', 'Congre', 'Vieille', 'Seiche'],
     meanTideRangeM: 5.4,
     summary:
       'Pointe de Barfleur, un des courants de marée les plus violents des côtes françaises. L’orientation nord-est protège de la houle d’ouest dominante mais expose au vent de terre. Le raz de Barfleur brasse en permanence : le poisson y est présent, l’accès y est technique.',
@@ -136,7 +136,7 @@ const RAW_SPOTS: Spot[] = [
     bottom: 'sable',
     type: 'plage',
     techniques: ['surfcasting', 'peche-a-pied', 'lancer-ramener'],
-    species: ['Bar', 'Sole', 'Plie', 'Merlan'],
+    species: ['Bar', 'Sole', 'Plie', 'Merlan', 'Limande'],
     meanTideRangeM: 8.1,
     summary:
       'Immense estran de sable qui découvre sur près d’un kilomètre à basse mer, à l’embouchure de la Canche. Le marnage y est le plus fort du littoral français continental. Poste de référence pour la sole en été et le merlan en hiver.',
@@ -158,7 +158,7 @@ const RAW_SPOTS: Spot[] = [
     bottom: 'sable',
     type: 'plage',
     techniques: ['surfcasting', 'lancer-ramener', 'peche-a-pied'],
-    species: ['Bar', 'Sole', 'Turbot', 'Raie bouclée'],
+    species: ['Bar', 'Sole', 'Turbot', 'Merlan', 'Limande'],
     meanTideRangeM: 7.4,
     summary:
       'Baie entre le cap Gris-Nez et le cap Blanc-Nez, ouverte au nord-ouest sur le Pas-de-Calais. Le fond de sable est parcouru de bancs mobiles et de fosses qui se déplacent d’une saison à l’autre. Le turbot s’y prend sur vif à proximité des cassures.',
@@ -180,7 +180,7 @@ const RAW_SPOTS: Spot[] = [
     bottom: 'sable',
     type: 'plage',
     techniques: ['surfcasting', 'lancer-ramener'],
-    species: ['Bar', 'Maigre', 'Sole', 'Marbré'],
+    species: ['Bar', 'Maigre', 'Sole', 'Marbré', 'Bar moucheté', 'Turbot'],
     meanTideRangeM: 3.9,
     summary:
       'Côte landaise rectiligne, entièrement sableuse, structurée par un système de baïnes qui se reforment à chaque coup de mer. La baïne est à la fois le poste de pêche et le piège : c’est elle qui concentre le poisson et qui emporte les baigneurs. Le maigre remonte en été.',
@@ -202,7 +202,7 @@ const RAW_SPOTS: Spot[] = [
     bottom: 'sable',
     type: 'pointe',
     techniques: ['surfcasting', 'lancer-ramener', 'peche-a-soutenir'],
-    species: ['Bar', 'Maigre', 'Sole', 'Dorade royale'],
+    species: ['Bar', 'Maigre', 'Sole', 'Dorade royale', 'Marbré', 'Sar'],
     meanTideRangeM: 4.1,
     summary:
       'Pointe qui sépare l’océan du bassin d’Arcachon. Deux régimes cohabitent : la côte océane, ouverte et puissante, et les passes, où le courant de vidange du bassin crée des veines de courant exceptionnelles à marée descendante. La dorade royale y est régulière en été.',
@@ -224,7 +224,7 @@ const RAW_SPOTS: Spot[] = [
     bottom: 'sable',
     type: 'plage',
     techniques: ['surfcasting', 'lancer-ramener', 'peche-au-flotteur'],
-    species: ['Loup', 'Daurade royale', 'Sar', 'Marbré'],
+    species: ['Loup', 'Daurade royale', 'Sar', 'Marbré', 'Pageot', 'Oblade'],
     meanTideRangeM: 0.35,
     summary:
       'Longue plage sauvage du Grau-du-Roi, au bout de la Camargue. Méditerranée : le marnage y est quasi nul, le facteur marée cède la place au vent et à la houle. Les coups de mistral et de tramontane structurent l’activité bien davantage que le cycle lunaire.',
@@ -246,7 +246,7 @@ const RAW_SPOTS: Spot[] = [
     bottom: 'sable',
     type: 'plage',
     techniques: ['surfcasting', 'lancer-ramener', 'peche-au-flotteur'],
-    species: ['Loup', 'Ombrine', 'Sar', 'Pageot'],
+    species: ['Loup', 'Ombrine', 'Sar', 'Daurade royale', 'Sole'],
     meanTideRangeM: 2.4,
     summary:
       'Grande baie en arc, protégée au nord par le cap Ghir mais ouverte à la houle atlantique. Le fond de sable régulier convient au lancer lourd. L’ombrine, recherchée localement, se tient dans les fosses de bord dès que l’eau se trouble.',
@@ -278,6 +278,26 @@ const RAW_SPOTS: Spot[] = [
 ];
 
 /** Les spots sont validés au chargement du module : un mock mal formé casse le build, pas la page. */
+/**
+ * PROVENANCE DES ESPÈCES.
+ *
+ * Les listes ci-dessus sont des assemblages RÉGIONAUX, recoupés sur des sources
+ * de pêche du bord (peche.com, opalesurfcasting.net, chtipecheur.com,
+ * comptoirdespecheurs.com, surfcasting-mediterranee.com, blog Roumaillac /
+ * Sunset Fishing pour l'Aquitaine, pecheurmaroc.ma pour le Souss-Massa).
+ *
+ * Aucune source publique ne donne de statistique de prises SPOT PAR SPOT : ce
+ * niveau de détail n'existe que dans les carnets des pêcheurs. Ces listes disent
+ * donc « ce qui se pêche sur cette côte, sur ce type de fond », pas « ce qui a
+ * été pris ici ». C'est précisément ce que les contributions doivent remplacer :
+ * une espèce confirmée par des prises déclarées vaut mieux que dix espèces
+ * plausibles.
+ *
+ * Correction notable : « Maigre » figurait à La Torche. Le maigre se tient
+ * essentiellement vers l'estuaire de la Gironde, l'Adour et le bassin d'Arcachon
+ * — pas en baie d'Audierne. Il a été retiré là et conservé à Lacanau et au
+ * Cap Ferret, où il est effectivement recherché.
+ */
 export const SPOTS: readonly Spot[] = Object.freeze(
   RAW_SPOTS.map((spot) => spotSchema.parse(spot)),
 );
