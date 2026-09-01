@@ -179,6 +179,47 @@ STORMGLASS_URL=http://127.0.0.1:4000/v2/tide/extremes/point \
 npm run build
 ```
 
+#### Ce que coûte Stormglass, mesuré
+
+Stormglass est **ponctuel** : une requête par point, il n'existe pas de requête
+groupée. Un spot = un appel, plus un appel Brest pour le coefficient national.
+
+Les chiffres ci-dessous sont **mesurés**, pas estimés — `scripts/providers-stub.mjs`
+compte les requêtes quand `STUB_LOG` est défini :
+
+```bash
+STUB_LOG=/tmp/calls.json node scripts/providers-stub.mjs 4000 &
+STORMGLASS_API_KEY=stub STORMGLASS_URL=http://127.0.0.1:4000/v2/tide/extremes/point \
+  npm run build
+```
+
+| Configuration | URL distinctes | Requêtes HTTP / build | Régime établi / jour |
+| --- | --- | --- | --- |
+| 12 spots | 13 | ~24 | 13 |
+| 3 spots (`TIDE_REAL_SPOTS`) | 4 | 8 | 4 |
+
+Deux choses expliquent ces nombres :
+
+- **Le facteur 2 sur le build.** Les workers de `next build` ne partagent pas le
+  cache de `fetch` : chaque URL est demandée environ deux fois. Ce n'est pas
+  l'`AbortSignal` — mesuré, le retirer aggrave le compte.
+- **13 par jour en régime établi.** La fenêtre demandée est calée sur le jour
+  LOCAL du spot : l'URL change à minuit, donc le cache de 24 h expire une fois
+  par jour quoi qu'on mette dans `TIDE_CACHE_SECONDS`. Allonger ce cache au-delà
+  de 24 h ne change rien tant que la fenêtre n'est pas quantifiée sur plusieurs
+  jours — c'est le levier à activer pour servir les 12 spots sur un petit quota.
+
+**Sur le palier gratuit (10 appels/jour), utilisez `TIDE_REAL_SPOTS`** avec trois
+spots. Les neuf autres restent en démonstration et l'annoncent : ils gardent leur
+cadre pointillé et leur mention *Simulé*, sans allumer le voyant *Interrompu*,
+réservé aux vraies coupures.
+
+L'appel Brest est **mutualisé** : sa fenêtre est alignée sur la journée UTC
+(`canonicalRange`) et non sur le jour local du spot, si bien que les douze spots
+et les deux fuseaux du catalogue partagent une seule URL. Auparavant, France et
+Maroc en produisaient deux — deux appels facturés pour un chiffre qui, par
+définition, ne dépend que de l'instant.
+
 ### 2. Météo marine → Open-Meteo ✅ FAIT
 
 Implémenté dans `src/lib/providers/open-meteo/weather.ts`. Deux modèles

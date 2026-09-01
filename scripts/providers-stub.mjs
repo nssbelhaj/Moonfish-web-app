@@ -14,6 +14,7 @@
  * et le mapping, pas le contrat du fournisseur.
  */
 import { createServer } from 'node:http';
+import { writeFileSync } from 'node:fs';
 
 const port = Number(process.argv[2] ?? 4000);
 const HOUR = 3600;
@@ -77,8 +78,41 @@ function tideExtremes(lat, lng, startS, endS) {
   return data;
 }
 
+/**
+ * Compteur d'appels, pour mesurer la consommation de quota d'un build.
+ *
+ * Le palier gratuit de Stormglass est à dix appels par jour et le fournisseur
+ * est ponctuel — une requête par spot. Savoir ce que coûte RÉELLEMENT un build
+ * demande de compter, pas d'estimer : le cache de `fetch` de Next déduplique
+ * une partie des appels, mais pas entre les workers de `next build`.
+ *
+ *   STUB_LOG=/tmp/calls.json node scripts/providers-stub.mjs 4000
+ *
+ * Le compteur vit en mémoire : relancer le stub entre deux mesures, sinon les
+ * totaux s'additionnent silencieusement d'un build à l'autre.
+ */
+const seen = new Map();
+
+function dumpLog() {
+  const out = process.env.STUB_LOG;
+  if (!out) return;
+  writeFileSync(
+    out,
+    JSON.stringify([...seen.entries()].map(([url, hits]) => ({ url, hits })), null, 2),
+  );
+}
+
+process.on('SIGTERM', dumpLog);
+process.on('SIGINT', () => { dumpLog(); process.exit(0); });
+
 const server = createServer((req, res) => {
   const url = new URL(req.url ?? '/', `http://${req.headers.host}`);
+
+  if (process.env.STUB_LOG) {
+    const key = url.pathname + '?' + url.searchParams.toString();
+    seen.set(key, (seen.get(key) ?? 0) + 1);
+    dumpLog();
+  }
 
   if (url.pathname === '/v2/tide/extremes/point') {
     const lat = Number(url.searchParams.get('lat') ?? 48);

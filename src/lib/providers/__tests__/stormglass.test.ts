@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { SPOTS } from '@/data/spots';
 import { TideProviderWithFallback } from '../fallback';
 import { MockTideProvider } from '../mock/tide';
-import { StormglassError, StormglassTideProvider } from '../stormglass/tide';
+import { canonicalRange, StormglassError, StormglassTideProvider } from '../stormglass/tide';
 
 const spot = SPOTS.find((s) => s.slug === 'pen-hat')!;
 const H = 3_600_000;
@@ -191,5 +191,44 @@ describe('repli des marées', () => {
     const { provider } = stub();
     const wrapped = new TideProviderWithFallback(provider, new MockTideProvider());
     expect((await wrapped.getTideEvents(spot, range)).source.kind).toBe('forecast');
+  });
+});
+
+describe('fenêtre canonique de Brest', () => {
+  it('rend la MÊME fenêtre pour deux spots de fuseaux différents', () => {
+    // Le coefficient est national : il ne dépend que de l'instant. Deux plages
+    // horaires Brest pour deux fuseaux, c'était deux appels facturés pour un
+    // seul chiffre — sur un quota de dix par jour, ça compte.
+    const paris = canonicalRange({
+      from: new Date('2026-08-31T22:00:00Z'),
+      to: new Date('2026-09-08T06:00:00Z'),
+    });
+    const casablanca = canonicalRange({
+      from: new Date('2026-08-31T23:00:00Z'),
+      to: new Date('2026-09-08T07:00:00Z'),
+    });
+
+    expect(paris.from.toISOString()).toBe(casablanca.from.toISOString());
+    expect(paris.to.toISOString()).toBe(casablanca.to.toISOString());
+  });
+
+  it('englobe toujours la fenêtre demandée', () => {
+    const range = {
+      from: new Date('2026-08-31T22:00:00Z'),
+      to: new Date('2026-09-08T06:00:00Z'),
+    };
+    const canonical = canonicalRange(range);
+
+    expect(canonical.from.getTime()).toBeLessThanOrEqual(range.from.getTime());
+    expect(canonical.to.getTime()).toBeGreaterThanOrEqual(range.to.getTime());
+  });
+
+  it('est alignée sur minuit UTC', () => {
+    const c = canonicalRange({
+      from: new Date('2026-08-31T22:13:07Z'),
+      to: new Date('2026-09-08T06:41:00Z'),
+    });
+    expect(c.from.getTime() % 86_400_000).toBe(0);
+    expect(c.to.getTime() % 86_400_000).toBe(0);
   });
 });

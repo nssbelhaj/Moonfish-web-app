@@ -4,6 +4,7 @@ import { MockTideProvider } from './mock/tide';
 import { MockWeatherProvider } from './mock/weather';
 import { FileWaitlistRepository } from './mock/waitlist';
 import { OpenMeteoWeatherProvider } from './open-meteo/weather';
+import { SelectiveTideProvider, parseAllowedSpots } from './selective-tide';
 import { StormglassTideProvider } from './stormglass/tide';
 import type { SpotRepository, TideProvider, WaitlistRepository, WeatherProvider } from './types';
 
@@ -42,13 +43,22 @@ function buildTideProvider(): TideProvider {
 
   const cacheSeconds = Number(process.env.TIDE_CACHE_SECONDS);
 
-  return new TideProviderWithFallback(
-    new StormglassTideProvider(apiKey, {
-      ...(Number.isFinite(cacheSeconds) && cacheSeconds > 0 ? { cacheSeconds } : {}),
-      ...(process.env.STORMGLASS_URL ? { baseUrl: process.env.STORMGLASS_URL } : {}),
-    }),
-    mock,
-  );
+  const real = new StormglassTideProvider(apiKey, {
+    ...(Number.isFinite(cacheSeconds) && cacheSeconds > 0 ? { cacheSeconds } : {}),
+    ...(process.env.STORMGLASS_URL ? { baseUrl: process.env.STORMGLASS_URL } : {}),
+  });
+
+  // Un repli enveloppe TOUJOURS le fournisseur réel : une panne réseau ne doit
+  // ni casser le build ni rendre douze pages en 500.
+  const withFallback = new TideProviderWithFallback(real, mock);
+
+  // `TIDE_REAL_SPOTS` borne la dépense quand le quota est petit. Vide = tous les
+  // spots passent par le fournisseur réel, ce qui reste le comportement par
+  // défaut.
+  const allowed = parseAllowedSpots(process.env.TIDE_REAL_SPOTS);
+  if (allowed.length === 0) return withFallback;
+
+  return new SelectiveTideProvider(withFallback, mock, allowed);
 }
 
 export const tides: TideProvider = buildTideProvider();

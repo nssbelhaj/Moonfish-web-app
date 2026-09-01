@@ -28,6 +28,21 @@ const DEFAULT_TIMEOUT_MS = 8000;
  */
 const MIN_COVERAGE_DAYS = 3;
 
+const DAY_MS = 86_400_000;
+
+/**
+ * Fenêtre canonique couvrant `range`, alignée sur la journée UTC.
+ *
+ * Sert à la table de coefficients de Brest, qui est NATIONALE : elle ne doit
+ * dépendre ni du spot ni de son fuseau. L'alignement sur minuit UTC rend l'URL
+ * identique pour tous les spots, donc mise en cache une seule fois.
+ */
+export function canonicalRange(range: DateRange): DateRange {
+  const from = new Date(Math.floor(range.from.getTime() / DAY_MS) * DAY_MS);
+  const to = new Date(Math.ceil(range.to.getTime() / DAY_MS) * DAY_MS);
+  return { from, to };
+}
+
 export interface StormglassOptions {
   fetchImpl?: typeof fetch;
   baseUrl?: string;
@@ -90,7 +105,20 @@ export class StormglassTideProvider implements TideProvider {
   async getTideEvents(spot: Spot, range: DateRange): Promise<Sourced<TideEvent[]>> {
     const [spotExtremes, brestExtremes] = await Promise.all([
       this.fetchExtremes(spot.lat, spot.lng, range, spot.slug),
-      this.fetchExtremes(BREST_REFERENCE.lat, BREST_REFERENCE.lng, range, 'brest'),
+      // Brest est demandé sur une fenêtre CANONIQUE, indépendante du spot.
+      //
+      // Elle était auparavant celle du spot, donc calée sur SON jour local :
+      // les spots du Maroc et ceux de France produisaient deux URL Brest
+      // différentes pour la même table nationale. Deux appels au lieu d'un, et
+      // surtout deux tables de coefficients pour un chiffre qui, par
+      // définition, ne dépend que de l'instant. Une seule URL pour les douze
+      // spots : le cache de `fetch` la sert une fois par jour, pas par fuseau.
+      this.fetchExtremes(
+        BREST_REFERENCE.lat,
+        BREST_REFERENCE.lng,
+        canonicalRange(range),
+        'brest',
+      ),
     ]);
 
     const table: CoefficientPoint[] = coefficientTable(brestExtremes);
