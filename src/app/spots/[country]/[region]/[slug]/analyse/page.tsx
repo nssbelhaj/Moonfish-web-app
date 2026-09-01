@@ -12,6 +12,7 @@ import {
   TECHNIQUE_DESCRIPTIONS,
   TECHNIQUE_LABELS,
 } from '@/data/spots';
+import { sourceList } from '@/lib/forecast';
 import { absoluteUrl, spotPath } from '@/lib/routes';
 import { findSpot, resolveSpot, type RouteParams } from '../spot-page-data';
 
@@ -44,7 +45,7 @@ export default async function SpotAnalysisPage({ params }: { params: Promise<Rou
         <SpotTabs basePath={spotPath(spot)} active="analyse" />
 
         <div className="mt-6">
-          <DemoDataNotice sources={Object.values(forecast.sources)} />
+          <DemoDataNotice sources={sourceList(forecast.sources)} />
         </div>
       </div>
 

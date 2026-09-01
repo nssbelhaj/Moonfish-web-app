@@ -29,6 +29,7 @@ const config: Config = {
         'accent-score': 'var(--accent-score)',
         'accent-data': 'var(--accent-data)',
         danger: 'var(--danger)',
+        warn: 'var(--warn)',
         score: {
           1: 'var(--score-1)',
           2: 'var(--score-2)',

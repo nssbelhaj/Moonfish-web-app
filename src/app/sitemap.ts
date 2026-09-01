@@ -16,6 +16,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: absoluteUrl('/spots'), lastModified: now, changeFrequency: 'daily', priority: 0.9 },
     { url: absoluteUrl('/guides'), lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
     { url: absoluteUrl('/pricing'), lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
+    { url: absoluteUrl('/donnees'), lastModified: now, changeFrequency: 'monthly', priority: 0.4 },
   ];
 
   // Chaque spot expose trois pages réelles, pas trois onglets commutés : elles

@@ -28,7 +28,12 @@ export function SiteFooter() {
         */}
         <div className={anySimulated ? 'demo-frame px-4 py-3' : 'surface px-4 py-3'}>
           <p className="text-meta text-fg-faint nums">
-            D’où viennent les données
+            <Link
+              href="/donnees"
+              className="underline decoration-dotted underline-offset-4 hover:text-fg-muted"
+            >
+              D’où viennent les données
+            </Link>
           </p>
           <ul className="mt-3 max-w-prose space-y-2">
             {SOURCES.map(({ label, source }) => (
@@ -72,6 +77,7 @@ export function SiteFooter() {
               { href: '/spots', label: 'Tous les spots' },
               { href: '/guides', label: 'Guides' },
               { href: '/pricing', label: 'Tarifs' },
+              { href: '/donnees', label: 'Données et sources' },
             ].map((item) => (
               <li key={item.href}>
                 <Link href={item.href} className="inline-flex min-h-[44px] items-center text-body text-fg-muted hover:text-fg">

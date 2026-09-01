@@ -1,4 +1,5 @@
-import type { SourceMeta } from '@/lib/providers';
+import { FreshnessChip } from './FreshnessChip';
+import type { SourceStatus } from '@/lib/forecast';
 
 const KIND_LABEL = {
   measured: 'Relevé',
@@ -8,21 +9,29 @@ const KIND_LABEL = {
 } as const;
 
 /**
- * Provenance d'un bloc de données, avec son heure de rafraîchissement.
+ * Provenance d'un bloc de données, avec sa fraîcheur.
  *
  * Handoff §5 : « la confiance se gagne en montrant la fraîcheur, pas en
  * promettant la précision ». Le champ `precision` dit explicitement ce que la
- * source ne sait PAS faire.
+ * source ne sait PAS faire, et la puce dit de quand date ce qui est affiché.
+ *
+ * La date affichée est celle rendue par le FOURNISSEUR. Elle valait auparavant
+ * `generatedAt`, l'instant de rendu de la page : une table de marée servie
+ * depuis un cache de vingt-quatre heures s'annonçait alors comme fraîche de la
+ * minute.
  */
 export function DataSourceTag({
-  source,
-  refreshedAt,
+  status,
+  serverNow,
   timeZone,
 }: {
-  source: SourceMeta;
-  refreshedAt?: string;
+  status: SourceStatus;
+  /** Instant de rendu serveur, ISO. */
+  serverNow: string;
   timeZone?: string;
 }) {
+  const { source, refreshedAt } = status;
+
   const formatted = refreshedAt
     ? new Intl.DateTimeFormat('fr-FR', {
         timeZone: timeZone ?? 'Europe/Paris',
@@ -39,7 +48,9 @@ export function DataSourceTag({
         {KIND_LABEL[source.kind]}
       </span>
       {source.name}
-      {formatted ? ` · maj ${formatted}` : ''}
+      <br />
+      <FreshnessChip source={source} refreshedAt={refreshedAt} serverNow={serverNow} />
+      {formatted ? <span className="text-fg-faint"> · relevé le {formatted}</span> : null}
       <br />
       <span className="text-fg-faint">{source.precision}</span>
     </p>

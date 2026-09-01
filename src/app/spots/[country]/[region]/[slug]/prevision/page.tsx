@@ -6,6 +6,7 @@ import { DemoDataNotice } from '@/components/data/DemoDataNotice';
 import { SpotTabs } from '@/components/spot/SpotTabs';
 import { Card } from '@/components/ui/Card';
 import { favourableSlots } from '@/lib/forecast';
+import { sourceList } from '@/lib/forecast';
 import { absoluteUrl, spotPath } from '@/lib/routes';
 import { formatDayLong, formatTime } from '@/lib/time';
 import { findSpot, resolveSpot, type RouteParams } from '../spot-page-data';
@@ -46,7 +47,7 @@ export default async function SpotForecastPage({ params }: { params: Promise<Rou
         <SpotTabs basePath={spotPath(spot)} active="prevision" />
 
         <div className="mt-6">
-          <DemoDataNotice sources={Object.values(forecast.sources)} />
+          <DemoDataNotice sources={sourceList(forecast.sources)} />
         </div>
       </div>
 

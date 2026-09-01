@@ -129,9 +129,9 @@ describe('prévision assemblée', () => {
 
   it('étiquette marée et houle comme simulées, et l’astronomie comme calculée', async () => {
     const forecast = await getSpotForecast(spot, NOW);
-    expect(forecast.sources.tide.kind).toBe('simulated');
-    expect(forecast.sources.weather.kind).toBe('simulated');
-    expect(forecast.sources.astro.kind).toBe('computed');
+    expect(forecast.sources.tide.source.kind).toBe('simulated');
+    expect(forecast.sources.weather.source.kind).toBe('simulated');
+    expect(forecast.sources.astro.source.kind).toBe('computed');
   });
 
   it('découpe les journées sur minuit LOCAL, y compris au Maroc', async () => {

@@ -2,6 +2,7 @@ import { generateMarineSeries } from '@/data/generators/marine';
 import type { MarinePoint, Spot } from '@/data/schemas';
 import { marinePointSchema } from '@/data/schemas';
 import type { DateRange, Sourced, WeatherProvider } from '../types';
+import { generatedNow } from './generated-now';
 
 /**
  * Conditions marines simulées.
@@ -31,7 +32,12 @@ export class MockWeatherProvider implements WeatherProvider {
     return {
       data: series,
       source: this.source,
-      refreshedAt: range.from.toISOString(),
+      // `range.from` est le début des DONNÉES, pas l'instant du relevé : l'écrire
+      // ici faisait afficher « relevé le 31 août » à une série engendrée à la
+      // seconde. Ces données sont fabriquées au rendu, leur date est maintenant —
+      // arrondie à l'heure comme `referenceNow()`, pour que deux builds de la
+      // même heure restent identiques au bit près.
+      refreshedAt: generatedNow(),
     };
   }
 }

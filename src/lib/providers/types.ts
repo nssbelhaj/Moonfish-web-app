@@ -29,6 +29,28 @@ export interface SourceMeta {
   precision: string;
   /** Lien vers la source, quand elle est publique. */
   url?: string;
+  /**
+   * `true` quand cette source est un REPLI après échec du fournisseur réel,
+   * par opposition à un fournisseur simulé délibérément configuré.
+   *
+   * Les deux rendent `kind: 'simulated'`, mais ils ne veulent pas dire la même
+   * chose : le premier est une panne à signaler, le second le mode démo normal.
+   * Sans cette distinction, une démo hors ligne afficherait un voyant d'alerte
+   * permanent — et le jour d'une vraie panne, plus personne ne le regarderait.
+   */
+  degraded?: boolean;
+  /**
+   * Durée pendant laquelle cette source reste « à jour », en heures.
+   * `null` = ne périme pas. Omis = valeur par défaut de son `kind`.
+   *
+   * La péremption est une propriété de la SOURCE, pas de sa nature. Marées et
+   * météo sont toutes deux des `forecast`, et pourtant : une prévision de vent
+   * est révisée plusieurs fois par jour, une table de marée est de l'astronomie
+   * prédite des mois à l'avance. Les ranger sous un même seuil affichait
+   * « à jour pendant 6 h » sur un bloc dont le texte disait, deux lignes plus
+   * haut, qu'un cache de 24 à 72 h ne lui fait rien perdre.
+   */
+  validityHours?: number | null;
 }
 
 /** Enveloppe systématique : aucune donnée ne circule sans sa provenance. */

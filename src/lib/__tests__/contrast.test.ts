@@ -108,3 +108,35 @@ describe.each([
     }
   });
 });
+
+/**
+ * Les quatre puces de fraîcheur (R9) doivent se distinguer les unes des autres.
+ *
+ * Même leçon que les paliers de score : le contraste de luminance ne dit RIEN de
+ * la distinguabilité de deux couleurs catégorielles. Deux oranges peuvent tenir
+ * AA sur le même fond et rester indiscernables entre elles.
+ *
+ * Le test porte sur le THÈME SOMBRE seul, parce que c'est le seul où ces puces
+ * apparaissent : `DataSourceTag` ne vit que sur les pages de spot, et le thème
+ * guide est réservé aux pages éditoriales (D6). En thème guide, trois paires
+ * mesurées seraient sous le seuil — accent-data/fg-faint à 0,097,
+ * warn/danger à 0,103, warn/fg-faint à 0,117 — parce que la série 800 est une
+ * palette de TEXTE sur papier clair, resserrée exprès. Y forcer l'écart
+ * déplacerait `--accent-score` et `--danger`, donc les paliers de score, pour
+ * corriger un rendu qui n'existe pas. Le jour où une puce apparaîtra sur une
+ * page guide, c'est la palette guide qu'il faudra rouvrir, pas ce test.
+ */
+describe('thème sombre — les puces de fraîcheur', () => {
+  const t = theme(':root');
+  const CHIPS = ['accent-data', 'warn', 'danger', 'fg-faint'] as const;
+
+  it('résout les quatre couleurs de puce', () => {
+    for (const chip of CHIPS) expect(t[chip]).toMatch(/^#[0-9a-f]{6}$/);
+  });
+
+  it.each(
+    CHIPS.flatMap((a, i) => CHIPS.slice(i + 1).map((b) => [a, b] as const)),
+  )('distingue %s de %s', (a, b) => {
+    expect(perceptualDistance(t[a] as string, t[b] as string)).toBeGreaterThan(0.12);
+  });
+});

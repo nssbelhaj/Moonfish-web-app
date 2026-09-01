@@ -26,10 +26,30 @@ export function referenceNow(): Date {
   return new Date(Math.floor(Date.now() / 3_600_000) * 3_600_000);
 }
 
+/**
+ * Une source ET la date de la donnée qu'elle a rendue.
+ *
+ * Les deux voyagent ensemble parce qu'elles ne peuvent pas se déduire l'une de
+ * l'autre. L'interface affichait jusqu'ici `generatedAt`, l'instant de RENDU de
+ * la page — ce qui présentait une table de marée sortie d'un cache de 24 h comme
+ * si elle venait d'arriver. C'est exactement l'inverse de ce que la puce de
+ * fraîcheur est censée dire.
+ */
+export interface SourceStatus {
+  source: SourceMeta;
+  /** Horodatage rendu par le fournisseur, `null` s'il n'en donne pas. */
+  refreshedAt: string | null;
+}
+
 export interface ForecastSources {
-  tide: SourceMeta;
-  weather: SourceMeta;
-  astro: SourceMeta;
+  tide: SourceStatus;
+  weather: SourceStatus;
+  astro: SourceStatus;
+}
+
+/** Les métadonnées seules, pour les composants qui ne datent rien. */
+export function sourceList(sources: ForecastSources): SourceMeta[] {
+  return Object.values(sources).map((status) => status.source);
 }
 
 export interface SpotForecast {
@@ -75,9 +95,10 @@ async function computeSpotForecast(spot: Spot, now: Date): Promise<SpotForecast>
     best: bestSlot(days.flatMap((day) => day.slots)),
     nextGood: nextGoodWindow(days, now),
     sources: {
-      tide: tideResult.source,
-      weather: weatherResult.source,
-      astro: ASTRO_SOURCE,
+      tide: { source: tideResult.source, refreshedAt: tideResult.refreshedAt },
+      weather: { source: weatherResult.source, refreshedAt: weatherResult.refreshedAt },
+      // L'astronomie est recalculée à chaque rendu : sa date EST celle du rendu.
+      astro: { source: ASTRO_SOURCE, refreshedAt: now.toISOString() },
     },
   };
 }
@@ -140,7 +161,7 @@ export async function getSpotSummary(spot: Spot, now: Date = referenceNow()): Pr
 export function collectSources(summaries: readonly SpotSummary[]): SourceMeta[] {
   const seen = new Map<string, SourceMeta>();
   for (const summary of summaries) {
-    for (const source of Object.values(summary.sources)) {
+    for (const { source } of Object.values(summary.sources)) {
       if (!seen.has(source.name)) seen.set(source.name, source);
     }
   }

@@ -64,6 +64,11 @@
   --accent-score: var(--amber-400);
   --accent-data: var(--azure-400);
   --danger: var(--coral-400);
+  /* Fraîcheur des données uniquement (R9). Ambre comme l'accent de score, mais
+     nommé à part : les deux ne se déplacent pas ensemble, et un jour où l'accent
+     de score changera, un voyant « donnée ancienne » ne devra pas changer avec
+     lui. Ne jamais l'employer pour autre chose qu'un état de fraîcheur. */
+  --warn: var(--amber-400);
 
   /* Namespace SÉPARÉ des accents (D4) : un bouton n'est jamais vert parce que
      c'est positif, un onglet jamais ambre. Ces couleurs ne peuvent apparaître
@@ -106,6 +111,7 @@
   --accent-score: var(--amber-800);
   --accent-data: var(--azure-800);
   --danger: var(--coral-800);
+  --warn: var(--amber-800);
 
   --score-1: var(--slate-500);
   --score-2: var(--amber-800);

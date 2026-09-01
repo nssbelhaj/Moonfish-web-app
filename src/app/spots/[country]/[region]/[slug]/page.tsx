@@ -17,6 +17,7 @@ import {
   SPOT_TYPE_LABELS,
   TECHNIQUE_LABELS,
 } from '@/data/spots';
+import { sourceList } from '@/lib/forecast';
 import { tidalRangeOf } from '@/lib/forecast/tide-curve';
 import { absoluteUrl, spotPath } from '@/lib/routes';
 import { formatMeasure, formatScore } from '@/lib/score-display';
@@ -47,8 +48,8 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
   const current = forecast.current;
   const today = forecast.days[0];
 
-  const tideIsSimulated = simulatedSources([forecast.sources.tide]).length > 0;
-  const weatherIsSimulated = simulatedSources([forecast.sources.weather]).length > 0;
+  const tideIsSimulated = simulatedSources([forecast.sources.tide.source]).length > 0;
+  const weatherIsSimulated = simulatedSources([forecast.sources.weather.source]).length > 0;
 
   // Handoff §5 : le créneau praticable passe en tête dès qu'une alerte de
   // sécurité est active. Le produit bascule seul, ce n'est pas un choix.
@@ -77,7 +78,7 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
         </div>
 
         <div className="mt-6">
-          <DemoDataNotice sources={Object.values(forecast.sources)} />
+          <DemoDataNotice sources={sourceList(forecast.sources)} />
         </div>
       </div>
 
@@ -162,7 +163,7 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
             aria-labelledby="marees"
             className={tideIsSimulated ? 'demo-frame p-4' : 'surface p-4'}
           >
-            <DemoDataNotice sources={[forecast.sources.tide]} compact />
+            <DemoDataNotice sources={[forecast.sources.tide.source]} compact />
             <h2 id="marees" className="mt-2 text-val-sm font-600">
               Marées du jour
             </h2>
@@ -187,8 +188,8 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
               </>
             )}
             <DataSourceTag
-              source={forecast.sources.tide}
-              refreshedAt={forecast.generatedAt}
+              status={forecast.sources.tide}
+              serverNow={forecast.generatedAt}
               timeZone={spot.timezone}
             />
           </section>
@@ -199,7 +200,7 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
               weatherIsSimulated ? 'demo-frame mt-6 p-4' : 'mt-6 surface p-4'
             }
           >
-            <DemoDataNotice sources={[forecast.sources.weather]} compact />
+            <DemoDataNotice sources={[forecast.sources.weather.source]} compact />
             <h2 id="meteo" className="mt-2 text-val-sm font-600">
               Vent et état de mer
             </h2>
@@ -237,8 +238,8 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
               <p className="mt-4 text-meta nums text-fg-faint">Conditions indisponibles.</p>
             )}
             <DataSourceTag
-              source={forecast.sources.weather}
-              refreshedAt={forecast.generatedAt}
+              status={forecast.sources.weather}
+              serverNow={forecast.generatedAt}
               timeZone={spot.timezone}
             />
           </section>
@@ -283,8 +284,8 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
               </>
             )}
             <DataSourceTag
-              source={forecast.sources.astro}
-              refreshedAt={forecast.generatedAt}
+              status={forecast.sources.astro}
+              serverNow={forecast.generatedAt}
               timeZone={spot.timezone}
             />
           </section>

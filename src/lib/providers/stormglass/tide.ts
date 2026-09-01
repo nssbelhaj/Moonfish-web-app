@@ -60,6 +60,10 @@ export class StormglassTideProvider implements TideProvider {
     kind: 'forecast',
     precision:
       'Modèle global. Hauteurs au MLLW, proche du zéro des cartes françaises à quelques dizaines de centimètres près. Coefficient recalculé sur le marnage de Brest, définition SHOM. Pour une sortie réelle, la table du SHOM reste la référence.',
+    // Une table de marée ne se dégrade pas avec le temps : ce qui se dégrade,
+    // c'est sa COUVERTURE. Passé trois jours, une table mise en cache ne couvre
+    // plus les sept jours affichés — d'où un seuil calé sur MIN_COVERAGE_DAYS.
+    validityHours: MIN_COVERAGE_DAYS * 24,
     url: 'https://stormglass.io',
   };
 

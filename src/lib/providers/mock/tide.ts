@@ -2,6 +2,7 @@ import { generateTideEvents } from '@/data/generators/tide';
 import type { Spot, TideEvent } from '@/data/schemas';
 import { tideEventSchema } from '@/data/schemas';
 import type { DateRange, Sourced, TideProvider } from '../types';
+import { generatedNow } from './generated-now';
 
 /**
  * Marées simulées.
@@ -28,7 +29,12 @@ export class MockTideProvider implements TideProvider {
     return {
       data: events,
       source: this.source,
-      refreshedAt: range.from.toISOString(),
+      // `range.from` est le début des DONNÉES, pas l'instant du relevé : l'écrire
+      // ici faisait afficher « relevé le 31 août » à une série engendrée à la
+      // seconde. Ces données sont fabriquées au rendu, leur date est maintenant —
+      // arrondie à l'heure comme `referenceNow()`, pour que deux builds de la
+      // même heure restent identiques au bit près.
+      refreshedAt: generatedNow(),
     };
   }
 }

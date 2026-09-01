@@ -39,6 +39,7 @@ export class WeatherProviderWithFallback implements WeatherProvider {
         source: {
           name: `Repli simulé — ${this.primary.source.name} injoignable`,
           kind: 'simulated',
+          degraded: true,
           precision:
             'Le fournisseur réel n’a pas répondu. Les valeurs affichées sont générées et ne décrivent aucune condition réelle.',
         },
@@ -81,6 +82,7 @@ export class TideProviderWithFallback implements TideProvider {
         source: {
           name: `Marées — repli simulé, ${this.primary.source.name} injoignable`,
           kind: 'simulated',
+          degraded: true,
           precision:
             'Le fournisseur réel n’a pas répondu. Les horaires affichés sont générés et ne correspondent à aucune marée réelle. Consultez maree.shom.fr.',
         },

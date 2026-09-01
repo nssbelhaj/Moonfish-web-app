@@ -262,6 +262,46 @@ C'est déjà visible aujourd'hui : sur une page de spot, le bloc « Vent et éta
 mer » est en bordure pleine et étiqueté *Prévision*, tandis que le bloc
 « Marées du jour » garde son cadre pointillé et son étiquette *Simulé*.
 
+### 6. La fraîcheur des données
+
+Chaque `DataSourceTag` porte une puce à quatre états (R9, D13) :
+
+| Puce | Quand | Couleur |
+| --- | --- | --- |
+| **À jour** | dans la fenêtre de validité de la source | `--accent-data` |
+| **Ancien** | la fenêtre est dépassée sans renouvellement | `--warn` |
+| **Interrompu** | le fournisseur réel a échoué, on sert un repli | `--danger` |
+| **En attente** | on ignore de quand date la donnée | `--fg-faint` |
+
+Trois décisions valent d'être connues avant d'y toucher :
+
+- **La puce est un composant CLIENT** (`FreshnessChip`). Les pages de spot sont
+  en ISR à `revalidate = 3600` : une fraîcheur calculée au rendu serait figée
+  dans le HTML statique et dirait « à jour » sur une page vieille de cinquante-
+  neuf minutes. Elle est donc recalculée dans le navigateur, contre l'horloge du
+  lecteur, et rafraîchie chaque minute.
+- **La date affichée vient du FOURNISSEUR**, pas du rendu. `ForecastSources`
+  transporte un `SourceStatus { source, refreshedAt }` pour cette seule raison :
+  auparavant l'interface montrait `generatedAt`, si bien qu'une table de marée
+  sortie d'un cache de 24 h s'annonçait fraîche de la minute.
+- **La validité est une propriété de la SOURCE**, via `SourceMeta.validityHours`,
+  avec un défaut par `kind`. Marées et météo sont toutes deux des `forecast` et
+  n'ont pourtant rien de commun : le vent est révisé plusieurs fois par jour, une
+  table de marée est de l'astronomie prédite des mois à l'avance. Stormglass
+  déclare donc 72 h, calées sur `MIN_COVERAGE_DAYS` — ce qui se dégrade dans une
+  table cachée, ce n'est pas sa justesse, c'est sa couverture.
+
+Un fournisseur simulé **délibérément configuré** (mode démo) n'est pas une panne
+et n'allume pas « Interrompu » : seul un repli après échec porte
+`SourceMeta.degraded`. Un voyant d'alerte permanent apprend à ne plus le
+regarder.
+
+La page **`/donnees`**, liée depuis le pied de page, détaille les sources, les
+quatre états et ce que le produit ne sait pas faire.
+
+Tests : `src/lib/__tests__/data-freshness.test.ts` et le bloc « les puces de
+fraîcheur » de `src/lib/__tests__/contrast.test.ts`.
+
 ---
 
 ## Où toucher au design
