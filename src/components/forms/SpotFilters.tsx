@@ -69,13 +69,13 @@ export function SpotFilters(props: SpotFiltersProps) {
   }
 
   return (
-    <form ref={formRef} method="GET" action="/spots" className="rounded-card border border-edge bg-card p-4">
+    <form ref={formRef} method="GET" action="/spots" className="surface p-4">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {FIELDS.map((field) => (
           <div key={field.name}>
             <label
               htmlFor={`filter-${field.name}`}
-              className="block font-mono text-label uppercase tracking-[0.14em] text-fg-muted"
+              className="block meta font-mono"
             >
               {field.label}
             </label>

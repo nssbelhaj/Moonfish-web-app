@@ -77,24 +77,28 @@ export function PricingTable() {
         <section
           key={plan.name}
           aria-labelledby={`plan-${plan.name}`}
-          className={`flex flex-col rounded-card bg-card p-6 ${
-            plan.highlighted ? 'border-2 border-best-line' : 'border border-edge'
-          }`}
+          className={`surface flex flex-col p-6 ${plan.highlighted ? 'ring-2 ring-accent' : ''}`}
         >
           <h2 id={`plan-${plan.name}`} className="text-h2 font-600">
             {plan.name}
           </h2>
 
-          <p className="mt-3 font-mono text-score-lg font-700" data-numeric="">
-            {plan.price}
-          </p>
-          <p className="mt-1 font-mono text-label uppercase tracking-[0.14em] text-fg-dim">
-            {plan.priceNote}
-          </p>
+          {/*
+            Hauteur fixe sur le bloc prix : sans elle, « 0 € » et « À définir »
+            n'occupent pas la même place et les deux listes de fonctionnalités
+            démarrent à des ordonnées différentes — la comparaison colonne à
+            colonne devient impossible à lire.
+          */}
+          <div className="mt-3 min-h-[5.5rem]">
+            <p className="font-mono text-score-lg font-700" data-numeric="">
+              {plan.price}
+            </p>
+            <p className="mt-1 meta font-mono">{plan.priceNote}</p>
+          </div>
 
-          <p className="mt-4 text-body text-fg-muted">{plan.pitch}</p>
+          <p className="min-h-[5.5rem] text-body text-fg-muted">{plan.pitch}</p>
 
-          <ul className="mt-6 flex-1 space-y-3">
+          <ul className="mt-2 flex-1 space-y-3">
             {plan.features.map((feature) => (
               <li key={feature.label} className="flex gap-3">
                 <Check included={feature.included} />

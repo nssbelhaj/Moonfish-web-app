@@ -143,7 +143,7 @@ export default async function SpotsPage({
         />
 
         {matching.length === 0 ? (
-          <div className="mt-6 rounded-card border border-edge bg-card px-4 py-8">
+          <div className="mt-6 surface px-4 py-8">
             <p className="text-h3 font-600">Aucun spot ne correspond à cette combinaison.</p>
             <p className="mt-2 max-w-measure text-body text-fg-muted">
               Le catalogue compte 12 spots pour l’instant. Retirez un filtre, ou repartez de la

@@ -61,8 +61,13 @@ export default async function GuidePage({ params }: { params: Promise<RouteParam
   };
 
   return (
-    /* Identité « carte marine » : les guides basculent en thème clair (handoff §0). */
-    <div className="theme-light bg-page">
+    /*
+      Les guides restent en sombre. Un îlot clair coincé entre un en-tête et un
+      pied de page sombres se lit comme un copier-coller raté, pas comme une
+      identité. Le passage à la serif suffit à signaler le mode lecture.
+      Le thème clair reste défini et testé dans globals.css, prêt à resservir.
+    */
+    <div>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}

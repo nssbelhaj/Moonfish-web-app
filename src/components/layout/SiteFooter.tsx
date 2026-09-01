@@ -26,14 +26,14 @@ export function SiteFooter() {
           devenu faux — et une mention fausse, même prudente, use la confiance
           aussi sûrement qu'une mention absente.
         */}
-        <div className={anySimulated ? 'demo-frame px-4 py-3' : 'rounded-card border border-edge px-4 py-3'}>
-          <p className="font-mono text-label uppercase tracking-[0.14em] text-fg-muted">
+        <div className={anySimulated ? 'demo-frame px-4 py-3' : 'surface px-4 py-3'}>
+          <p className="meta font-mono">
             D’où viennent les données
           </p>
           <ul className="mt-3 max-w-measure space-y-2">
             {SOURCES.map(({ label, source }) => (
               <li key={label} className="text-body text-fg-muted">
-                <span className="font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-fg-dim">
+                <span className="meta font-mono">
                   {KIND_LABEL[source.kind]}
                 </span>{' '}
                 — <strong className="font-600 text-fg">{label}</strong> : {source.name}.
@@ -82,7 +82,7 @@ export function SiteFooter() {
           </ul>
         </nav>
 
-        <p className="mt-4 font-mono text-[0.6875rem] text-fg-dim">
+        <p className="mt-4 meta font-mono">
           Moonfish — les meilleurs créneaux de pêche en mer, spot par spot. Aucune promesse de prise :
           la mer décide.
         </p>

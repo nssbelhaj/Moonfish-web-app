@@ -10,73 +10,84 @@
 :root {
   color-scheme: dark;
 
-  --page: #05100f;
-  --card: #0a1a19;
-  --card-raised: #102624;
-  --edge: #1e3439;
-  --edge-strong: #2c4a4c;
+  --page: #0a0b0d;
+  --card: #15181c;
+  --card-raised: #1d2126;
+  --edge: #262a30;
+  --edge-strong: #3a3f47;
 
-  --fg: #e8f2f0;
-  --fg-muted: #9fb4b3;
-  --fg-dim: #7e9494;
+  --fg: #f1f3f5;
+  --fg-muted: #a7aeb8;
+  --fg-dim: #828a95;
 
-  --score-bad: #ff5a52;
-  --score-mid: #ffb020;
-  --score-good: #4fc3e8;
-  --score-best: #2fe39a;
+  --score-bad: #f26a62;
+  --score-mid: #e6a63c;
+  --score-good: #5bb8dc;
+  --score-best: #3dd9a0;
 
-  --alert-bg: #2a0f0d;
+  --alert-bg: #2a1210;
   --alert-ink: #ffd9d6;
-  --vigil-bg: #241a05;
-  --vigil-ink: #ffd9a0;
-  --ok-bg: #0d2620;
-  --ok-line: #1e5c4a;
+  --alert-line: #f26a62;
+  --vigil-bg: #241b0a;
+  --vigil-ink: #ffdfae;
+  --ok-bg: #10231d;
+  --ok-line: #1f5a48;
 
-  /* Non-couleur de la nuit et fond des fenêtres favorables : utilisés par les
-     instruments, où ce sont des DONNÉES et non de la décoration. */
-  --night: #152b29;
-  --best-bg: #0d2620;
+  /* Non-couleur de la nuit et fond des fenêtres favorables : ce sont des
+     DONNÉES dans les instruments, pas de la décoration. */
+  --night: #1a1d21;
+  --best-bg: #10231d;
 
-  --focus: #2fe39a;
+  --focus: #3dd9a0;
+
+  /* Élévation par REMPLISSAGE, pas par liseré (règle d'audit : choisir l'un ou
+     l'autre, jamais les deux). Le liseré ne subsiste que pour porter un sens :
+     carte active, bandeau de danger, séparateur de tableau. */
+  --lift-1: var(--card);
+  --lift-2: var(--card-raised);
 }
 
 .theme-light {
   color-scheme: light;
 
   /* Indispensable : les descendants héritent de la couleur CALCULÉE sur <body>,
-     où --fg valait encore la valeur sombre. Sans ces deux lignes, les guides
-     affichent du texte clair sur fond clair. */
+     où --fg valait encore la valeur sombre. Sans ces deux lignes, le contenu
+     sortirait en texte clair sur fond clair. */
   color: var(--fg);
   background-color: var(--page);
 
-  --page: #fbf8f1;
-  --card: #f4efe4;
-  --card-raised: #e7e0ce;
-  --edge: #c9c0ac;
-  --edge-strong: #5c6b66;
+  --page: #fbfaf8;
+  --card: #f3f1ed;
+  --card-raised: #e9e6df;
+  --edge: #ddd8ce;
+  --edge-strong: #b4ac9d;
 
-  --fg: #10201f;
-  --fg-muted: #3c4a46;
-  --fg-dim: #5c6b66;
+  --fg: #14161a;
+  --fg-muted: #4a5058;
+  --fg-dim: #5a6069;
 
-  --score-bad: #b3251c;
-  --score-mid: #8a5300;
-  --score-good: #0b5e80;
-  --score-best: #04695a;
+  /* Séparés par la TEINTE — rouge, ambre, bleu, vert — et non par la seule
+     luminosité. Les valeurs héritées étaient deux bleu-vert quasi identiques :
+     0,081 de distance perceptuelle, en dessous du seuil de confusion. */
+  --score-bad: #c22b1e;
+  --score-mid: #8a5a00;
+  --score-good: #12579e;
+  --score-best: #1b6b3a;
 
-  --alert-bg: #f7e2e0;
+  --alert-bg: #f9e6e4;
   --alert-ink: #6b1410;
-  --vigil-bg: #f6ecd6;
+  --alert-line: #c22b1e;
+  --vigil-bg: #f7efdc;
   --vigil-ink: #573600;
-  --ok-bg: #e3efe7;
-  --ok-line: #04695a;
+  --ok-bg: #e5efe9;
+  --ok-line: #1b6b3a;
 
-  --night: #e7e0ce;
-  --best-bg: #dcece2;
+  --night: #e9e6df;
+  --best-bg: #dfeee6;
 
-  /* Le vert #2FE39A tombe sous 4.5:1 sur #FBF8F1 : en clair, le focus prend
-     l'accent clair du handoff pour tenir la garantie AA de la §1. */
-  --focus: #04695a;
+  /* Le vert d'accent sombre tombe sous 4,5:1 sur du papier : en clair, le focus
+     prend l'accent clair pour tenir la garantie AA. */
+  --focus: #1b6b3a;
 }
 
 @layer base {
@@ -86,14 +97,45 @@
 
   html {
     -webkit-text-size-adjust: 100%;
+    /* Les ancres des pages longues ne doivent pas sauter brutalement. */
+    scroll-behavior: smooth;
   }
 
   body {
     background-color: var(--page);
     color: var(--fg);
     font-size: 1rem; /* plancher 16px ; jamais sous 14px */
-    line-height: 1.55;
+    line-height: 1.6;
     text-rendering: optimizeLegibility;
+  }
+
+  /*
+   * Grain : une trame très faible, fixe, non interactive.
+   * Un aplat parfaitement lisse sonne numérique et vide. Le bruit est en SVG
+   * inline plutôt qu'en image : aucune requête, aucun octet transféré, et il
+   * s'adapte à toute taille d'écran.
+   */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* Un titre ne doit jamais laisser un mot seul sur sa dernière ligne. */
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p,
+  li,
+  dd {
+    text-wrap: pretty;
   }
 
   /* Toute donnée chiffrée est en mono et alignée en colonnes (handoff §1). */
@@ -111,22 +153,64 @@
 
   ::selection {
     background: var(--score-best);
-    color: #05100f;
+    color: var(--page);
   }
 }
 
 @layer components {
-  /* Loading = skeleton en line, sans pulsation ni spinner (handoff §6). */
-  .skeleton {
-    background-color: var(--edge);
-    border-radius: 2px;
+  /*
+   * Surface de carte. L'élévation se joue au REMPLISSAGE : pas de bordure, pas
+   * d'ombre. Une bordure ne subsiste que lorsqu'elle porte un sens — carte
+   * active, alerte — et jamais pour simplement délimiter.
+   */
+  .surface {
+    background-color: var(--card);
+    border-radius: 14px;
   }
 
-  /* Bloc de données simulées : bordure 1px dashed + tag (handoff §5).
-     Même gabarit que le futur DataSourceTag réel. */
+  .surface-raised {
+    background-color: var(--card-raised);
+    border-radius: 14px;
+  }
+
+  /* Loading = skeleton plein, sans pulsation ni spinner. */
+  .skeleton {
+    background-color: var(--card-raised);
+    border-radius: 4px;
+  }
+
+  /* Bloc de données simulées : le pointillé est le seul liseré décoratif
+     conservé, parce qu'il porte une information — cette donnée est inventée. */
   .demo-frame {
     border: 1px dashed var(--edge-strong);
-    border-radius: 10px;
+    border-radius: 14px;
+  }
+
+  /*
+   * Libellé de donnée : le petit texte gris au-dessus d'une valeur.
+   *
+   * Deux corrections d'un coup. D'abord la taille : ces libellés étaient à
+   * 11 px, sous le plancher de 14 px que le produit s'était lui-même fixé.
+   * Ensuite la casse : les capitales espacées, employées partout, cessent de
+   * hiérarchiser et deviennent une signature générique. On distingue désormais
+   * par la couleur et le poids, pas par le cri.
+   */
+  .meta {
+    font-size: 0.875rem;
+    line-height: 1.35;
+    font-weight: 500;
+    color: var(--fg-dim);
+  }
+
+  /* Retour tactile : un appui doit se voir. */
+  .pressable {
+    transition:
+      background-color 180ms cubic-bezier(0.22, 0.61, 0.36, 1),
+      transform 120ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+
+  .pressable:active {
+    transform: translateY(1px);
   }
 }
 
@@ -144,7 +228,7 @@
      Seul endroit du site où la serif est utilisée. */
   .guide-prose h2 {
     font-family: var(--font-archivo), system-ui, sans-serif;
-    font-size: 1.5rem;
+    font-size: 1.375rem;
     line-height: 1.2;
     letter-spacing: -0.015em;
     font-weight: 600;

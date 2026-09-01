@@ -10,7 +10,7 @@ const BASE =
   'inline-flex items-center justify-center rounded-input px-5 font-600 transition-colors';
 
 const VARIANTS = {
-  primary: 'min-h-[56px] bg-accent text-abyss hover:opacity-90',
+  primary: 'min-h-[56px] bg-accent text-page hover:opacity-90',
   secondary: 'min-h-[48px] border border-edge-strong text-fg hover:bg-card-raised',
   ghost: 'min-h-[48px] text-fg-muted hover:text-fg',
 } as const;

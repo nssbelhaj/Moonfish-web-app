@@ -120,7 +120,7 @@ export function DayActivityChart({
           .join(', ')}.`;
 
   return (
-    <figure className="rounded-card border border-edge bg-card p-4">
+    <figure className="surface p-4">
       {/* Rangée des poissons, au-dessus du tracé. */}
       <div className="relative h-8" aria-hidden="true">
         {favourable.map((slot) => {

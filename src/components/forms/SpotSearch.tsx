@@ -46,7 +46,7 @@ export function SpotSearch({ spots }: { spots: readonly SearchableSpot[] }) {
 
   return (
     <div>
-      <label htmlFor={inputId} className="block font-mono text-label uppercase tracking-[0.14em] text-fg-muted">
+      <label htmlFor={inputId} className="block meta font-mono">
         Chercher un spot ou une ville
       </label>
       <input
@@ -67,7 +67,7 @@ export function SpotSearch({ spots }: { spots: readonly SearchableSpot[] }) {
       </div>
 
       {query.length >= 2 && (
-        <ul id={listId} className="mt-3 divide-y divide-edge rounded-card border border-edge bg-card">
+        <ul id={listId} className="mt-3 divide-y divide-edge surface">
           {results.length === 0 && (
             <li className="px-4 py-4 text-body text-fg-muted">
               Aucun spot ne correspond. Les 12 spots du catalogue sont listés sur{' '}

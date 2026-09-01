@@ -91,7 +91,7 @@ export class OpenMeteoWeatherProvider implements WeatherProvider {
     name: 'Open-Meteo — modèles Marine & Forecast',
     kind: 'forecast',
     precision:
-      'Sortie de modèle à maille d’environ 5 km, réactualisée toutes les heures. Fiable à 48 h, indicative au-delà : au-delà de J+3, lisez la tendance, pas la valeur.',
+      'Modèle à maille d’environ 5 km, réactualisé chaque heure. Fiable à 48 h. Au-delà de J+3, lisez la tendance, pas la valeur.',
     url: 'https://open-meteo.com',
   };
 

@@ -10,4 +10,4 @@
  *
  * Doit toujours refléter `--page` du thème sombre.
  */
-export const BROWSER_THEME_COLOR = '#05100F';
+export const BROWSER_THEME_COLOR = '#0A0B0D';

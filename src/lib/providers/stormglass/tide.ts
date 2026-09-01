@@ -59,7 +59,7 @@ export class StormglassTideProvider implements TideProvider {
     name: 'Stormglass — modèle de marée',
     kind: 'forecast',
     precision:
-      'Horaires et hauteurs issus d’un modèle global, hauteurs rapportées au MLLW — proche du zéro des cartes françaises sans lui être identique, écart possible de quelques dizaines de centimètres. Coefficient recalculé sur le marnage de Brest selon la définition du SHOM. Pour une sortie réelle, la table officielle du SHOM reste la référence.',
+      'Modèle global. Hauteurs au MLLW, proche du zéro des cartes françaises à quelques dizaines de centimètres près. Coefficient recalculé sur le marnage de Brest, définition SHOM. Pour une sortie réelle, la table du SHOM reste la référence.',
     url: 'https://stormglass.io',
   };
 

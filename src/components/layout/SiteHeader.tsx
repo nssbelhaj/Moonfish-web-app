@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { NavLink } from './NavLink';
 
 const NAV = [
   { href: '/spots', label: 'Spots' },
@@ -8,7 +9,7 @@ const NAV = [
 
 export function SiteHeader() {
   return (
-    <header className="border-b border-edge">
+    <header className="relative z-banner border-b border-edge bg-page">
       <div className="mx-auto flex max-w-shell items-center justify-between gap-4 px-4 py-3 md:px-8">
         <Link href="/" className="flex min-h-[48px] items-center gap-2 font-600">
           <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -22,12 +23,7 @@ export function SiteHeader() {
           <ul className="flex items-center gap-1">
             {NAV.map((item) => (
               <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className="inline-flex min-h-[48px] items-center rounded-input px-3 text-body text-fg-muted hover:text-fg"
-                >
-                  {item.label}
-                </Link>
+                <NavLink href={item.href}>{item.label}</NavLink>
               </li>
             ))}
           </ul>

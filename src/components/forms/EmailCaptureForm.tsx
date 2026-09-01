@@ -62,7 +62,7 @@ export function EmailCaptureForm({ source = 'site' }: { source?: string }) {
 
   return (
     <form onSubmit={handleSubmit} noValidate>
-      <label htmlFor={inputId} className="block font-mono text-label uppercase tracking-[0.14em] text-fg-muted">
+      <label htmlFor={inputId} className="block meta font-mono">
         Adresse e-mail
       </label>
 
@@ -94,7 +94,7 @@ export function EmailCaptureForm({ source = 'site' }: { source?: string }) {
       {/* Ne promettre que ce qui est réellement implémenté. La désinscription
           en un clic n'existe pas encore : on donne l'adresse de contact plutôt
           que d'annoncer une fonctionnalité absente. */}
-      <p className="mt-3 font-mono text-[0.6875rem] leading-[1.5] text-fg-dim">
+      <p className="mt-3 meta font-mono leading-[1.5]">
         Seule votre adresse est enregistrée, avec la page d’où vous vous inscrivez. Aucun partage à
         des tiers. Pour être retiré de la liste, écrivez à contact@moonfish.fish : la suppression
         est manuelle tant que le produit n’est pas lancé.

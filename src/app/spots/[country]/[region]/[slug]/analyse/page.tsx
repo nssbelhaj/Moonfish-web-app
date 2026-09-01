@@ -99,7 +99,7 @@ export default async function SpotAnalysisPage({ params }: { params: Promise<Rou
         </div>
 
         <aside className="mt-12 xl:mt-0">
-          <section aria-labelledby="spot" className="rounded-card border border-edge p-4">
+          <section aria-labelledby="spot" className="surface p-4">
             <h2 id="spot" className="text-h2 font-600">
               Le spot
             </h2>
@@ -111,7 +111,7 @@ export default async function SpotAnalysisPage({ params }: { params: Promise<Rou
                 ['Marnage moyen', `${spot.meanTideRangeM.toFixed(1).replace('.', ',')} m`],
               ].map(([label, value]) => (
                 <div key={label}>
-                  <dt className="text-[0.6875rem] uppercase tracking-[0.14em] text-fg-dim">
+                  <dt className="meta">
                     {label}
                   </dt>
                   <dd className="mt-0.5 text-fg-muted" data-numeric="">
@@ -129,14 +129,14 @@ export default async function SpotAnalysisPage({ params }: { params: Promise<Rou
             </p>
           </section>
 
-          <section aria-labelledby="acces" className="mt-6 rounded-card border border-edge p-4">
+          <section aria-labelledby="acces" className="mt-6 surface p-4">
             <h2 id="acces" className="text-h2 font-600">
               Accès et sécurité
             </h2>
             <p className="mt-2 text-body text-fg-muted">{spot.access}</p>
           </section>
 
-          <section aria-labelledby="alerte" className="mt-6 rounded-card border border-edge p-4">
+          <section aria-labelledby="alerte" className="mt-6 surface p-4">
             <h2 id="alerte" className="text-h2 font-600">
               Être prévenu pour ce spot
             </h2>

@@ -45,7 +45,7 @@ export function TimeWindowBar({
               key={day.date}
               className="min-w-[46%] flex-1 snap-start sm:min-w-[30%] md:min-w-0"
             >
-              <p className="font-mono text-label uppercase tracking-[0.14em] text-fg-muted">
+              <p className="meta font-mono">
                 {formatDayShort(new Date(day.date), timeZone)}
               </p>
 
@@ -60,7 +60,7 @@ export function TimeWindowBar({
 
                     return (
                       <li key={slot.start} className="flex items-center gap-2 py-[3px]">
-                        <span className="w-9 shrink-0 font-mono text-[0.6875rem] text-fg-dim" data-numeric="">
+                        <span className="w-9 shrink-0 meta font-mono" data-numeric="">
                           {formatTime(new Date(slot.start), timeZone)}
                         </span>
                         <span
@@ -70,7 +70,7 @@ export function TimeWindowBar({
                             width: `${Math.max(6, slot.score.value * 10)}%`,
                           }}
                         />
-                        <span className="font-mono text-[0.6875rem] text-fg-dim" data-numeric="">
+                        <span className="meta font-mono" data-numeric="">
                           {isPast ? '—' : formatScore(slot.score.value)}
                         </span>
                         <span className="sr-only">
@@ -85,7 +85,7 @@ export function TimeWindowBar({
 
                 {locked && (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-fg-muted">
+                    <span className="meta font-mono text-fg-muted">
                       Pro
                     </span>
                   </div>

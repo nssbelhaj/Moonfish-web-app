@@ -96,7 +96,7 @@ export default async function SpotForecastPage({ params }: { params: Promise<Rou
               return (
                 <li key={day.date}>
                   <Card className="h-full p-4">
-                    <p className="font-mono text-label uppercase tracking-[0.14em] text-fg-muted">
+                    <p className="meta font-mono">
                       {formatDayLong(new Date(day.date), spot.timezone)}
                     </p>
                     <div className="mt-3">

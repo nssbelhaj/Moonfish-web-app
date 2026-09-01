@@ -38,7 +38,7 @@ export function SpotResultsSkeleton({ count }: { count: number }) {
   return (
     <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-hidden="true">
       {Array.from({ length: count }, (_, index) => (
-        <li key={index} className="rounded-card border border-edge bg-card p-4">
+        <li key={index} className="surface p-4">
           <div className="skeleton h-5 w-2/3" />
           <div className="skeleton mt-3 h-4 w-1/3" />
           <div className="skeleton mt-6 h-4 w-full" />

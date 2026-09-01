@@ -16,16 +16,16 @@ interface RouteParams {
 
 /** Les couleurs du handoff, en dur : l'image est rendue hors du DOM, sans variables CSS. */
 const COLORS = {
-  page: '#05100F',
-  card: '#0A1A19',
-  line: '#1E3439',
-  ink: '#E8F2F0',
-  muted: '#9FB4B3',
-  dim: '#7E9494',
-  bad: '#FF5A52',
-  mid: '#FFB020',
-  good: '#4FC3E8',
-  best: '#2FE39A',
+  page: '#0A0B0D',
+  card: '#15181C',
+  line: '#262A30',
+  ink: '#F1F3F5',
+  muted: '#A7AEB8',
+  dim: '#828A95',
+  bad: '#F26A62',
+  mid: '#E6A63C',
+  good: '#5BB8DC',
+  best: '#3DD9A0',
 } as const;
 
 /** Mêmes 12 chemins que la page : l'image est produite au build, pas à la demande. */

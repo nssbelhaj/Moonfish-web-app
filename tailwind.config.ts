@@ -1,55 +1,58 @@
 import type { Config } from 'tailwindcss';
 
 /**
- * Traduction directe du HANDOFF DESIGN v1.
+ * Palette Moonfish v2.
  *
  * Deux familles de tokens cohabitent volontairement :
  *
- * 1. Les littéraux du handoff (`abyss`, `paper`, `line`, `score-bad-dark`…).
- *    Ils sont la référence : ils ne bougent pas et servent à écrire les variables CSS.
- * 2. Les tokens sémantiques (`page`, `card`, `fg`, `score-bad`…) adossés à des
- *    variables CSS définies dans globals.css. Ce sont EUX que les composants
- *    utilisent, afin qu'un même composant rende juste en sombre (défaut) comme en
- *    clair (jour + guides) sans une seule classe conditionnelle.
+ * 1. Les littéraux, référence stable, jamais utilisés directement par un composant.
+ * 2. Les tokens SÉMANTIQUES (`page`, `card`, `fg`, `score-best`…) adossés à des
+ *    variables CSS définies dans globals.css. Ce sont eux que les composants
+ *    utilisent, afin qu'un même composant rende juste en sombre comme en clair.
+ *
+ * Les noms sémantiques n'ont pas changé depuis la v1 : le passage d'une
+ * direction artistique verte à une direction neutre n'a donc touché que ce
+ * fichier et globals.css, pas une seule ligne de composant.
+ *
+ * Tous les couples encre/surface sont vérifiés ≥ 4,5:1 par
+ * `src/lib/__tests__/contrast.test.ts`. Modifier une valeur ici sans faire
+ * passer ce test casse le build.
  */
 const config: Config = {
   content: ['./src/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {
-        // --- Littéraux sombre ---
-        abyss: '#05100F',
-        surface: '#0A1A19',
-        raised: '#102624',
-        line: '#1E3439',
-        'line-strong': '#2C4A4C',
-        ink: '#E8F2F0',
-        muted: '#9FB4B3',
-        dim: '#7E9494',
-        // --- Littéraux clair ---
-        paper: '#FBF8F1',
-        'paper-surface': '#F4EFE4',
-        'paper-sunk': '#E7E0CE',
-        hairline: '#C9C0AC',
-        'ink-dark': '#10201F',
-        'ink-2': '#3C4A46',
-        'ink-3': '#5C6B66',
-        // --- Marque ---
-        sonde: '#0B5E80',
-        night: 'var(--night)',
-        'danger-bg': '#2A0F0D',
-        'danger-ink': '#FFD9D6',
-        'warn-bg': '#241A05',
-        'warn-ink': '#FFD9A0',
-        'best-bg': 'var(--best-bg)',
-        'best-line': '#1E5C4A',
+        // ── Littéraux, thème sombre (défaut) ──────────────────────────────
+        // Jamais de noir pur : un #000 écrase les surfaces et durcit le rendu.
+        ink0: '#0A0B0D',
+        ink1: '#15181C',
+        ink2: '#1D2126',
+        ink3: '#262A30',
+        ink4: '#3A3F47',
+        chalk: '#F1F3F5',
+        'chalk-muted': '#A7AEB8',
+        'chalk-dim': '#828A95',
+
+        // ── Littéraux, thème clair ────────────────────────────────────────
+        paper: '#FBFAF8',
+        'paper-surface': '#F3F1ED',
+        'paper-sunk': '#E9E6DF',
+        graphite: '#14161A',
+        'graphite-muted': '#4A5058',
+        'graphite-dim': '#5A6069',
+
+        // ── Paliers de score : désaturés par rapport à la v1 ──────────────
+        // Ils portent une DONNÉE, pas une décoration : leur seule contrainte
+        // est de rester distinguables entre eux et lisibles sur les trois fonds.
         score: {
-          bad: { DEFAULT: 'var(--score-bad)', dark: '#FF5A52', light: '#B3251C' },
-          mid: { DEFAULT: 'var(--score-mid)', dark: '#FFB020', light: '#8A5300' },
-          good: { DEFAULT: 'var(--score-good)', dark: '#4FC3E8', light: '#0B5E80' },
-          best: { DEFAULT: 'var(--score-best)', dark: '#2FE39A', light: '#04695A' },
+          bad: { DEFAULT: 'var(--score-bad)', dark: '#F26A62', light: '#C22B1E' },
+          mid: { DEFAULT: 'var(--score-mid)', dark: '#E6A63C', light: '#8A5A00' },
+          good: { DEFAULT: 'var(--score-good)', dark: '#5BB8DC', light: '#12579E' },
+          best: { DEFAULT: 'var(--score-best)', dark: '#3DD9A0', light: '#1B6B3A' },
         },
-        // --- Sémantiques (bascule sombre/clair via variables CSS) ---
+
+        // ── Sémantiques : bascule sombre/clair via variables CSS ──────────
         page: 'var(--page)',
         card: 'var(--card)',
         'card-raised': 'var(--card-raised)',
@@ -59,8 +62,11 @@ const config: Config = {
         'fg-muted': 'var(--fg-muted)',
         'fg-dim': 'var(--fg-dim)',
         accent: 'var(--score-best)',
+        night: 'var(--night)',
+        'best-bg': 'var(--best-bg)',
         'alert-bg': 'var(--alert-bg)',
         'alert-ink': 'var(--alert-ink)',
+        'alert-line': 'var(--alert-line)',
         'vigil-bg': 'var(--vigil-bg)',
         'vigil-ink': 'var(--vigil-ink)',
         'ok-bg': 'var(--ok-bg)',
@@ -72,41 +78,39 @@ const config: Config = {
         serif: ['var(--font-spectral)', 'Georgia', 'serif'],
       },
       fontSize: {
-        // [taille, { lineHeight, letterSpacing }]
-        'score-xl': ['4.5rem', { lineHeight: '0.9', letterSpacing: '-0.04em' }],
-        'score-lg': ['3.25rem', { lineHeight: '0.92', letterSpacing: '-0.045em' }],
-        'score-md': ['1.6rem', { lineHeight: '1', letterSpacing: '-0.03em' }],
-        display: ['3.5rem', { lineHeight: '1', letterSpacing: '-0.03em' }],
-        h1: ['2rem', { lineHeight: '1.1', letterSpacing: '-0.02em' }],
-        h2: ['1.5rem', { lineHeight: '1.2', letterSpacing: '-0.015em' }],
-        h3: ['1.0625rem', { lineHeight: '1.3' }],
-        body: ['1rem', { lineHeight: '1.55' }],
+        // Échelle resserrée : les titres gagnent en présence par le poids et le
+        // tracking négatif, pas par la taille brute.
+        'score-xl': ['4.25rem', { lineHeight: '0.88', letterSpacing: '-0.045em' }],
+        'score-lg': ['3rem', { lineHeight: '0.9', letterSpacing: '-0.04em' }],
+        'score-md': ['1.5rem', { lineHeight: '1', letterSpacing: '-0.03em' }],
+        display: ['2.75rem', { lineHeight: '1.02', letterSpacing: '-0.035em' }],
+        h1: ['1.875rem', { lineHeight: '1.12', letterSpacing: '-0.028em' }],
+        h2: ['1.375rem', { lineHeight: '1.25', letterSpacing: '-0.018em' }],
+        h3: ['1.0625rem', { lineHeight: '1.35', letterSpacing: '-0.008em' }],
+        body: ['1rem', { lineHeight: '1.6' }],
         data: ['0.9375rem', { lineHeight: '1.45' }],
-        label: ['0.75rem', { lineHeight: '1', letterSpacing: '0.14em' }],
-        'guide-body': ['1.1875rem', { lineHeight: '1.7' }],
+        label: ['0.8125rem', { lineHeight: '1.2', letterSpacing: '0.02em' }],
+        'guide-body': ['1.1875rem', { lineHeight: '1.75' }],
       },
       spacing: {
-        // Base 4. Les pas hors échelle sont volontairement absents.
         gutter: '1rem',
         'gutter-lg': '1.5rem',
-        screenx: '1rem',
-        'screenx-lg': '2rem',
       },
       borderRadius: {
-        tag: '2px',
-        input: '6px',
-        card: '10px',
-        sheet: '16px',
-        frame: '22px',
+        tag: '4px',
+        input: '8px',
+        card: '14px',
+        sheet: '18px',
+        frame: '24px',
       },
       borderWidth: { DEFAULT: '1px', '2': '2px' },
-      boxShadow: {
-        'elev-1': '0 1px 0 #1E3439',
-        'elev-2': '0 8px 24px rgba(0,0,0,.55)',
-        'elev-light': '0 1px 2px rgba(16,32,31,.10)',
-      },
-      maxWidth: { measure: '68ch', shell: '1440px' },
+      maxWidth: { measure: '65ch', shell: '1320px' },
       screens: { xs: '390px' },
+      transitionTimingFunction: {
+        // Sortie douce : les interfaces de données ne rebondissent pas.
+        ui: 'cubic-bezier(0.22, 0.61, 0.36, 1)',
+      },
+      zIndex: { banner: '30', overlay: '40', skip: '50' },
     },
   },
   plugins: [],

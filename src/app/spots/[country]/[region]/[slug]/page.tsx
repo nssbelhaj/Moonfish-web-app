@@ -159,7 +159,7 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
         <aside className="mt-10 xl:mt-0">
           <section
             aria-labelledby="marees"
-            className={tideIsSimulated ? 'demo-frame p-4' : 'rounded-card border border-edge p-4'}
+            className={tideIsSimulated ? 'demo-frame p-4' : 'surface p-4'}
           >
             <DemoDataNotice sources={[forecast.sources.tide]} compact />
             <h2 id="marees" className="mt-2 text-h2 font-600">
@@ -195,7 +195,7 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
           <section
             aria-labelledby="meteo"
             className={
-              weatherIsSimulated ? 'demo-frame mt-6 p-4' : 'mt-6 rounded-card border border-edge p-4'
+              weatherIsSimulated ? 'demo-frame mt-6 p-4' : 'mt-6 surface p-4'
             }
           >
             <DemoDataNotice sources={[forecast.sources.weather]} compact />
@@ -222,7 +222,7 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
                     ['Pression', formatMeasure(current.conditions.pressureHpa, 'hPa', 0)],
                   ].map(([label, value]) => (
                     <div key={label}>
-                      <dt className="text-[0.6875rem] uppercase tracking-[0.14em] text-fg-dim">
+                      <dt className="meta">
                         {label}
                       </dt>
                       <dd className="mt-0.5 text-fg-muted" data-numeric="">
@@ -242,7 +242,7 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
             />
           </section>
 
-          <section aria-labelledby="lune" className="mt-6 rounded-card border border-edge p-4">
+          <section aria-labelledby="lune" className="mt-6 surface p-4">
             <h2 id="lune" className="text-h2 font-600">
               Lune et lumière
             </h2>
@@ -256,7 +256,7 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
                 </div>
                 <dl className="mt-4 grid grid-cols-2 gap-3 font-mono text-data">
                   <div>
-                    <dt className="text-[0.6875rem] uppercase tracking-[0.14em] text-fg-dim">
+                    <dt className="meta">
                       Lever du soleil
                     </dt>
                     <dd className="mt-0.5 text-fg-muted" data-numeric="">
@@ -266,7 +266,7 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-[0.6875rem] uppercase tracking-[0.14em] text-fg-dim">
+                    <dt className="meta">
                       Coucher du soleil
                     </dt>
                     <dd className="mt-0.5 text-fg-muted" data-numeric="">

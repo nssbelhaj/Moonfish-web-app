@@ -5,7 +5,6 @@ import { EmailCaptureForm } from '@/components/forms/EmailCaptureForm';
 import { SpotSearch, type SearchableSpot } from '@/components/forms/SpotSearch';
 import { SpotCard } from '@/components/spot/SpotCard';
 import { ButtonLink } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { Section } from '@/components/ui/Section';
 import { collectSources, getAllSpotSummaries, referenceNow } from '@/lib/forecast';
 import { tides, weather } from '@/lib/providers';
@@ -142,55 +141,84 @@ export default async function HomePage() {
         </div>
       </Section>
 
-      <Section title="Ce que le score regarde">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <Section
+        title="Ce que le score regarde"
+        lead="Cinq facteurs, pondérés. Le poids compte autant que la note : un excellent score de lumière ne rattrape pas une mauvaise marée."
+      >
+        {/*
+          Une liste pondérée plutôt qu'une rangée de cartes identiques.
+          Quatre cartes côte à côte, c'est la mise en page générique par défaut —
+          et surtout elle rendait les cinq poids indiscernables, alors que
+          l'écart entre 35 % et 5 % est toute l'information de cette section.
+        */}
+        <ul className="divide-y divide-edge">
           {[
             {
               title: 'Marée',
-              weight: '35 %',
+              weight: 35,
               body: 'La fenêtre de deux heures avant à une heure après la pleine mer, et la descendante établie. L’étale est pénalisée : sans courant, rien ne circule.',
               href: '/guides/comprendre-les-coefficients-de-maree',
               link: 'Comprendre les coefficients',
             },
             {
-              title: 'Vent et houle',
-              weight: '45 %',
-              body: '10 à 25 km/h de secteur mer brassent le bord sans le rendre impêchable. Au-delà de 40 km/h ou de 2,5 m, c’est non.',
+              title: 'Vent',
+              weight: 25,
+              body: '10 à 25 km/h de secteur mer brassent le bord sans le rendre impêchable. Au-delà de 40 km/h, c’est non.',
               href: '/guides/vent-houle-et-surfcasting',
               link: 'Vent, houle et surfcasting',
             },
             {
-              title: 'Lune et solunaire',
-              weight: '15 %',
+              title: 'Houle',
+              weight: 20,
+              body: 'Entre 0,5 et 1,5 m, la mer travaille le bord. Sous 0,3 m elle est trop lisse ; au-delà de 2,5 m, la question n’est plus la pêche.',
+              href: '/guides/vent-houle-et-surfcasting',
+              link: 'Lire l’état de mer',
+            },
+            {
+              title: 'Solunaire et lune',
+              weight: 15,
               body: 'Périodes majeures au zénith et au nadir, mineures au lever et au coucher. Bonus en vive-eau. Un effet réel, mais modeste.',
               href: '/guides/lune-et-periodes-solunaires',
               link: 'Ce que vaut vraiment le solunaire',
             },
             {
               title: 'Lumière',
-              weight: '5 %',
+              weight: 5,
               body: 'Aube, crépuscule et nuit devant le plein jour. Le poids est faible parce que l’effet, seul, l’est aussi.',
               href: '/guides/quand-pecher-le-bar-du-bord',
               link: 'Quand pêcher le bar',
             },
-          ].map((item) => (
-            <Card key={item.title} className="flex h-full flex-col p-4">
-              <div className="flex items-baseline justify-between gap-2">
-                <h3 className="text-h3 font-600">{item.title}</h3>
-                <span className="font-mono text-data text-fg-dim" data-numeric="">
-                  {item.weight}
+          ].map((factor) => (
+            <li key={factor.title} className="py-6">
+              <div className="flex items-baseline gap-4">
+                <span
+                  className="w-16 shrink-0 font-mono text-score-md font-700 text-fg"
+                  data-numeric=""
+                >
+                  {factor.weight}
+                  <span className="text-body font-500 text-fg-dim"> %</span>
                 </span>
+                <h3 className="text-h3 font-600">{factor.title}</h3>
               </div>
-              <p className="mt-2 flex-1 text-body text-fg-muted">{item.body}</p>
+
+              {/* La barre rend l'écart de poids immédiatement lisible. */}
+              <div className="ml-20 mt-2 h-1 rounded-[2px] bg-card-raised" aria-hidden="true">
+                <div
+                  className="h-full rounded-[2px] bg-accent"
+                  style={{ width: `${(factor.weight / 35) * 100}%` }}
+                />
+              </div>
+
+              <p className="ml-20 mt-3 max-w-measure text-body text-fg-muted">{factor.body}</p>
               <Link
-                href={item.href}
-                className="mt-3 inline-flex min-h-[44px] items-center font-mono text-data underline decoration-dotted underline-offset-4"
+                href={factor.href}
+                className="ml-20 mt-2 inline-flex min-h-[44px] items-center font-mono text-data text-fg underline decoration-dotted underline-offset-4"
               >
-                {item.link}
+                {factor.link}
               </Link>
-            </Card>
+            </li>
           ))}
-        </div>
+        </ul>
       </Section>
 
       <Section title="Questions fréquentes">

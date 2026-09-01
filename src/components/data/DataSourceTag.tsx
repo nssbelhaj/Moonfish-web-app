@@ -34,9 +34,10 @@ export function DataSourceTag({
     : null;
 
   return (
-    <p className="mt-3 font-mono text-[0.6875rem] leading-[1.5] text-fg-dim">
-      <span className="uppercase tracking-[0.14em]">{KIND_LABEL[source.kind]}</span>
-      {' · '}
+    <p className="mt-3 meta font-mono leading-[1.5]">
+      <span className="mr-1.5 inline-block rounded-tag bg-card-raised px-1.5 py-0.5 font-600 text-fg-muted">
+        {KIND_LABEL[source.kind]}
+      </span>
       {source.name}
       {formatted ? ` · maj ${formatted}` : ''}
       <br />

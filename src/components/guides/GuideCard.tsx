@@ -4,8 +4,8 @@ import { Card } from '@/components/ui/Card';
 
 export function GuideCard({ guide }: { guide: Guide }) {
   return (
-    <Card className="relative flex h-full flex-col p-4">
-      <p className="font-mono text-label uppercase tracking-[0.14em] text-fg-dim">
+    <Card interactive className="relative flex h-full flex-col p-4">
+      <p className="meta font-mono">
         {guide.category}
       </p>
       <h3 className="mt-2 text-h3 font-600">

@@ -44,7 +44,7 @@ export function ScoreGauge({
 
       <div className="mt-3 flex items-center gap-2">
         <ScoreShape tier={tier} size={16} className={isDanger ? 'opacity-50' : undefined} />
-        <p className="font-mono text-label uppercase tracking-[0.14em] text-fg-muted">
+        <p className="meta font-mono">
           {tier.label}
         </p>
       </div>
