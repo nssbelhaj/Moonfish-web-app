@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { TideEvent } from '@/data/schemas';
-import { eventsAround, sampleTideCurve, tideBounds, tideHeightAt } from '../tide-curve';
+import { eventsAround, sampleTideCurve, tidalRangeOf, tideBounds, tideHeightAt } from '../tide-curve';
 
 const H = 3_600_000;
 const T0 = Date.UTC(2026, 8, 1, 0, 0, 0);
@@ -67,5 +67,16 @@ describe('courbe de marée', () => {
     expect(window).toHaveLength(2);
     expect(window[0]?.type).toBe('high');
     expect(window[1]?.type).toBe('low');
+  });
+});
+
+describe('marnage effectif', () => {
+  it('mesure l’écart entre la plus haute pleine mer et la plus basse basse mer', () => {
+    expect(tidalRangeOf(events)).toBeCloseTo(6, 6);
+  });
+
+  it('rend null quand il manque une pleine ou une basse mer', () => {
+    expect(tidalRangeOf([])).toBeNull();
+    expect(tidalRangeOf(events.filter((e) => e.type === 'high'))).toBeNull();
   });
 });

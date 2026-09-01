@@ -1,5 +1,5 @@
 /**
- * Serveur Open-Meteo local.
+ * Serveur de fournisseurs local — Open-Meteo et Stormglass.
  *
  * Sert des réponses à la forme EXACTE de l'API publique — tableaux parallèles,
  * horodatages `unixtime`, valeurs nulles éparses — pour pouvoir exercer le
@@ -30,8 +30,72 @@ function hoursFor(url) {
   return { start, count: (pastDays + forecastDays) * 24 };
 }
 
+/** Période de l'onde semi-diurne lunaire M2, en secondes. */
+const M2_PERIOD_S = 12.4206 * 3600;
+const SYNODIC_S = 29.530588 * 86400;
+const REFERENCE_NEW_MOON_S = Date.UTC(2000, 0, 6, 18, 14) / 1000;
+
+/**
+ * Marnage moyen d'un point.
+ * Brest est calé sur sa valeur réelle (~5,5 m) : c'est le port de référence du
+ * coefficient français, une valeur fantaisiste y rendrait tous les coefficients
+ * de la démonstration absurdes.
+ */
+function meanRangeFor(lat, lng) {
+  if (Math.abs(lat - 48.3833) < 0.01 && Math.abs(lng + 4.4944) < 0.01) return 5.5;
+  const seed = Math.abs(Math.sin(lat * 12.9898 + lng * 78.233)) * 43758.5453;
+  return 1.5 + (seed % 1) * 6;
+}
+
+/** Extremums de marée : onde M2, amplitude suivant la lunaison. */
+function tideExtremes(lat, lng, startS, endS) {
+  const meanRange = meanRangeFor(lat, lng);
+  const lagS = (Math.abs(Math.sin(lat * 3.1 + lng * 7.7)) % 1) * M2_PERIOD_S;
+  const halfCycle = M2_PERIOD_S / 2;
+  const data = [];
+
+  const firstIndex = Math.floor((startS - lagS) / halfCycle);
+  const lastIndex = Math.ceil((endS - lagS) / halfCycle);
+
+  for (let i = firstIndex; i <= lastIndex; i += 1) {
+    const t = lagS + i * halfCycle;
+    if (t < startS || t > endS) continue;
+
+    // Vives-eaux aux syzygies, avec le retard de deux jours de l'âge de la marée.
+    const age = ((t - 2 * 86400 - REFERENCE_NEW_MOON_S) % SYNODIC_S + SYNODIC_S) % SYNODIC_S;
+    const syzygy = Math.abs(Math.cos((2 * Math.PI * age) / SYNODIC_S));
+    const range = meanRange * (0.5 + 0.75 * syzygy);
+    const isHigh = ((i % 2) + 2) % 2 === 0;
+
+    data.push({
+      time: new Date(t * 1000).toISOString(),
+      height: Number((meanRange * 0.9 + (isHigh ? range / 2 : -range / 2)).toFixed(2)),
+      type: isHigh ? 'high' : 'low',
+    });
+  }
+
+  return data;
+}
+
 const server = createServer((req, res) => {
   const url = new URL(req.url ?? '/', `http://${req.headers.host}`);
+
+  if (url.pathname === '/v2/tide/extremes/point') {
+    const lat = Number(url.searchParams.get('lat') ?? 48);
+    const lng = Number(url.searchParams.get('lng') ?? -4);
+    const startS = Number(url.searchParams.get('start') ?? Math.floor(Date.now() / 1000));
+    const endS = Number(url.searchParams.get('end') ?? startS + 9 * 86400);
+
+    res.writeHead(200, { 'content-type': 'application/json' });
+    res.end(
+      JSON.stringify({
+        data: tideExtremes(lat, lng, startS, endS),
+        meta: { datum: 'MLLW', requestCount: 1, dailyQuota: 10, cost: 1 },
+      }),
+    );
+    return;
+  }
+
   const lat = Number(url.searchParams.get('latitude') ?? 48);
   const lng = Number(url.searchParams.get('longitude') ?? -4);
   const { start, count } = hoursFor(url);

@@ -24,6 +24,7 @@ import {
   TECHNIQUE_LABELS,
 } from '@/data/spots';
 import { getSpotForecast, referenceNow, type ForecastSlot } from '@/lib/forecast';
+import { tidalRangeOf } from '@/lib/forecast/tide-curve';
 import { shelteredNearby } from '@/lib/geo';
 import { spots as spotRepository } from '@/lib/providers';
 import { absoluteUrl, spotPath } from '@/lib/routes';
@@ -274,9 +275,10 @@ export default async function SpotPage({ params }: { params: Promise<RouteParams
                 La journée d’un coup d’œil
               </h2>
               <p className="mt-2 max-w-measure text-body text-fg-muted">
-                La hauteur d’eau, les huit créneaux de trois heures et ceux qui ressortent. Les
-                marées de cette version sont simulées ; le lever et le coucher du soleil, eux, sont
-                calculés.
+                La hauteur d’eau, les huit créneaux de trois heures et ceux qui ressortent.{' '}
+                {tideIsSimulated
+                  ? 'Les marées affichées ici sont simulées ; le lever et le coucher du soleil, eux, sont calculés.'
+                  : 'Marées et météo sont réelles ; le lever et le coucher du soleil sont calculés localement.'}
               </p>
               <div className="mt-4">
                 <DayActivityChart
@@ -352,8 +354,15 @@ export default async function SpotPage({ params }: { params: Promise<RouteParams
             {today && (
               <>
                 <p className="mt-2 font-mono text-data text-fg-muted" data-numeric="">
-                  Coefficient {today.tideEvents[0]?.coefficient ?? '—'} · marnage moyen{' '}
-                  {spot.meanTideRangeM.toFixed(1).replace('.', ',')} m
+                  Coefficient {today.tideEvents[0]?.coefficient ?? '—'} ·{' '}
+                  {/* Le marnage du JOUR, calculé sur les extremums affichés — pas
+                      la moyenne du spot, qui les contredirait sous les yeux du lecteur. */}
+                  {(() => {
+                    const range = tidalRangeOf(today.tideEvents);
+                    return range === null
+                      ? `marnage moyen ${spot.meanTideRangeM.toFixed(1).replace('.', ',')} m`
+                      : `marnage du jour ${range.toFixed(1).replace('.', ',')} m`;
+                  })()}
                 </p>
                 <div className="mt-4">
                   <TideChart

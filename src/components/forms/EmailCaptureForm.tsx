@@ -55,7 +55,7 @@ export function EmailCaptureForm({ source = 'site' }: { source?: string }) {
       >
         {status.alreadyRegistered
           ? 'Cette adresse était déjà inscrite. Vous serez prévenu au lancement.'
-          : 'C’est noté. Vous serez prévenu dès que les marées réelles seront branchées.'}
+          : 'C’est noté. Vous serez prévenu des prochaines fonctionnalités.'}
       </p>
     );
   }

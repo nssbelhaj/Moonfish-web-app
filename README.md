@@ -8,12 +8,13 @@ solunaires et lumière, pondérés et expliqués.
 | Donnée | Source | Nature |
 | --- | --- | --- |
 | Vent, houle, températures, pression | Open-Meteo (modèles Marine & Forecast) | **Prévision réelle** |
+| Marées et coefficients | Stormglass, *si `STORMGLASS_API_KEY` est définie* | **Prévision réelle** |
+| Marées, sans clé | Modèle de démonstration Moonfish | **Simulé** |
 | Lever/coucher du Soleil, phase de Lune | Calcul local (NOAA + lunaison) | **Calculé** |
-| Marées et coefficients | Modèle de démonstration Moonfish | **Simulé** |
 
-Les marées restent inventées, et le site le dit sur chaque page qui en affiche.
-Les avertissements sont pilotés par la source : ils disparaîtront d'eux-mêmes
-quand le fournisseur de marées passera au réel — il n'y a rien à retirer à la main.
+Les avertissements de démonstration sont pilotés par la source réellement
+utilisée : ils disparaissent d'eux-mêmes quand un fournisseur passe au réel, et
+reviennent seuls s'il tombe. Il n'y a rien à retirer ni à remettre à la main.
 
 ---
 
@@ -45,7 +46,7 @@ Node 20 ou plus. Aucune variable d'environnement n'est requise pour démarrer.
 | `npm start` | Sert le build de production |
 | `npm run typecheck` | `tsc --noEmit` en mode strict renforcé |
 | `npm run lint` | ESLint (config `next/core-web-vitals` + `next/typescript`) |
-| `npm test` | 121 tests unitaires (Vitest), hermétiques — aucun accès réseau |
+| `npm test` | 148 tests unitaires (Vitest), hermétiques — aucun accès réseau |
 | `npm run test:watch` | Tests en mode surveillance |
 
 ---
@@ -97,6 +98,7 @@ src/
     ├── forecast/                 Assemblage providers → créneaux scorés
     │   ├── tide-context.ts       Contexte de marée reconstruit depuis les extremums
     │   ├── tide-curve.ts         Interpolation cosinusoïdale entre extremums
+    │   ├── tide-coefficient.ts   Coefficient français, défini sur le marnage de Brest
     │   └── slots.ts              Découpage en 8 créneaux de 3 h, journée LOCALE
     ├── providers/                ← LE POINT DE BASCULE (voir plus bas)
     ├── guides.ts, markdown.ts    Chargement et rendu des articles
@@ -121,26 +123,57 @@ export const spots: SpotRepository = new MockSpotRepository();
 export const waitlist: WaitlistRepository = new FileWaitlistRepository();
 ```
 
-### 1. Marées → Stormglass
+### 1. Marées → Stormglass ✅ FAIT
 
-| | |
-| --- | --- |
-| **Interface** | `TideProvider` dans `src/lib/providers/types.ts` |
-| **À implémenter** | `getTideEvents(spot, range): Promise<Sourced<TideEvent[]>>` |
-| **Mock à remplacer** | `src/lib/providers/mock/tide.ts` |
-| **Nouveau fichier** | `src/lib/providers/stormglass/tide.ts` |
-| **Ligne à changer** | `export const tides: TideProvider = new StormglassTideProvider(process.env.STORMGLASS_KEY!)` |
+Implémenté dans `src/lib/providers/stormglass/tide.ts`. S'active dès que
+`STORMGLASS_API_KEY` est définie ; sans elle, les marées restent simulées et le
+site le dit — il ne casse pas.
 
-Appeler `GET https://api.stormglass.io/v2/tide/extremes/point` avec `lat`, `lng`,
-`start`, `end`. Mapper chaque élément `{ time, type, height }` vers `TideEvent`.
-Le coefficient n'est pas fourni par Stormglass : le récupérer auprès du SHOM ou
-le conserver calculé (`tideCoefficientFor` dans `src/data/generators/tide.ts`),
-en changeant alors `source.kind` en `'computed'` pour ce champ.
+**Deux appels par spot, et le second n'est pas une redondance.** Stormglass
+donne des horaires et des hauteurs, jamais le coefficient français. Celui-ci est
+*défini* par le SHOM comme le marnage de **Brest** rapporté à son unité de
+hauteur :
 
-Rien d'autre ne bouge : `tideContextAt` (`src/lib/forecast/tide-context.ts`)
-reconstruit déjà l'heure relative à la pleine mer, le coefficient et l'état de
-marée **à partir des seuls extremums**, exactement la forme que renvoie
-Stormglass. C'est le point d'architecture le plus important du projet.
+```
+coefficient = 100 × marnage_Brest / (2 × 3,05 m)
+```
+
+Le calculer sur le marnage local donnerait un nombre qui ne correspondrait à
+aucune table de marée française — l'erreur qu'on trouve dans beaucoup
+d'applications. L'appel Brest est identique pour les douze spots, donc mutualisé
+par le cache : il coûte **un appel par jour au total**, pas douze.
+
+Le coefficient ne dépend que d'une *différence* de hauteurs : il est donc
+insensible au zéro de référence, ce qui le rend fiable même avec une source
+étrangère. C'est vérifié par un test.
+
+**Le quota, en clair.** L'offre gratuite de Stormglass est de 10 appels par
+jour. Avec 12 spots + Brest, il faut 13 appels par cycle de cache :
+
+| `TIDE_CACHE_SECONDS` | Appels/jour | Offre gratuite |
+| --- | --- | --- |
+| 86400 (24 h, défaut) | 13 | dépassée de 3 |
+| 172800 (48 h) | 6,5 | tient |
+
+Les prévisions de marée sont de l'astronomie : elles ne se réactualisent pas
+d'heure en heure. Un cache de 48 h n'est pas un compromis, c'est une durée
+juste — et c'est ce qui rend l'offre gratuite utilisable. Au-delà de 12 spots,
+il faut passer à une offre payante ou à une autre source.
+
+**Limites annoncées dans l'interface :** hauteurs rapportées au MLLW, proche du
+zéro des cartes françaises sans lui être identique (écart possible de quelques
+dizaines de centimètres). Le `DataSourceTag` renvoie vers le SHOM pour toute
+sortie réelle.
+
+**Tester sans clé ni réseau :** `node scripts/providers-stub.mjs 4000` sert des
+réponses à la forme exacte de l'API, avec Brest calé sur son marnage réel pour
+que les coefficients restent plausibles.
+
+```bash
+STORMGLASS_API_KEY=stub \
+STORMGLASS_URL=http://127.0.0.1:4000/v2/tide/extremes/point \
+npm run build
+```
 
 ### 2. Météo marine → Open-Meteo ✅ FAIT
 
@@ -170,7 +203,7 @@ Robustesse : un champ d'affichage hors bornes physiques devient `null`
 (« Indispo. ») ; seule une grandeur dont dépend le score fait écarter l'heure.
 Une rafale aberrante ne doit pas coûter sept jours de vraie prévision.
 
-Tester sans réseau : `node scripts/open-meteo-stub.mjs 4000` sert des réponses
+Tester sans réseau : `node scripts/providers-stub.mjs 4000` sert des réponses
 à la forme exacte de l'API, puis
 
 ```bash
@@ -279,7 +312,7 @@ Lighthouse mobile, build de production, 8 URL couvrant les 5 pages :
 | Toutes les pages | 94–98 | 100 | 100 | 100 |
 
 `npm run build`, `npm run typecheck` et `npm run lint` passent sans erreur ni
-avertissement. 121 tests unitaires. Aucun débordement horizontal à 375 px.
+avertissement. 148 tests unitaires. Aucun débordement horizontal à 375 px.
 
 ## Déploiement
 

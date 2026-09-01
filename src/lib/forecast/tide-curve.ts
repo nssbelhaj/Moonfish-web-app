@@ -100,3 +100,18 @@ export function eventsAround(
   const after = list.filter((event) => new Date(event.time).getTime() > to.getTime()).slice(0, 1);
   return [...before, ...inside, ...after];
 }
+
+/**
+ * Marnage effectif sur un ensemble d'extremums, en mètres.
+ *
+ * Préférable au marnage moyen du spot dès que les hauteurs sont réelles :
+ * annoncer « marnage moyen 5,6 m » à côté d'une pleine mer et d'une basse mer
+ * qui n'en font que 2 est une contradiction que le lecteur ne peut pas trancher.
+ * `null` s'il manque une pleine ou une basse mer pour conclure.
+ */
+export function tidalRangeOf(events: readonly TideEvent[]): number | null {
+  const highs = events.filter((event) => event.type === 'high').map((event) => event.heightM);
+  const lows = events.filter((event) => event.type === 'low').map((event) => event.heightM);
+  if (highs.length === 0 || lows.length === 0) return null;
+  return Math.max(...highs) - Math.min(...lows);
+}

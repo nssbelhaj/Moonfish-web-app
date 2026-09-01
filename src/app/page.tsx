@@ -8,6 +8,7 @@ import { ButtonLink } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Section } from '@/components/ui/Section';
 import { collectSources, getAllSpotSummaries, referenceNow } from '@/lib/forecast';
+import { tides, weather } from '@/lib/providers';
 import { absoluteUrl, spotPath } from '@/lib/routes';
 import { formatDateTime } from '@/lib/time';
 
@@ -27,17 +28,38 @@ export const metadata: Metadata = {
   },
 };
 
+/**
+ * La réponse sur l'origine des données ne peut pas être écrite en dur : elle
+ * change avec les fournisseurs branchés. Une FAQ qui affirmerait encore que les
+ * marées sont simulées après leur branchement serait fausse — et une FAQ fausse
+ * détruit plus de confiance qu'une FAQ absente.
+ */
+const DATA_QUESTION = {
+  question: 'Les données affichées sont-elles réelles ?',
+  answer: (() => {
+    const simulated = [
+      tides.source.kind === 'simulated' ? 'les marées' : null,
+      weather.source.kind === 'simulated' ? 'le vent et la houle' : null,
+    ].filter((item): item is string => item !== null);
+
+    const base =
+      'Le lever et le coucher du Soleil ainsi que la phase de Lune sont calculés localement, et chaque bloc indique sa provenance et sa fraîcheur.';
+
+    if (simulated.length === 0) {
+      return `Oui. Les marées viennent de ${tides.source.name}, le vent et la houle des modèles Open-Meteo. ${base}`;
+    }
+
+    return `En partie. ${simulated.join(' et ')} ${simulated.length > 1 ? 'sont simulés' : 'sont simulées'} et signalés comme tels sur chaque page. Le reste vient de fournisseurs réels. ${base}`;
+  })(),
+} as const;
+
 const FAQ = [
   {
     question: 'Comment le score Moonfish est-il calculé ?',
     answer:
       'Cinq facteurs pondérés : la marée pour 35 %, le vent pour 25 %, la houle pour 20 %, les périodes solunaires et la lune pour 15 %, la lumière pour 5 %. Chaque sous-score et son poids sont affichés sur la page du spot, avec la phrase qui l’explique.',
   },
-  {
-    question: 'Les données affichées sont-elles réelles ?',
-    answer:
-      'En partie. Le vent et la houle viennent des modèles Open-Meteo : ce sont de vraies prévisions. Le lever et le coucher du Soleil ainsi que la phase de Lune sont calculés localement. Les marées, en revanche, sont encore simulées, et chaque bloc indique sa provenance et sa fraîcheur.',
-  },
+  DATA_QUESTION,
   {
     question: 'Un score élevé garantit-il une prise ?',
     answer:
@@ -184,8 +206,8 @@ export default async function HomePage() {
 
       <Section
         id="waitlist"
-        title="Être prévenu quand les marées deviennent réelles"
-        lead="Le vent et la houle sont déjà réels. Reste les marées, via le SHOM ou Stormglass. Une seule adresse suffit, et vous ne recevrez rien d’autre."
+        title="Être prévenu des prochaines fonctionnalités"
+        lead="Alertes sur vos fenêtres favorables, favoris, carnet de prises. Une seule adresse suffit, et vous ne recevrez rien d’autre."
       >
         <div className="max-w-[42rem]">
           <EmailCaptureForm source="accueil" />

@@ -50,8 +50,14 @@ export function DemoDataNotice({
 
   const subjects = simulated.map(subjectOf);
   const nouns = [...new Set(subjects.map((subject) => subject.noun))];
+
+  // « ainsi que » et non « et » : un sujet contient déjà une conjonction
+  // (« le vent et la houle »), et l'énumération produisait « les marées et le
+  // vent et la houle ».
   const list =
-    nouns.length === 1 ? nouns[0] : `${nouns.slice(0, -1).join(', ')} et ${nouns[nouns.length - 1]}`;
+    nouns.length === 1
+      ? nouns[0]
+      : `${nouns.slice(0, -1).join(', ')} ainsi que ${nouns[nouns.length - 1]}`;
   const verb = subjects.every((subject) => subject.feminine) ? 'sont simulées' : 'sont simulés';
 
   return (

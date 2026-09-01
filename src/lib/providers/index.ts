@@ -1,9 +1,10 @@
-import { WeatherProviderWithFallback } from './fallback';
+import { TideProviderWithFallback, WeatherProviderWithFallback } from './fallback';
 import { MockSpotRepository } from './mock/spots';
 import { MockTideProvider } from './mock/tide';
 import { MockWeatherProvider } from './mock/weather';
 import { FileWaitlistRepository } from './mock/waitlist';
 import { OpenMeteoWeatherProvider } from './open-meteo/weather';
+import { StormglassTideProvider } from './stormglass/tide';
 import type { SpotRepository, TideProvider, WaitlistRepository, WeatherProvider } from './types';
 
 /**
@@ -18,16 +19,39 @@ import type { SpotRepository, TideProvider, WaitlistRepository, WeatherProvider 
  *
  * Reste à brancher :
  *
- *   import { StormglassTideProvider } from './stormglass/tide';
  *   import { SupabaseSpotRepository } from './supabase/spots';
  *   import { SupabaseWaitlistRepository } from './supabase/waitlist';
  *
- *   export const tides: TideProvider = new StormglassTideProvider(process.env.STORMGLASS_KEY!);
  *   export const spots: SpotRepository = new SupabaseSpotRepository();
  *   export const waitlist: WaitlistRepository = new SupabaseWaitlistRepository();
  */
 
-export const tides: TideProvider = new MockTideProvider();
+/**
+ * Marées : Stormglass dès qu'une clé est présente, sinon le modèle de
+ * démonstration — clairement étiqueté comme tel sur chaque page.
+ *
+ * La clé n'est pas fournie par défaut, et c'est volontaire : mieux vaut un site
+ * qui annonce des marées simulées qu'un site qui échoue à se construire faute
+ * d'une variable d'environnement.
+ */
+function buildTideProvider(): TideProvider {
+  const mock = new MockTideProvider();
+  const apiKey = process.env.STORMGLASS_API_KEY?.trim();
+
+  if (!apiKey || process.env.TIDE_PROVIDER === 'mock') return mock;
+
+  const cacheSeconds = Number(process.env.TIDE_CACHE_SECONDS);
+
+  return new TideProviderWithFallback(
+    new StormglassTideProvider(apiKey, {
+      ...(Number.isFinite(cacheSeconds) && cacheSeconds > 0 ? { cacheSeconds } : {}),
+      ...(process.env.STORMGLASS_URL ? { baseUrl: process.env.STORMGLASS_URL } : {}),
+    }),
+    mock,
+  );
+}
+
+export const tides: TideProvider = buildTideProvider();
 
 /**
  * Météo marine : Open-Meteo est branché.
