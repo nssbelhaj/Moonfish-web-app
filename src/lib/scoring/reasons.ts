@@ -17,6 +17,7 @@ const POSITIVE: Record<ScoreFactor, string> = {
   wind: 'Le vent est bien placé',
   swell: 'L’état de mer est favorable',
   solunar: 'Le créneau solunaire est porteur',
+  pressure: 'La pression joue en votre faveur',
   light: 'La lumière joue en votre faveur',
 };
 
@@ -25,6 +26,7 @@ const NEGATIVE: Record<ScoreFactor, string> = {
   wind: 'Le vent pénalise la sortie',
   swell: 'L’état de mer pénalise',
   solunar: 'Le solunaire n’apporte rien ici',
+  pressure: 'La pression ne travaille pas pour vous',
   light: 'La lumière n’aide pas',
 };
 

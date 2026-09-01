@@ -3,7 +3,7 @@ import { computeScore } from '../compute';
 import { FACTOR_WEIGHTS, type ScoreFactor } from '../types';
 import { IDEAL, scoreOf, withInput } from './fixtures';
 
-const ALL: ScoreFactor[] = ['tide', 'wind', 'swell', 'solunar', 'light'];
+const ALL: ScoreFactor[] = ['tide', 'wind', 'swell', 'solunar', 'pressure', 'light'];
 
 /**
  * D11 — un score calculé avec un facteur manquant le DÉCLARE.
@@ -39,8 +39,9 @@ describe('sources manquantes — renormalisation', () => {
 
   it('rapporte la couverture réellement atteinte', () => {
     expect(computeScore(IDEAL).coverage).toBeCloseTo(1, 10);
-    expect(computeScore(withInput({ swell: null })).coverage).toBeCloseTo(0.8, 10);
-    expect(computeScore(withInput({ tide: null, swell: null })).coverage).toBeCloseTo(0.45, 10);
+    // 1 − 0,18 pour la houle ; puis 1 − 0,18 − 0,32 avec la marée en moins.
+    expect(computeScore(withInput({ swell: null })).coverage).toBeCloseTo(0.82, 10);
+    expect(computeScore(withInput({ tide: null, swell: null })).coverage).toBeCloseTo(0.5, 10);
   });
 
   it('vaut exactement la moyenne pondérée des facteurs restants', () => {
@@ -81,6 +82,7 @@ describe('sources manquantes — une absence n’est pas un zéro', () => {
       wind: null,
       swell: null,
       solunar: null,
+      pressure: null,
       light: null,
     });
 

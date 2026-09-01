@@ -58,7 +58,7 @@ describe('sécurité — règle non négociable', () => {
 });
 
 describe('cumul de facteurs négatifs', () => {
-  it('sort en Médiocre quand marée, vent, houle, lune et lumière sont tous défavorables', () => {
+  it('sort en Médiocre quand tous les facteurs sont défavorables', () => {
     const worst = computeScore({
       spotFacingDeg: 270,
       tide: { hoursFromHighTide: 6.2, coefficient: 118, state: 'slack' },
@@ -70,6 +70,8 @@ describe('cumul de facteurs négatifs', () => {
         moonIlluminationPct: 50,
         moonAgeDays: 7.4,
       },
+      // Pression en hausse franche derrière un front : le cas le moins porteur.
+      pressure: { hPa: 1027, trend3hHpa: 3.4 },
       light: { phase: 'day' },
     });
 

@@ -107,6 +107,19 @@ export const marinePointSchema = z.object({
   waterTempC: z.number().nullable(),
   cloudCoverPct: z.number().min(0).max(100).nullable(),
   pressureHpa: z.number().min(870).max(1090).nullable(),
+  /**
+   * Champs de confort et de sécurité, tous facultatifs.
+   *
+   * Ils viennent du MÊME appel Open-Meteo que le reste : les demander ne coûte
+   * rien de plus. Ils sont nullables parce qu'aucun n'est nécessaire au score —
+   * leur absence ne doit jamais faire tomber une heure.
+   */
+  precipitationProbabilityPct: z.number().min(0).max(100).nullable().default(null),
+  uvIndex: z.number().min(0).max(20).nullable().default(null),
+  visibilityKm: z.number().min(0).max(200).nullable().default(null),
+  apparentTempC: z.number().min(-90).max(70).nullable().default(null),
+  humidityPct: z.number().min(0).max(100).nullable().default(null),
+  dewPointC: z.number().min(-90).max(60).nullable().default(null),
 });
 
 export type MarinePoint = z.infer<typeof marinePointSchema>;

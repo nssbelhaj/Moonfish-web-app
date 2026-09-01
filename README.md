@@ -386,11 +386,28 @@ Fonction pure : aucun accès réseau, aucune horloge, aucun système de fichiers
 
 | Facteur | Poids | Optimal |
 | --- | --- | --- |
-| Marée | 35 % | −2 h à +1 h autour de la pleine mer, ou descendante établie. Coefficient 70–95. Étale pénalisée. |
-| Vent | 25 % | 10–25 km/h de secteur mer. Vent de terre modéré = correct. > 40 km/h = mauvais. |
-| Houle | 20 % | 0,5–1,5 m. < 0,3 m trop calme, > 2,5 m mauvais. |
-| Solunaire & lune | 15 % | Périodes majeures (zénith/nadir) et mineures (lever/coucher), bonus vive-eau. |
+| Marée | 32 % | −2 h à +1 h autour de la pleine mer, ou descendante établie. Coefficient 70–95. Étale pénalisée. |
+| Vent | 23 % | 10–25 km/h de secteur mer. Vent de terre modéré = correct. > 40 km/h = mauvais. |
+| Houle | 18 % | 0,5–1,5 m. < 0,3 m trop calme, > 2,5 m mauvais. |
+| Solunaire & lune | 13 % | Périodes majeures (zénith/nadir) et mineures (lever/coucher), bonus vive-eau. |
+| Pression | 9 % | Baisse douce (−0,5 à −2,5 hPa/3 h). Chute brutale et hausse franche pénalisées. |
 | Lumière | 5 % | Aube, crépuscule, nuit devant le plein jour. |
+
+**La pression compte par sa TENDANCE, pas par sa valeur.** 1013 hPa n'est ni bon
+ni mauvais ; c'est la variation sur trois heures qui porte l'information. Une
+baisse douce précède souvent une phase active, une hausse franche derrière un
+front la referme. Une chute brutale n'est pas récompensée : elle annonce du gros
+temps, et la récompenser ferait monter le score juste avant un coup de vent.
+Sans tendance calculable — au début de la série — le facteur se neutralise à 5
+et le dit, plutôt que d'inventer une direction.
+
+**Les hauteurs de vagues sont dérivées, pas mesurées.** Seule la hauteur
+significative vient du modèle. La plus fréquente (Hs/2) et la maximale attendue
+(Hs·√(ln N / 2)) sortent de la loi de Rayleigh — `src/lib/forecast/wave-statistics.ts`.
+Le contrôle est dans les tests : la formule doit retrouver « 14 % des vagues
+dépassent la significative » et « le double, trois fois par jour à 9 s de
+période ». Ce sont les deux nombres publiés partout ; s'ils ne tombaient pas,
+nous afficherions une statistique inventée sous couvert d'océanographie.
 
 **Règle non négociable.** Si houle > 2,5 m **ou** vent > 50 km/h,
 `safety.level` vaut `'danger'` et l'interface affiche un bandeau non refermable

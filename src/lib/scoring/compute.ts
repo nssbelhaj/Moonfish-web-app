@@ -1,4 +1,5 @@
 import { scoreLight } from './factors/light';
+import { scorePressure } from './factors/pressure';
 import { scoreSolunar } from './factors/solunar';
 import { scoreSwell } from './factors/swell';
 import { scoreTide } from './factors/tide';
@@ -20,7 +21,7 @@ export function labelFor(value: number): ScoreLabel {
   return 'Excellent';
 }
 
-const FACTORS: readonly ScoreFactor[] = ['tide', 'wind', 'swell', 'solunar', 'light'];
+const FACTORS: readonly ScoreFactor[] = ['tide', 'wind', 'swell', 'solunar', 'pressure', 'light'];
 
 /**
  * Le score Moonfish.
@@ -43,6 +44,7 @@ export function computeScore(input: ScoreInput): ScoreResult {
     wind: scoreWind(input.wind, input.spotFacingDeg),
     swell: scoreSwell(input.swell),
     solunar: scoreSolunar(input.solunar),
+    pressure: scorePressure(input.pressure),
     light: scoreLight(input.light),
   };
 

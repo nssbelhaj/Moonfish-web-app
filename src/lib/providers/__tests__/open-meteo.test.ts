@@ -75,6 +75,16 @@ describe('Open-Meteo — recomposition des tableaux parallèles', () => {
       waterTempC: 17.4,
       cloudCoverPct: 75,
       pressureHpa: 1014,
+      // Champs de confort : le stub ne les fournit pas, ils doivent donc être
+      // NULS et non absents. Un champ manquant ferait échouer le schéma et
+      // perdrait l'heure entière ; un `null` dit « pas de donnée » et laisse
+      // l'interface écrire « Indispo. ».
+      precipitationProbabilityPct: null,
+      uvIndex: null,
+      visibilityKm: null,
+      apparentTempC: null,
+      humidityPct: null,
+      dewPointC: null,
     });
   });
 

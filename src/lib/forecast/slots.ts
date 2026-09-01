@@ -107,6 +107,13 @@ export function buildForecastDays(
           conditions === null
             ? null
             : { heightM: conditions.swellHeightM, periodS: conditions.swellPeriodS },
+        pressure:
+          conditions === null || conditions.pressureHpa === null
+            ? null
+            : {
+                hPa: conditions.pressureHpa,
+                trend3hHpa: pressureTrend(marineByHour, middle),
+              },
         solunar: {
           hoursToMajorPeriod: hoursToNearest(middle, solunar.major),
           hoursToMinorPeriod: hoursToNearest(middle, solunar.minor),
@@ -142,6 +149,31 @@ export function buildForecastDays(
   }
 
   return days;
+}
+
+/** Fenêtre sur laquelle on mesure la tendance barométrique, en heures. */
+const PRESSURE_TREND_HOURS = 3;
+
+/**
+ * Variation de pression sur les trois dernières heures, en hPa.
+ *
+ * C'est la TENDANCE qui porte l'information, pas la valeur absolue : 1013 hPa
+ * n'est ni bon ni mauvais. On lit donc la série trois heures en arrière.
+ *
+ * `null` quand la série ne remonte pas assez loin — au tout début de la période
+ * couverte, typiquement. On ne devine pas une tendance à partir d'un seul point :
+ * le facteur se neutralise et le dit, plutôt que d'inventer une baisse ou une
+ * hausse qui orienterait le score.
+ */
+export function pressureTrend(
+  byHour: ReadonlyMap<number, MarinePoint>,
+  instant: Date,
+): number | null {
+  const hour = Math.floor(instant.getTime() / 3_600_000);
+  const now = byHour.get(hour)?.pressureHpa ?? null;
+  const before = byHour.get(hour - PRESSURE_TREND_HOURS)?.pressureHpa ?? null;
+  if (now === null || before === null) return null;
+  return Math.round((now - before) * 10) / 10;
 }
 
 /**

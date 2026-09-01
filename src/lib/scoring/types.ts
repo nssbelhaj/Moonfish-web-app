@@ -3,7 +3,7 @@
  * Aucun import : ce module doit rester utilisable hors Next.js (test, worker, CLI).
  */
 
-export type ScoreFactor = 'tide' | 'wind' | 'swell' | 'solunar' | 'light';
+export type ScoreFactor = 'tide' | 'wind' | 'swell' | 'solunar' | 'pressure' | 'light';
 
 export type ScoreLabel = 'Médiocre' | 'Passable' | 'Bon' | 'Excellent';
 
@@ -43,6 +43,17 @@ export interface SolunarInput {
   moonAgeDays: number;
 }
 
+export interface PressureInput {
+  /** Pression au niveau de la mer, en hPa. */
+  hPa: number;
+  /**
+   * Variation sur les trois dernières heures, en hPa. Négatif = en baisse.
+   * `null` quand la série ne remonte pas assez loin : on ne devine pas une
+   * tendance, on neutralise le facteur.
+   */
+  trend3hHpa: number | null;
+}
+
 export type LightPhase = 'dawn' | 'day' | 'dusk' | 'night';
 
 export interface LightInput {
@@ -68,6 +79,7 @@ export interface ScoreInput {
   wind: WindInput | null;
   swell: SwellInput | null;
   solunar: SolunarInput | null;
+  pressure: PressureInput | null;
   light: LightInput | null;
 }
 
@@ -112,11 +124,21 @@ export interface ScoreResult {
   safety: { level: SafetyLevel; message?: string };
 }
 
+/**
+ * Poids nominaux. Leur somme fait 1.
+ *
+ * La pression est entrée dans le modèle à 9 %, prise sur les quatre autres au
+ * prorata. C'est un facteur RÉEL — la tendance barométrique est l'un des rares
+ * points sur lesquels la pratique et la littérature s'accordent — mais
+ * secondaire devant la marée. Lui donner davantage prétendrait une précision
+ * que ni la donnée horaire ni la littérature ne soutiennent.
+ */
 export const FACTOR_WEIGHTS: Record<ScoreFactor, number> = {
-  tide: 0.35,
-  wind: 0.25,
-  swell: 0.2,
-  solunar: 0.15,
+  tide: 0.32,
+  wind: 0.23,
+  swell: 0.18,
+  solunar: 0.13,
+  pressure: 0.09,
   light: 0.05,
 };
 
@@ -125,6 +147,7 @@ export const FACTOR_LABELS: Record<ScoreFactor, string> = {
   wind: 'Vent',
   swell: 'Houle',
   solunar: 'Solunaire & lune',
+  pressure: 'Pression',
   light: 'Lumière',
 };
 
@@ -134,6 +157,7 @@ export const FACTOR_SUBJECTS: Record<ScoreFactor, string> = {
   wind: 'le vent',
   swell: 'la houle',
   solunar: 'le solunaire',
+  pressure: 'la pression',
   light: 'la lumière',
 };
 
@@ -143,6 +167,7 @@ export const FACTOR_UNAVAILABLE_NOTES: Record<ScoreFactor, string> = {
   wind: 'vent indisponible pour ce créneau',
   swell: 'houle indisponible pour ce créneau',
   solunar: 'éphémérides lunaires indisponibles pour ce créneau',
+  pressure: 'pression indisponible pour ce créneau',
   light: 'lever et coucher du soleil indisponibles pour ce créneau',
 };
 

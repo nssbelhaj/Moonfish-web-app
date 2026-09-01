@@ -17,6 +17,7 @@ export const IDEAL = {
     moonIlluminationPct: 98,
     moonAgeDays: 14.8,
   },
+  pressure: { hPa: 1014, trend3hHpa: -1.2 },
   light: { phase: 'dawn' },
   // `satisfies` plutôt qu'une annotation : les blocs restent typés NON NULS, si
   // bien qu'un test peut écrire `...IDEAL.solunar` sans avoir à écarter un

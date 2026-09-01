@@ -118,7 +118,22 @@ export class OpenMeteoWeatherProvider implements WeatherProvider {
     // Fusion sur l'horodatage. Une heure présente d'un seul côté est écartée :
     // un score calculé sur un vent sans houle, ou l'inverse, serait faux sans
     // que rien ne le signale.
-    const windByTime = new Map<number, { speed: number | null; direction: number | null; gust: number | null; temp: number | null; cloud: number | null; pressure: number | null }>();
+    interface HourlyWeather {
+      speed: number | null;
+      direction: number | null;
+      gust: number | null;
+      temp: number | null;
+      cloud: number | null;
+      pressure: number | null;
+      rainProbability: number | null;
+      uv: number | null;
+      visibility: number | null;
+      apparent: number | null;
+      humidity: number | null;
+      dewPoint: number | null;
+    }
+
+    const windByTime = new Map<number, HourlyWeather>();
 
     forecast.hourly.time.forEach((epoch, index) => {
       windByTime.set(epoch, {
@@ -128,6 +143,12 @@ export class OpenMeteoWeatherProvider implements WeatherProvider {
         temp: forecast.hourly.temperature_2m?.[index] ?? null,
         cloud: forecast.hourly.cloud_cover?.[index] ?? null,
         pressure: forecast.hourly.pressure_msl?.[index] ?? null,
+        rainProbability: forecast.hourly.precipitation_probability?.[index] ?? null,
+        uv: forecast.hourly.uv_index?.[index] ?? null,
+        visibility: forecast.hourly.visibility?.[index] ?? null,
+        apparent: forecast.hourly.apparent_temperature?.[index] ?? null,
+        humidity: forecast.hourly.relative_humidity_2m?.[index] ?? null,
+        dewPoint: forecast.hourly.dew_point_2m?.[index] ?? null,
       });
     });
 
@@ -170,6 +191,16 @@ export class OpenMeteoWeatherProvider implements WeatherProvider {
         waterTempC: bounded(marine.hourly.sea_surface_temperature?.[index], 1, -5, 45),
         cloudCoverPct: bounded(wind.cloud, 0, 0, 100),
         pressureHpa: bounded(wind.pressure, 0, 870, 1090),
+        precipitationProbabilityPct: bounded(wind.rainProbability, 0, 0, 100),
+        uvIndex: bounded(wind.uv, 1, 0, 20),
+        // Open-Meteo rend la visibilité en MÈTRES ; nous l'affichons en km.
+        visibilityKm:
+          wind.visibility === null || wind.visibility === undefined
+            ? null
+            : bounded(wind.visibility / 1000, 1, 0, 200),
+        apparentTempC: bounded(wind.apparent, 1, -90, 70),
+        humidityPct: bounded(wind.humidity, 0, 0, 100),
+        dewPointC: bounded(wind.dewPoint, 1, -90, 60),
       };
 
       // Dernier filet : si le schéma refuse malgré tout, on perd l'heure, pas
@@ -201,8 +232,22 @@ export class OpenMeteoWeatherProvider implements WeatherProvider {
 
   private async fetchForecast(spot: Spot) {
     const url = this.buildUrl(this.options.forecastUrl, spot, {
-      hourly:
-        'wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m,cloud_cover,pressure_msl',
+      // Tout tient dans le même appel : ajouter des variables ne coûte ni une
+      // requête ni un quota supplémentaire.
+      hourly: [
+        'wind_speed_10m',
+        'wind_direction_10m',
+        'wind_gusts_10m',
+        'temperature_2m',
+        'cloud_cover',
+        'pressure_msl',
+        'precipitation_probability',
+        'uv_index',
+        'visibility',
+        'apparent_temperature',
+        'relative_humidity_2m',
+        'dew_point_2m',
+      ].join(','),
       wind_speed_unit: 'kmh',
     });
     return openMeteoForecastSchema.parse(await this.getJson(url, 'forecast'));

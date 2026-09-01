@@ -88,7 +88,36 @@ export function marinePointAt(spot: Spot, instant: Date): MarinePoint {
     waterTempC: round(seasonalWaterTemp(spot.lat, instant), 1),
     cloudCoverPct: round(noiseToRange(cloudNoise, 0, 100), 0),
     pressureHpa: round(noiseToRange(pressureNoise, 988, 1030), 0),
+    // Champs de confort : dérivés du même bruit que le reste, pour rester
+    // déterministes et cohérents entre eux — une couverture nuageuse à 90 %
+    // avec 0 % de pluie et un UV de 8 se verrait tout de suite.
+    precipitationProbabilityPct: round(noiseToRange(cloudNoise, 0, 95), 0),
+    uvIndex: round(uvIndexFor(spot.lat, instant, hourOfDay, cloudNoise), 1),
+    visibilityKm: round(noiseToRange(-cloudNoise, 3, 30), 1),
+    apparentTempC: round(
+      seasonalAirTemp(spot.lat, instant, hourOfDay) - 0.02 * windSpeedKmh,
+      1,
+    ),
+    humidityPct: round(noiseToRange(cloudNoise, 42, 96), 0),
+    dewPointC: round(seasonalAirTemp(spot.lat, instant, hourOfDay) - 8 + 4 * cloudNoise, 1),
   };
+}
+
+/**
+ * Indice UV simulé.
+ *
+ * Nul la nuit, maximal au midi solaire, atténué par la latitude et la
+ * couverture nuageuse. Il n'a aucune prétention de justesse — il sert à ce que
+ * l'écran de démonstration ne montre pas un UV de 7 à trois heures du matin,
+ * ce qui décrédibiliserait tout le reste de la page.
+ */
+function uvIndexFor(lat: number, instant: Date, hourOfDay: number, cloudNoise: number): number {
+  const daylight = Math.max(0, Math.cos(((hourOfDay - 13) / 12) * Math.PI));
+  const month = instant.getUTCMonth();
+  const season = 0.6 + 0.4 * Math.cos(((month - 6) / 6) * Math.PI);
+  const latitudeFactor = Math.max(0.25, Math.cos((Math.abs(lat) * Math.PI) / 180));
+  const clouds = 1 - 0.55 * Math.max(0, cloudNoise);
+  return Math.max(0, Math.min(11, 10 * daylight * season * latitudeFactor * clouds));
 }
 
 /** Série horaire couvrant [from, to[. */

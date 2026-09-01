@@ -258,7 +258,7 @@ describe('panne du fournisseur de marées (D11)', () => {
     const slot = days[0]!.slots[0]!;
 
     expect(slot.score.value).not.toBeNull();
-    expect(slot.score.coverage).toBeCloseTo(0.65, 10);
+    expect(slot.score.coverage).toBeCloseTo(1 - 0.32, 10);
     expect(slot.score.reasons.join(' ')).toContain('Calculé sans la marée');
   });
 
@@ -288,7 +288,12 @@ describe('panne du fournisseur météo (D11)', () => {
     expect(days[0]!.slots).toHaveLength(SLOTS_PER_DAY);
     expect(slot.conditions).toBeNull();
     expect(slot.score.value).not.toBeNull();
-    expect(slot.score.reasons.join(' ')).toContain('Calculé sans le vent ni la houle');
+    // La pression vient de la MÊME série météo : elle disparaît avec elle, et
+    // la déclaration doit la nommer aussi. L'oublier laisserait croire que le
+    // score tient encore compte d'un facteur qu'il n'a plus.
+    expect(slot.score.reasons.join(' ')).toContain(
+      'Calculé sans le vent, la houle ni la pression',
+    );
   });
 
   it('ne déclare jamais la sortie sûre sans mesure de vent ni de houle', () => {

@@ -25,7 +25,7 @@ describe('computeScore — invariants', () => {
 
   it('expose un breakdown complet dont les poids somment à 1', () => {
     const { breakdown } = computeScore(IDEAL);
-    const factors = ['tide', 'wind', 'swell', 'solunar', 'light'] as const;
+    const factors = ['tide', 'wind', 'swell', 'solunar', 'pressure', 'light'] as const;
 
     expect(Object.keys(breakdown).sort()).toStrictEqual([...factors].sort());
     const total = factors.reduce((sum, f) => sum + breakdown[f].weight, 0);

@@ -7,6 +7,7 @@ import { MoonPhase } from '@/components/marine/MoonPhase';
 import { WindCompass } from '@/components/marine/WindCompass';
 import { ScoreCartouche } from '@/components/v3/ScoreCartouche';
 import { SlotRow } from '@/components/v3/SlotRow';
+import { SeaStateCard } from '@/components/v3/SeaStateCard';
 import { WaterValue } from '@/components/v3/WaterValue';
 import { ScoreReasons } from '@/components/score/ScoreReasons';
 import { SpotTabs } from '@/components/spot/SpotTabs';
@@ -274,12 +275,16 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
                 </div>
                 <dl className="mt-4 grid grid-cols-2 gap-3 text-meta nums">
                   {[
-                    ['Houle', formatMeasure(current.conditions.swellHeightM, 'm', 1)],
-                    ['Période', formatMeasure(current.conditions.swellPeriodS, 's', 0)],
                     ['Eau', formatMeasure(current.conditions.waterTempC, '°C', 1)],
                     ['Air', formatMeasure(current.conditions.airTempC, '°C', 1)],
-                    ['Nuages', formatMeasure(current.conditions.cloudCoverPct, '%', 0)],
+                    ['Ressenti', formatMeasure(current.conditions.apparentTempC, '°C', 1)],
                     ['Pression', formatMeasure(current.conditions.pressureHpa, 'hPa', 0)],
+                    ['Pluie', formatMeasure(current.conditions.precipitationProbabilityPct, '%', 0)],
+                    ['Nuages', formatMeasure(current.conditions.cloudCoverPct, '%', 0)],
+                    ['Humidité', formatMeasure(current.conditions.humidityPct, '%', 0)],
+                    ['Point de rosée', formatMeasure(current.conditions.dewPointC, '°C', 1)],
+                    ['Visibilité', formatMeasure(current.conditions.visibilityKm, 'km', 0)],
+                    ['UV', formatMeasure(current.conditions.uvIndex, '', 0)],
                   ].map(([label, value]) => (
                     <div key={label}>
                       <dt className="text-meta text-fg-faint">
@@ -301,6 +306,12 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
               timeZone={spot.timezone}
             />
           </section>
+
+          {current?.conditions && (
+            <div className="mt-6">
+              <SeaStateCard conditions={current.conditions} />
+            </div>
+          )}
 
           <section aria-labelledby="lune" className="mt-6 surface p-4">
             <h2 id="lune" className="font-serif text-h2 font-semibold">

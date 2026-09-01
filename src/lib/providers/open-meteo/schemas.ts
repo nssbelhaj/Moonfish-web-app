@@ -39,6 +39,12 @@ export const openMeteoForecastSchema = z.object({
     temperature_2m: hourlySeries.optional(),
     cloud_cover: hourlySeries.optional(),
     pressure_msl: hourlySeries.optional(),
+    precipitation_probability: hourlySeries.optional(),
+    uv_index: hourlySeries.optional(),
+    visibility: hourlySeries.optional(),
+    apparent_temperature: hourlySeries.optional(),
+    relative_humidity_2m: hourlySeries.optional(),
+    dew_point_2m: hourlySeries.optional(),
   }),
 });
 
