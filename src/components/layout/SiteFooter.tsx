@@ -78,6 +78,8 @@ export function SiteFooter() {
               { href: '/carte', label: 'Carte' },
               { href: '/guides', label: 'Guides' },
               { href: '/donnees', label: 'Données et sources' },
+              { href: '/mentions-legales', label: 'Mentions légales' },
+              { href: '/confidentialite', label: 'Confidentialité' },
             ].map((item) => (
               <li key={item.href}>
                 <Link href={item.href} className="inline-flex min-h-[44px] items-center text-body text-fg-muted hover:text-fg">

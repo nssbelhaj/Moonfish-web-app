@@ -124,6 +124,22 @@ export function formatDayLong(date: Date, timeZone: string): string {
   }).format(date);
 }
 
+/**
+ * Date complète avec l'année : « 1 septembre 2026 ».
+ *
+ * `formatDayLong` omet volontairement l'année, parce qu'une prévision ne porte
+ * jamais au-delà de sept jours. Une date de révision de page légale, elle, n'a
+ * aucun sens sans année.
+ */
+export function formatDateLong(date: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat('fr-FR', {
+    timeZone,
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(date);
+}
+
 export function formatDateTime(date: Date, timeZone: string): string {
   return new Intl.DateTimeFormat('fr-FR', {
     timeZone,

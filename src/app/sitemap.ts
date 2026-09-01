@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next';
+import { LEGAL_UPDATED } from '@/data/legal';
 import { listGuides } from '@/lib/guides';
 import { spots as spotRepository } from '@/lib/providers';
 import { absoluteUrl, spotPath } from '@/lib/routes';
@@ -17,6 +18,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: absoluteUrl('/guides'), lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
     { url: absoluteUrl('/carte'), lastModified: now, changeFrequency: 'hourly', priority: 0.7 },
     { url: absoluteUrl('/donnees'), lastModified: now, changeFrequency: 'monthly', priority: 0.4 },
+    {
+      url: absoluteUrl('/mentions-legales'),
+      lastModified: new Date(LEGAL_UPDATED),
+      changeFrequency: 'yearly',
+      priority: 0.2,
+    },
+    {
+      url: absoluteUrl('/confidentialite'),
+      lastModified: new Date(LEGAL_UPDATED),
+      changeFrequency: 'yearly',
+      priority: 0.2,
+    },
   ];
 
   // Chaque spot expose trois pages réelles, pas trois onglets commutés : elles

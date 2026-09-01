@@ -76,7 +76,12 @@ export class FileWaitlistRepository implements WaitlistRepository {
 
       await mkdir(STORAGE_DIR, { recursive: true });
       await appendFile(STORAGE_FILE, `${JSON.stringify(entry)}\n`, 'utf8');
-      console.info(`[waitlist] nouvelle inscription : ${email} (source: ${entry.source})`);
+      // On journalise la SOURCE, jamais l'adresse. Une console d'hébergeur est
+      // un journal de service : y écrire l'e-mail en clair, c'est le recopier
+      // dans un second traitement, avec sa propre durée de conservation et ses
+      // propres accès — et rendre fausse la politique de confidentialité, qui
+      // annonce que ces journaux ne contiennent pas de données d'inscription.
+      console.info(`[waitlist] nouvelle inscription (source: ${entry.source})`);
       return { ok: true, alreadyRegistered: false };
     } catch (error) {
       console.error('[waitlist] écriture impossible', error);

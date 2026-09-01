@@ -64,12 +64,18 @@ src/
 │   │       ├── page.tsx          Onglet Live — score, graphique du jour, conditions
 │   │       ├── prevision/        Onglet Prévision — 7 jours, meilleurs créneaux
 │   │       ├── analyse/          Onglet Analyse — détail du calcul, techniques, accès
+│   │       ├── especes/          Onglet Espèces — espèces connues du coin, mailles
 │   │       ├── spot-page-data.ts Résolution partagée par le layout et les onglets
 │   │       └── opengraph-image.tsx  Image OG dynamique, pré-rendue au build
 │   ├── guides/                   Index + article ([slug])
+│   ├── carte/                    Carte des spots (SVG projeté au serveur)
+│   ├── donnees/                  D'où viennent les données, bloc par bloc
+│   ├── mentions-legales/         Éditeur, hébergeur, responsabilité
+│   ├── confidentialite/          Traitements, stockage navigateur, droits
 │   ├── api/waitlist/route.ts     POST — Zod + limiteur de débit + écriture
 │   ├── sitemap.ts, robots.ts     Générés depuis les mêmes sources que les pages
-│   ├── globals.css               Variables CSS des deux thèmes ← POINT D'ENTRÉE DESIGN
+│   ├── tokens.css                Variables CSS des deux thèmes ← POINT D'ENTRÉE DESIGN
+│   ├── globals.css               Classes de composition (.surface, .frame, .pill…)
 │   └── layout.tsx                Coquille, polices auto-hébergées, métadonnées de base
 │
 ├── components/
@@ -79,21 +85,30 @@ src/
 │   │                             TideChart, WindCompass, MoonPhase, TimeWindowBar,
 │   │                             FishGlyph
 │   ├── spot/                     SpotCard, SpotResults, SafetyBanner
+│   ├── v3/                       Pièces du handoff v3 : TideActivityChart,
+│   │                             ScoreCartouche, ScoreScale, CompassMark,
+│   │                             WaterValue, SlotRow, DayRuler, SpeciesCard,
+│   │                             SpotsMap, SeaStateCard
+│   ├── legal/                    LegalValue — une mention manquante s'affiche
 │   ├── data/                     DataSourceTag, DemoDataNotice ← honnêteté des données
-│   ├── forms/                    EmailCaptureForm, SpotSearch, SpotFilters (les 3
+│   ├── forms/                    EmailCaptureForm, SpotSearch, SpotFilters
+│   ├── layout/                   SiteHeader, SiteFooter, ThemeToggle
+│   │                             (ThemeToggle et les 3 formulaires sont les
 │   │                             SEULS composants clients du projet)
-│   ├── guides/, layout/, ui/
+│   ├── guides/, ui/
 │
 ├── data/
 │   ├── schemas.ts                Schémas Zod — la FRONTIÈRE avec les futures API
 │   ├── spots.ts                  Les 12 spots (contenu éditorial réel)
+│   ├── species.ts                Catalogue d'espèces : mailles, fonds, montages
+│   ├── legal.ts                  Éditeur, sous-traitants, stockages ← À COMPLÉTER
 │   └── generators/               Marée (onde M2) et conditions marines simulées
 │
 └── lib/
     ├── scoring/                  Le score. Pur, sans dépendance framework, testé
     │   ├── compute.ts            computeScore — l'agrégation pondérée
     │   ├── factors/              Un module par facteur : tide, wind, swell,
-    │   │                         solunar, light
+    │   │                         solunar, pressure, light
     │   ├── safety.ts             Règle de sécurité, JAMAIS dérivée du score
     │   ├── reasons.ts            Génération des 2–3 phrases explicatives
     │   └── math.ts               Trapèzes, rampes, formatage français
@@ -102,7 +117,9 @@ src/
     │   ├── tide-context.ts       Contexte de marée reconstruit depuis les extremums
     │   ├── tide-curve.ts         Interpolation cosinusoïdale entre extremums
     │   ├── tide-coefficient.ts   Coefficient français, défini sur le marnage de Brest
-    │   └── slots.ts              Découpage en 8 créneaux de 3 h, journée LOCALE
+    │   ├── wave-statistics.ts    Loi de Rayleigh : hauteur fréquente et maximale
+    │   └── slots.ts              Découpage en 12 créneaux de 2 h, journée LOCALE
+    ├── map/                      Projection équirectangulaire des spots
     ├── providers/                ← LE POINT DE BASCULE (voir plus bas)
     ├── guides.ts, markdown.ts    Chargement et rendu des articles
     ├── time.ts, geo.ts, routes.ts, random.ts, rate-limit.ts,
@@ -489,14 +506,60 @@ même heure produisent des pages strictement identiques.
 
 ## Qualité mesurée
 
-Lighthouse mobile, build de production, 8 URL couvrant les 5 pages :
+Lighthouse, build de production :
 
 | | Performance | Accessibilité | SEO | Bonnes pratiques |
 | --- | --- | --- | --- | --- |
-| Toutes les pages | 96–99 | 100 | 100 | 100 |
+| Mobile, toutes les pages | 96–99 | 100 | 100 | 100 |
+| Bureau, pages légales | 100 | 100 | 100 | 100 |
+
+Contraste vérifié sur le DOM rendu, pas seulement sur les tokens : zéro élément
+sous le seuil AA sur les deux pages légales, dans les deux thèmes, à 390 et
+1440 px.
 
 `npm run build`, `npm run typecheck` et `npm run lint` passent sans erreur ni
-avertissement. 195 tests unitaires. Aucun débordement horizontal à 375 px.
+avertissement. 315 tests unitaires. Aucun débordement horizontal à 375 px.
+
+## Pages légales
+
+`/mentions-legales` et `/confidentialite` existent et sont liées depuis le pied
+de page de toutes les pages. Leur contenu est exact pour ce que le site fait
+aujourd'hui : une seule donnée personnelle collectée (l'adresse e-mail de la
+liste d'attente), aucun compte, aucune mesure d'audience, aucun cookie.
+
+**Une chose reste à faire avant toute mise en ligne publique** : compléter
+`PUBLISHER` dans `src/data/legal.ts`. Nom ou raison sociale, adresse postale,
+adresse de contact et directeur de la publication sont exigés par l'article
+6-III de la LCEN, et nous ne pouvons pas les inventer. Tant que ces champs
+valent `null`, les deux pages affichent un bandeau qui dit qu'elles sont
+incomplètes, et chaque mention manquante s'affiche comme telle plutôt que de
+laisser un blanc qui aurait l'air conforme. Le bandeau disparaît tout seul une
+fois les champs renseignés : rien à penser à retirer.
+
+Le même fichier tient la liste des sous-traitants (`PROCESSORS`) et celle de ce
+que le site écrit dans le navigateur (`CLIENT_STORAGE` — aujourd'hui la seule
+préférence de thème). Les pages LISENT ces listes ; elles ne les recopient pas.
+
+`src/lib/__tests__/privacy-claims.test.ts` attache les affirmations de la page
+au code qui les rend vraies, parce qu'une politique de confidentialité se périme
+d'ordinaire par simple oubli :
+
+| Affirmation de la page | Ce qui la vérifie |
+| --- | --- |
+| « aucun cookie, un seul stockage » | Compte les points d'écriture (`localStorage`, `sessionStorage`, `document.cookie`, `cookies().set`) dans `src/` et exige l'égalité avec `CLIENT_STORAGE`. |
+| « aucune requête vers un tiers depuis votre navigateur » | Interdit tout `src="http…"`, `@import`, `url(http…)` et tout `fetch` client vers un domaine extérieur. |
+| « nous ne journalisons pas votre adresse » | Refuse un `console.*` contenant l'e-mail d'une inscription dans le dépôt de liste d'attente. |
+| Pages atteignables | Exige les deux routes dans le pied de page et dans le sitemap. |
+
+Ces quatre tests ont été vérifiés en état d'échec avant d'être conservés : un
+stockage ajouté, un `fetch` vers un domaine extérieur et un e-mail journalisé
+les font tomber chacun sur son propre message.
+
+Trois règles sont déjà écrites sur la page pour les fonctions à venir, afin
+qu'on puisse nous les opposer : la position de l'appareil ne remontera pas au
+serveur, les photos de prises seront débarrassées de leurs métadonnées EXIF
+avant enregistrement, et toute mesure d'audience sera sans identifiant ou
+soumise à un consentement préalable.
 
 ## Déploiement
 
