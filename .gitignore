@@ -10,3 +10,9 @@ next-env.d.ts
 .vercel
 coverage/
 /var/waitlist.jsonl
+
+# Skills d'agents installées via `npx skills add`.
+# Traitées comme node_modules : le verrou est suivi, le contenu non.
+# `npx skills install` les restaure à l'identique depuis skills-lock.json.
+.agents/
+.claude/skills/
