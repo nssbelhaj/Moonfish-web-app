@@ -4,7 +4,6 @@ import { DataSourceTag } from '@/components/data/DataSourceTag';
 import { DemoDataNotice, simulatedSources } from '@/components/data/DemoDataNotice';
 import { TideActivityChart } from '@/components/v3/TideActivityChart';
 import { MoonPhase } from '@/components/marine/MoonPhase';
-import { TideChart } from '@/components/marine/TideChart';
 import { WindCompass } from '@/components/marine/WindCompass';
 import { ScoreCartouche } from '@/components/v3/ScoreCartouche';
 import { SlotRow } from '@/components/v3/SlotRow';
@@ -190,30 +189,60 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
         <aside className="mt-10 xl:mt-0">
           <section
             aria-labelledby="marees"
-            className={tideIsSimulated ? 'demo-frame p-4' : 'surface p-4'}
+            className={tideIsSimulated ? 'demo-frame p-4' : 'surface p-[14px]'}
           >
             <DemoDataNotice sources={[forecast.sources.tide.source]} compact />
-            <h2 id="marees" className="mt-2 font-serif text-h2 font-semibold">
+            <h2 id="marees" className="card-title mt-2">
               Marées du jour
             </h2>
             {today && (
               <>
-                <p className="mt-2 text-meta nums text-fg-muted" data-numeric="">
-                  Coefficient {today.tideEvents[0]?.coefficient ?? '—'} ·{' '}
+                <p className="mt-1 text-meta text-fg-muted">
+                  Le tracé est au-dessus ; ici les chiffres exacts.
+                </p>
+                <dl className="mt-3 space-y-2">
+                  {today.tideEvents.map((event) => (
+                    <div
+                      key={event.time}
+                      className="flex items-baseline justify-between gap-3 border-b border-surface-2 pb-2 last:border-0"
+                    >
+                      <dt className="text-body">
+                        {event.type === 'high' ? 'Pleine mer' : 'Basse mer'}{' '}
+                        <span className="nums text-fg-muted" data-numeric="">
+                          {formatTime(new Date(event.time), spot.timezone)}
+                        </span>
+                      </dt>
+                      <dd>
+                        <WaterValue className="nums">
+                          {formatMeasure(event.heightM, 'm', 2)}
+                        </WaterValue>
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+                <p className="mt-3 text-meta text-fg-muted">
+                  Coefficient{' '}
+                  <WaterValue className="nums">
+                    {today.tideEvents[0]?.coefficient ?? '—'}
+                  </WaterValue>
+                  {' · '}
                   {(() => {
                     const range = tidalRangeOf(today.tideEvents);
-                    return range === null
-                      ? `marnage moyen ${spot.meanTideRangeM.toFixed(1).replace('.', ',')} m`
-                      : `marnage du jour ${range.toFixed(1).replace('.', ',')} m`;
+                    return range === null ? (
+                      <>
+                        marnage moyen{' '}
+                        <WaterValue className="nums">
+                          {formatMeasure(spot.meanTideRangeM, 'm', 2)}
+                        </WaterValue>
+                      </>
+                    ) : (
+                      <>
+                        marnage du jour{' '}
+                        <WaterValue className="nums">{formatMeasure(range, 'm', 2)}</WaterValue>
+                      </>
+                    );
                   })()}
                 </p>
-                <div className="mt-4">
-                  <TideChart
-                    events={today.tideEvents}
-                    timeZone={spot.timezone}
-                    dayStart={today.date}
-                  />
-                </div>
               </>
             )}
             <DataSourceTag

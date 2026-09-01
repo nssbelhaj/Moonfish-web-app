@@ -1,10 +1,11 @@
 import Link from 'next/link';
 
-export type SpotTab = 'live' | 'prevision' | 'analyse';
+export type SpotTab = 'live' | 'prevision' | 'especes' | 'analyse';
 
 const TABS: { id: SpotTab; label: string; segment: string; hint: string }[] = [
   { id: 'live', label: 'Live', segment: '', hint: 'Score et conditions du moment' },
   { id: 'prevision', label: 'Prévision', segment: '/prevision', hint: 'Les 7 prochains jours' },
+  { id: 'especes', label: 'Espèces', segment: '/especes', hint: 'Qui est actif, et dans quelle fenêtre' },
   { id: 'analyse', label: 'Analyse', segment: '/analyse', hint: 'Le détail du calcul et le spot' },
 ];
 
