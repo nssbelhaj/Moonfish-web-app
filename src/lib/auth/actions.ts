@@ -82,7 +82,23 @@ export async function requestSignInLink(
 
   if (error) {
     console.error('[auth] envoi du lien impossible', error.message);
-    return { ok: false, message: 'Envoi impossible pour le moment. Réessayez dans un instant.' };
+
+    /*
+      Deux pannes très différentes se ressemblent ici : un service momentanément
+      occupé, et un projet Supabase MIS EN PAUSE — ce que le palier gratuit fait
+      après sept jours sans activité. La seconde dure jusqu'à ce que quelqu'un
+      relance le projet, et « réessayez dans un instant » serait alors une
+      indication fausse, qui ferait douter la personne de son adresse.
+
+      On ne peut pas distinguer les deux de façon fiable depuis ici, alors on
+      n'annonce aucun délai. Le détail part dans les journaux, où il est utile ;
+      /api/keep-alive, lui, nomme explicitement la pause.
+    */
+    return {
+      ok: false,
+      message:
+        'Le service de comptes ne répond pas. Ce n’est pas votre adresse : réessayez plus tard.',
+    };
   }
 
   /*

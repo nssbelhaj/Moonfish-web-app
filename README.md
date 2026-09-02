@@ -39,6 +39,7 @@ Node 20 ou plus. Aucune variable d'environnement n'est requise pour démarrer.
 | `NEXT_PUBLIC_SUPABASE_URL` | non | — | Ouvre les comptes et les contributions. Absente, le site le dit et n'affiche aucun formulaire de connexion. |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | non | — | Clé publique du projet. Ce qu'elle autorise est décidé par les politiques RLS, pas par son secret. |
 | `SUPABASE_SERVICE_ROLE_KEY` | non | — | Uniquement pour effacer un compte dans `auth.users`. Sans elle, la suppression refuse explicitement plutôt que de faire semblant. |
+| `CRON_SECRET` | non | — | Ferme `/api/keep-alive` au public. Vercel l'envoie automatiquement à ses appels planifiés dès que la variable existe. |
 
 ## Scripts
 
