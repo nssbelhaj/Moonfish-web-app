@@ -25,30 +25,19 @@ const nextConfig: NextConfig = {
   htmlLimitedBots: /.*/,
 
   /**
-   * Photos de prises servies depuis le stockage Supabase.
+   * AUCUNE image distante n'est autorisée, et c'est délibéré.
    *
-   * Le motif est construit à partir de la variable d'environnement plutôt
-   * qu'écrit en dur : chaque projet Supabase a son propre sous-domaine, et un
-   * motif figé casserait le rendu d'images sur tout déploiement autre que le
-   * nôtre. Sans projet configuré, la liste reste vide — et aucune image
-   * distante n'est autorisée, ce qui est exactement l'état du site aujourd'hui.
+   * Les photos de prises sont servies par `/api/photos/...`, depuis notre
+   * propre origine : le fichier vit hors du répertoire de l'application et
+   * transite par une route qui vérifie le chemin. Rien ne part vers un tiers.
+   *
+   * Cette liste vide est donc une garantie, pas un oubli : c'est ce que le
+   * test de vie privée vérifie quand il affirme que le navigateur ne joint
+   * aucun hôte extérieur. Y ajouter un motif rouvrirait ce chemin.
    */
   images: {
-    remotePatterns: supabaseImagePattern(),
+    remotePatterns: [],
   },
 };
-
-function supabaseImagePattern(): { protocol: 'https'; hostname: string; pathname: string }[] {
-  const raw = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  if (!raw) return [];
-
-  try {
-    const { hostname } = new URL(raw);
-    return [{ protocol: 'https', hostname, pathname: '/storage/v1/object/public/**' }];
-  } catch {
-    console.warn(`[config] NEXT_PUBLIC_SUPABASE_URL inexploitable ("${raw}") : photos désactivées.`);
-    return [];
-  }
-}
 
 export default nextConfig;

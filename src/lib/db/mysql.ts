@@ -23,61 +23,30 @@ import mysql from 'mysql2/promise';
  * plus utile que de faire comme si le modèle de sécurité n'avait pas changé.
  */
 
-export interface MysqlConfig {
-  host: string;
-  port: number;
-  user: string;
-  password: string;
-  database: string;
-}
+import { lireConfigBase, type MysqlConfig } from './config';
+
+export type { MysqlConfig } from './config';
 
 /**
- * Lecture de la configuration.
+ * Configuration lue une seule fois, au chargement du module.
  *
- * Deux formes acceptées, parce que les hébergeurs ne s'accordent pas : une URL
- * unique (`mysql://user:pass@host:port/base`), ou quatre variables séparées.
- * Hostinger câble les identifiants automatiquement dans l'application ; ce
- * module s'adapte à ce qu'il trouve plutôt que d'imposer un format.
+ * Une variable RENSEIGNÉE MAIS ILLISIBLE est signalée bruyamment plutôt que
+ * traitée comme une absence. Sans cela, une faute de frappe dans DATABASE_URL
+ * fermait les comptes en silence, avec un déploiement au vert : le site
+ * annonçait « les comptes ne sont pas ouverts », ce qui est un mode PRÉVU, et
+ * rien ne distinguait le mode prévu de l'erreur de saisie.
  */
-function readConfig(): MysqlConfig | null {
-  const url = process.env.DATABASE_URL?.trim();
+const VERDICT = lireConfigBase();
 
-  if (url) {
-    try {
-      const parsed = new URL(url);
-      const database = parsed.pathname.replace(/^\//, '');
-      if (!parsed.hostname || !database) return null;
-
-      return {
-        host: parsed.hostname,
-        port: parsed.port ? Number(parsed.port) : 3306,
-        user: decodeURIComponent(parsed.username),
-        password: decodeURIComponent(parsed.password),
-        database,
-      };
-    } catch {
-      console.warn('[db] DATABASE_URL est inexploitable : base considérée absente.');
-      return null;
-    }
-  }
-
-  const host = process.env.MYSQL_HOST?.trim();
-  const user = process.env.MYSQL_USER?.trim();
-  const database = process.env.MYSQL_DATABASE?.trim();
-  if (!host || !user || !database) return null;
-
-  const port = Number(process.env.MYSQL_PORT ?? 3306);
-
-  return {
-    host,
-    port: Number.isFinite(port) && port > 0 ? port : 3306,
-    user,
-    password: process.env.MYSQL_PASSWORD ?? '',
-    database,
-  };
+if (VERDICT.kind === 'illisible') {
+  console.error(
+    `[db] ${VERDICT.raison}\n` +
+      `[db] ${VERDICT.remede}\n` +
+      '[db] Les comptes restent FERMÉS — ce n’est pas le mode « sans base », c’est une configuration à corriger.',
+  );
 }
 
-export const MYSQL_CONFIG: MysqlConfig | null = readConfig();
+export const MYSQL_CONFIG: MysqlConfig | null = VERDICT.kind === 'ok' ? VERDICT.config : null;
 
 /** La base est-elle configurée ? Décide de l'ouverture des comptes. */
 export function databaseEnabled(): boolean {

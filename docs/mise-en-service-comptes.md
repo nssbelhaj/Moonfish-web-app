@@ -58,9 +58,22 @@ EMAIL_SERVER=smtp://bonjour%40votre-domaine:MOTDEPASSE@smtp.hostinger.com:587
 EMAIL_FROM=bonjour@votre-domaine
 ```
 
-Le `@` de l'identifiant doit être encodé `%40` : c'est une URL, et un `@` non
-encodé coupe l'adresse en deux. C'est la cause d'échec la plus fréquente ici,
-et le message d'erreur ne la désigne pas.
+Le « @ » de l'identifiant n'a RIEN à encoder : l'analyseur retient le dernier
+comme séparateur. Cette page affirmait le contraire — c'était faux, et cela
+envoyait chercher la panne au mauvais endroit.
+
+Ce qui casse vraiment, ce sont `/`, `?`, `#` et `%` **dans le mot de passe**,
+et le mode de défaillance est pire qu'une erreur :
+
+| Caractère | Écrire | Ce qui se passe sinon |
+| --- | --- | --- |
+| `/` | `%2F` | l'hôte devient votre domaine au lieu du serveur d'envoi, et le mot de passe part **vide** |
+| `?` | `%3F` | idem |
+| `#` | `%23` | idem |
+| `%` | `%25` | le mot de passe transmis n'est pas celui que vous avez saisi |
+
+Aucun des quatre ne lève d'erreur. Mesuré contre `nodemailer`, pas déduit. Le
+site vous avertit au démarrage s'il en repère un.
 
 Port 587 en STARTTLS ; 465 en SSL si 587 est filtré. L'adresse d'expédition
 doit appartenir au domaine que vous authentifiez (SPF, DKIM) : envoyer depuis

@@ -37,7 +37,7 @@ Node 20 ou plus. Aucune variable d'environnement n'est requise pour démarrer.
 | `OPEN_METEO_FORECAST_URL` | non | API publique | Idem pour le modèle atmosphérique. |
 | `WAITLIST_FILE` | non | `var/waitlist.jsonl` | Chemin du fichier d'inscriptions, utilisé tant qu'aucune base n'est configurée. |
 | `DATABASE_URL` | non | — | `mysql://…`. Ouvre les comptes, les contributions et la liste d'attente persistante. Absente, le site le dit et n'affiche aucun formulaire de connexion. Quatre variables `MYSQL_*` sont acceptées à la place : les hébergeurs ne s'accordent pas. |
-| `EMAIL_SERVER` | avec les comptes | — | SMTP des liens de connexion. Le `@` de l'identifiant doit être encodé `%40` — c'est une URL. |
+| `EMAIL_SERVER` | avec les comptes | — | SMTP des liens de connexion. Le `@` de l'identifiant n'a rien à encoder ; `/`, `?`, `#` et `%` **dans le mot de passe**, si — sinon l'envoi part vers le mauvais hôte, sans erreur. |
 | `EMAIL_FROM` | avec les comptes | — | Adresse d'expédition. |
 | `AUTH_SECRET` | avec les comptes | — | Signe les jetons d'Auth.js. `openssl rand -base64 32`. |
 | `AUTH_URL` | avec les comptes | — | Domaine public, pour construire les liens de connexion. |
@@ -56,7 +56,7 @@ Node 20 ou plus. Aucune variable d'environnement n'est requise pour démarrer.
 | `npm start` | Sert le build de production — `prestart` migre la base avant, tout seul |
 | `npm run typecheck` | `tsc --noEmit` en mode strict renforcé |
 | `npm run lint` | ESLint (config `next/core-web-vitals` + `next/typescript`) |
-| `npm test` | 407 tests (Vitest). 390 hermétiques — aucun accès réseau ; les 17 d'intégration de la couche de données sont ignorés sans `DATABASE_URL`, et exécutés en intégration continue contre un vrai MySQL |
+| `npm test` | 447 tests (Vitest). 430 hermétiques — aucun accès réseau ; les 17 d'intégration de la couche de données sont ignorés sans `DATABASE_URL`, et exécutés en intégration continue contre un vrai MySQL |
 | `npm run test:watch` | Tests en mode surveillance |
 
 ---
@@ -629,8 +629,11 @@ SMTP, secrets, tâche d'entretien, et le parcours à refaire à la main.
 
 Deux pièges qui ne se voient pas :
 
-- le `@` de l'identifiant SMTP doit être encodé `%40` dans `EMAIL_SERVER` —
-  c'est une URL, et un `@` non encodé la coupe en deux ;
+- dans `EMAIL_SERVER`, un `/`, `?`, `#` ou `%` **du mot de passe** doit être
+  encodé (`%2F`, `%3F`, `%23`, `%25`). Sinon l'URL est tronquée et l'envoi part
+  vers un autre hôte avec un mot de passe vide, **sans lever d'erreur**. Le `@`
+  de l'identifiant, lui, n'a rien à encoder — ce dépôt a longtemps affirmé le
+  contraire ;
 - `UPLOADS_DIR` doit sortir du répertoire de l'application, sous peine de
   perdre les photos au déploiement suivant.
 

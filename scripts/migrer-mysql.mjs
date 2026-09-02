@@ -41,6 +41,8 @@ import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import mysql from 'mysql2/promise';
 
+import { lireConfigBase } from './lib/config-base.mjs';
+
 const AT_STARTUP = process.argv.includes('--au-demarrage');
 
 function loadEnvFile() {
@@ -58,39 +60,6 @@ function loadEnvFile() {
 
 loadEnvFile();
 
-function config() {
-  const url = process.env.DATABASE_URL?.trim();
-
-  if (url) {
-    try {
-      const parsed = new URL(url);
-      const database = parsed.pathname.replace(/^\//, '');
-      if (!parsed.hostname || !database) return null;
-
-      return {
-        host: parsed.hostname,
-        port: parsed.port ? Number(parsed.port) : 3306,
-        user: decodeURIComponent(parsed.username),
-        password: decodeURIComponent(parsed.password),
-        database,
-      };
-    } catch {
-      return null;
-    }
-  }
-
-  const { MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE, MYSQL_PORT } = process.env;
-  if (!MYSQL_HOST || !MYSQL_USER || !MYSQL_DATABASE) return null;
-
-  return {
-    host: MYSQL_HOST,
-    port: Number(MYSQL_PORT ?? 3306),
-    user: MYSQL_USER,
-    password: MYSQL_PASSWORD ?? '',
-    database: MYSQL_DATABASE,
-  };
-}
-
 /** Découpe un fichier SQL en instructions exécutables une à une. */
 function statementsOf(sql) {
   return (
@@ -106,9 +75,29 @@ function statementsOf(sql) {
   );
 }
 
-const settings = config();
+const verdict = lireConfigBase();
 
-if (!settings) {
+/*
+  Une variable RENSEIGNÉE MAIS ILLISIBLE n'est pas une absence, et les
+  confondre était un vrai défaut : le déploiement affichait « aucune base
+  configurée : rien à faire », en vert et exit 0, alors que DATABASE_URL était
+  bien là. Les comptes restaient fermés sans que rien ne désigne la cause, et
+  on allait chercher du côté du serveur MySQL — au mauvais endroit.
+*/
+if (verdict.kind === 'illisible') {
+  console.error(
+    `\n[migration] ${verdict.raison}\n` +
+      `[migration] ${verdict.remede}\n` +
+      '[migration] Ce n’est PAS le mode « sans base » : une variable est posée mais inexploitable.',
+  );
+
+  // Au démarrage, on n'arrête pas le site pour autant : marées, météo, guides
+  // et score n'ont pas besoin de la base. Mais le message, lui, est écrit sur
+  // le canal d'erreur et nomme la cause.
+  process.exit(AT_STARTUP ? 0 : 2);
+}
+
+if (verdict.kind === 'absente') {
   if (AT_STARTUP) {
     console.log('[migration] aucune base configurée : rien à faire.');
     process.exit(0);
@@ -121,6 +110,8 @@ if (!settings) {
   );
   process.exit(2);
 }
+
+const settings = verdict.config;
 
 let connection;
 try {
