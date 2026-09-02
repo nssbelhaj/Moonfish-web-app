@@ -964,6 +964,35 @@ en local ils sont ignorés faute de `DATABASE_URL`, et c'est là qu'ils sont le
 plus utiles, puisqu'ils vérifient qu'un utilisateur ne peut pas supprimer l'avis
 d'un autre.
 
+### Les `overrides`, et pourquoi ils sont là
+
+`package.json` force trois versions transitives. Ce n'est pas une commodité :
+`npm audit` remontait 7 vulnérabilités, dont une critique et cinq hautes, et
+proposait Next 16 — une version MAJEURE — comme correctif.
+
+En lisant la chaîne `via`, il n'y avait que **trois causes réelles** :
+
+| Cause | Entrées qu'elle produisait | Où elle vit |
+| --- | --- | --- |
+| `nodemailer` | `nodemailer`, `@auth/core`, `next-auth` | envoi des liens de connexion |
+| `postcss` | `postcss`, `next` | compilation des styles |
+| `sharp` | `sharp` | optimisation des images |
+
+Les corriger à la racine ramène le compte à **zéro sans quitter Next 15**. Le
+« correctif » que npm proposait pour `next-auth` était d'ailleurs un RETOUR à
+la v1 — une autre génération de la bibliothèque, pas une mise à jour.
+
+`nodemailer` passe de 8 à 9, une majeure, imposée à `@auth/core` qui ne l'a pas
+demandée. Un `overrides` ment à une dépendance sur ce qu'elle reçoit : la seule
+façon honnête de le poser est de vérifier la chaîne entière, ce qui a été fait
+contre un serveur SMTP réel — demande de lien, courriel reçu, lien ouvert,
+session créée en base, `/api/compte/etat` répondant `signedIn: true`.
+
+**Ce qui reste sciemment non corrigé** : rien. Mais l'avis `postcss` touchait
+aussi la copie embarquée par Next, et l'`override` la remplace — à surveiller
+lors d'une montée de version de Next, où le forçage pourrait devenir un frein
+plutôt qu'un correctif.
+
 ### Si le build échoue
 
 | Symptôme dans le log | Cause | État |
