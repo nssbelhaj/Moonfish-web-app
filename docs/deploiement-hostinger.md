@@ -39,10 +39,12 @@ rien à adapter dans le dépôt. Vérifié.
 | `NEXT_PUBLIC_SITE_URL` | **oui** | Sur Vercel, le domaine est injecté automatiquement. Ailleurs, non : sans cette variable, les URL canoniques, le sitemap et les aperçus de partage pointent vers le domaine de repli `moonfish.fish`. C'est l'oubli le plus coûteux de cette liste, et il ne casse rien de visible. |
 | `STORMGLASS_API_KEY` | non | Sans elle, les marées restent simulées et le site le dit. |
 | `TIDE_REAL_SPOTS` | non | Borne la dépense de quota. Voir le README. |
-| `NEXT_PUBLIC_SUPABASE_URL` | non | Ouvre les comptes. Absente, le site fonctionne et annonce qu'ils sont fermés. |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | non | Idem. |
-| `SUPABASE_SERVICE_ROLE_KEY` | non | Uniquement pour l'effacement d'un compte. |
-| `CRON_SECRET` | non | Ferme `/api/keep-alive`. Voir ci-dessous. |
+| `DATABASE_URL` | non | Ouvre les comptes, avec l'envoi de courriel. Absente, le site fonctionne et annonce qu'ils sont fermés. |
+| `EMAIL_SERVER` et `EMAIL_FROM` | non | Envoi des liens de connexion. Voir `docs/mise-en-service-comptes.md`. |
+| `AUTH_SECRET` | avec les comptes | Signe les jetons d'Auth.js. `openssl rand -base64 32`. |
+| `AUTH_URL` | avec les comptes | Domaine public, pour construire les liens de connexion. |
+| `UPLOADS_DIR` | avec les comptes | **Hors du répertoire de l'application** : un déploiement le remplace, et les photos disparaîtraient. |
+| `CRON_SECRET` | non | Ferme `/api/entretien`. Voir ci-dessous. |
 
 ## 3. La tâche planifiée
 
@@ -51,15 +53,12 @@ Hostinger, la tâche se crée dans hPanel (**Avancé → Tâches Cron**), une fo
 jour :
 
 ```
-curl -fsS -H "Authorization: Bearer VOTRE_CRON_SECRET" https://votre-domaine/api/keep-alive
+curl -fsS -H "Authorization: Bearer VOTRE_CRON_SECRET" https://votre-domaine/api/entretien
 ```
 
-Elle n'a d'intérêt que si les comptes sont branchés : elle empêche le projet
-Supabase de se mettre en pause faute d'activité. Sans Supabase, la route répond
-`{"ok":true,"state":"sans-base"}` et ne fait rien.
-
-Rappel : une tâche planifiée **empêche** la pause, elle n'en **sort** pas. Un
-projet déjà en pause ne se relance que d'un clic dans le tableau de bord.
+Elle purge les sessions et les liens de connexion périmés. Sans base
+configurée, la route répond `{"ok":true,"state":"sans-base"}` et ne fait
+rien.
 
 ## 4. Après le premier déploiement
 
@@ -71,9 +70,12 @@ projet déjà en pause ne se relance que d'un clic dans le tableau de bord.
    manque ;
 3. une page de spot s'affiche avec ses marées, et la mention de fraîcheur en bas
    dit la vérité sur la source réellement utilisée ;
-4. `/confidentialite` décrit le bon état : « aucun cookie » sans Supabase,
-   le cookie de session avec ;
-5. `/api/keep-alive` répond, avec l'en-tête si `CRON_SECRET` est défini.
+4. `/confidentialite` décrit le bon état : « aucun cookie » sans comptes, le
+   cookie de session avec ;
+5. `/api/entretien` répond, avec l'en-tête si `CRON_SECRET` est défini ;
+6. si les comptes sont ouverts : demandez-vous un lien de connexion et
+   **vérifiez qu'il arrive**. Un lien qui n'arrive pas ressemble, pour la
+   personne, à une adresse refusée.
 
 ---
 
@@ -99,11 +101,12 @@ parallèle, sur deux domaines différents, le temps de comparer.
 
 ---
 
-## Ce que ce déploiement ne résout PAS
+## La base
 
-Ajouter un site chez Hostinger ne crée pas un projet Supabase de plus. La limite
-de deux projets actifs est indépendante de l'hébergement.
+Elle est chez Hostinger elle aussi : MySQL managé, inclus dans le plan,
+identifiants câblés dans l'application, sauvegardes quotidiennes. L'application
+et la base étant sur le même hôte, il n'y a aucune autorisation d'adresse IP à
+gérer — c'est ce qui rend cette configuration possible là où un hébergement
+serverless ne le permettait pas.
 
-Si vos deux projets Supabase sont occupés, les options réelles sont dans
-`docs/mise-en-service-supabase.md` — la principale étant de loger Moonfish dans
-un **schéma dédié** d'un projet existant, ce qui n'altère aucune table en place.
+Le pas-à-pas est dans `docs/mise-en-service-comptes.md`.

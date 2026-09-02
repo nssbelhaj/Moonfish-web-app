@@ -17,8 +17,8 @@ import type { WaitlistRepository, WaitlistResult } from '../types';
  * on la montre.
  *
  * Ça ne rend pas le stockage durable pour autant : `/tmp` disparaît avec
- * l'instance. C'est exactement pourquoi Supabase reste la prochaine étape avant
- * toute collecte réelle.
+ * l'instance. C'est exactement pourquoi `MysqlWaitlistRepository` prend le
+ * relais dès qu'une base est configurée.
  */
 const RUNS_SERVERLESS = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
 
@@ -36,10 +36,10 @@ const limiter = new SlidingWindowRateLimiter(5, 15 * 60 * 1000);
 /**
  * Liste d'attente : une ligne JSON par inscription, dans `var/waitlist.jsonl`.
  *
- * ➜ POUR BRANCHER SUPABASE : créer `src/lib/providers/supabase/waitlist.ts`
- *   exposant le même `WaitlistRepository` (`insert into waitlist ... on
- *   conflict (email) do nothing`), puis changer la ligne `waitlist:` de
- *   `src/lib/providers/index.ts`. Le route handler ne change pas d'une ligne.
+ * Le relais durable est `src/lib/providers/mysql/waitlist.ts` : il expose le
+ * même `WaitlistRepository`, et la bascule est automatique dès que la base est
+ * configurée. Le gestionnaire de route n'a pas changé d'une ligne — c'était
+ * l'objet de l'interface.
  *
  * Limite connue et assumée : le système de fichiers d'un hébergeur serverless
  * est éphémère. Les inscriptions y survivent au mieux jusqu'au prochain
@@ -50,7 +50,7 @@ export class FileWaitlistRepository implements WaitlistRepository {
   readonly source = {
     name: 'Fichier local (var/waitlist.jsonl)',
     kind: 'measured' as const,
-    precision: 'Stockage éphémère. À remplacer par Supabase avant toute collecte réelle.',
+    precision: 'Stockage éphémère : les inscriptions ne survivent pas à un déploiement. Utilisé tant qu’aucune base n’est configurée.',
   };
 
   async add(input: WaitlistInput, context: { ip: string }): Promise<WaitlistResult> {

@@ -7,8 +7,8 @@ import { FileWaitlistRepository } from './mock/waitlist';
 import { OpenMeteoWeatherProvider } from './open-meteo/weather';
 import { SelectiveTideProvider, parseAllowedSpots } from './selective-tide';
 import { StormglassTideProvider } from './stormglass/tide';
-import { SupabaseContributionsRepository } from './supabase/contributions';
-import { SupabaseWaitlistRepository } from './supabase/waitlist';
+import { MysqlContributionsRepository } from './mysql/contributions';
+import { MysqlWaitlistRepository } from './mysql/waitlist';
 import type {
   ContributionsRepository,
   SpotRepository,
@@ -16,7 +16,8 @@ import type {
   WaitlistRepository,
   WeatherProvider,
 } from './types';
-import { accountsEnabled } from '@/lib/supabase/config';
+import { accountsEnabled } from '@/lib/auth/config';
+import { databaseEnabled } from '@/lib/db/mysql';
 
 /**
  * ═══════════════════════════════════════════════════════════════════════
@@ -35,8 +36,8 @@ import { accountsEnabled } from '@/lib/supabase/config';
  *
  * Reste à brancher :
  *
- *   import { SupabaseSpotRepository } from './supabase/spots';
- *   export const spots: SpotRepository = new SupabaseSpotRepository();
+ *   import { MysqlSpotRepository } from './mysql/spots';
+ *   export const spots: SpotRepository = new MysqlSpotRepository();
  *
  * Les spots sont du contenu éditorial écrit à la main : les mettre en base
  * n'apporterait rien tant qu'ils ne sont pas modifiables depuis une interface.
@@ -107,15 +108,19 @@ export const weather: WeatherProvider =
 export const spots: SpotRepository = new MockSpotRepository();
 
 /**
- * Liste d'attente : Supabase dès qu'un projet est configuré, sinon le fichier
- * local — éphémère sur un hébergeur serverless, et annoncé comme tel.
+ * Liste d'attente : MySQL dès que la base est configurée, sinon le fichier
+ * local — éphémère, et annoncé comme tel.
+ *
+ * La bascule ne dépend que de la base, pas de l'envoi de courriel : une
+ * inscription à la liste d'attente n'a besoin d'aucun message pour être
+ * enregistrée.
  */
-export const waitlist: WaitlistRepository = accountsEnabled()
-  ? new SupabaseWaitlistRepository()
+export const waitlist: WaitlistRepository = databaseEnabled()
+  ? new MysqlWaitlistRepository()
   : new FileWaitlistRepository();
 
 /**
- * Contributions : Supabase, ou l'implémentation FERMÉE.
+ * Contributions : MySQL, ou l'implémentation FERMÉE.
  *
  * Pas de mode démonstration ici, à la différence de la marée et de la météo.
  * Une marée simulée illustre le fonctionnement du site ; un avis simulé serait
@@ -123,7 +128,7 @@ export const waitlist: WaitlistRepository = accountsEnabled()
  * précisément de rapporter ce que de vraies personnes ont déclaré.
  */
 export const contributions: ContributionsRepository = accountsEnabled()
-  ? new SupabaseContributionsRepository()
+  ? new MysqlContributionsRepository()
   : new ClosedContributionsRepository();
 
 /**

@@ -91,3 +91,41 @@ describe('nom affiché', () => {
     expect(displayNameSchema.safeParse('a'.repeat(40)).success).toBe(true);
   });
 });
+
+describe('idempotence — le schéma est appliqué DEUX fois sur le même trajet', () => {
+  /**
+   * Le formulaire valide la saisie, puis le dépôt revalide ce qu'il reçoit
+   * parce qu'il ne fait confiance à personne. La sortie du premier passage
+   * doit donc être une entrée valable pour le second.
+   *
+   * Ce n'était pas le cas : le premier passage transformait un commentaire
+   * vide en `null`, et le second refusait `null`. Conséquence en production —
+   * tout avis SANS commentaire et toute prise SANS mesure étaient rejetés avec
+   * « saisie invalide ». Le défaut a survécu à toute la version PostgreSQL :
+   * il ne se voyait qu'en exécutant le trajet complet contre une vraie base.
+   */
+  it('accepte sa propre sortie pour un avis sans commentaire', () => {
+    const once = spotReviewInputSchema.parse({ spotSlug: 'pen-hat', rating: 3, comment: '' });
+    expect(once.comment).toBeNull();
+
+    const twice = spotReviewInputSchema.parse(once);
+    expect(twice).toStrictEqual(once);
+  });
+
+  it('accepte sa propre sortie pour une prise sans mesure', () => {
+    const once = catchInputSchema.parse({ ...BASE, lengthCm: '', weightG: '', note: '' });
+    expect(once.lengthCm).toBeNull();
+    expect(once.weightG).toBeNull();
+    expect(once.note).toBeNull();
+
+    const twice = catchInputSchema.parse(once);
+    expect(twice).toStrictEqual(once);
+  });
+
+  it('reste stable au troisième passage', () => {
+    // Une transformation qui n'est stable qu'au second passage cacherait le
+    // même défaut un cran plus loin.
+    const once = catchInputSchema.parse({ ...BASE, lengthCm: 47, note: 'Montée de marée' });
+    expect(catchInputSchema.parse(catchInputSchema.parse(once))).toStrictEqual(once);
+  });
+});

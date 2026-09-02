@@ -1,14 +1,16 @@
 'use server';
 
+import { AuthError } from 'next-auth';
 import { revalidatePath } from 'next/cache';
-import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
+import { signIn, signOut as authSignOut } from '@/auth';
+import { accountsEnabled } from '@/lib/auth/config';
 import { catchInputSchema, spotReviewInputSchema } from '@/data/schemas';
 import { localDateTimeToIso } from '@/lib/auth/local-time';
+import { currentUser } from '@/lib/auth/session';
 import { contributions, spots } from '@/lib/providers';
 import { spotPath } from '@/lib/routes';
-import { currentUser, supabaseServer } from '@/lib/supabase/server';
 
 export interface ActionState {
   ok: boolean;
@@ -26,35 +28,20 @@ const NOT_SIGNED_IN: ActionState = {
 };
 
 /**
- * Origine réelle de la requête, pour construire le lien de retour du courriel.
- *
- * On la déduit des en-têtes plutôt que d'une variable d'environnement : un
- * déploiement de prévisualisation a un domaine différent à chaque fois, et un
- * lien de connexion qui ramène en production depuis une préproduction est
- * inutilisable.
- */
-async function requestOrigin(): Promise<string> {
-  const list = await headers();
-  const host = list.get('x-forwarded-host') ?? list.get('host') ?? 'localhost:3000';
-  const protocol = list.get('x-forwarded-proto') ?? (host.startsWith('localhost') ? 'http' : 'https');
-  return `${protocol}://${host}`;
-}
-
-/**
  * Demande d'un lien de connexion.
  *
- * Pas de mot de passe, volontairement : ce que nous ne stockons pas ne peut
- * pas fuir, et un site de pêche n'a aucune raison de détenir un secret qu'une
- * personne réutilise peut-être ailleurs.
+ * Pas de mot de passe : ce que nous ne stockons pas ne peut pas fuir.
  */
 export async function requestSignInLink(
   _previous: ActionState | null,
   formData: FormData,
 ): Promise<ActionState> {
-  const client = await supabaseServer();
-  if (!client) return NOT_OPEN;
+  if (!accountsEnabled()) return NOT_OPEN;
 
-  const email = String(formData.get('email') ?? '').trim().toLowerCase();
+  const email = String(formData.get('email') ?? '')
+    .trim()
+    .toLowerCase();
+
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(email)) {
     return { ok: false, message: 'Cette adresse e-mail n’est pas valide.' };
   }
@@ -68,36 +55,28 @@ export async function requestSignInLink(
 
   const next = String(formData.get('next') ?? '/compte');
   const safeNext = /^\/(?!\/)[^\s]*$/.test(next) ? next : '/compte';
-  const origin = await requestOrigin();
 
-  const { error } = await client.auth.signInWithOtp({
-    email,
-    options: {
-      emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(safeNext)}`,
-      // Le compte se crée à la première connexion : un formulaire d'inscription
-      // séparé ne demanderait rien de plus et ferait une étape de plus.
-      shouldCreateUser: true,
-    },
-  });
-
-  if (error) {
-    console.error('[auth] envoi du lien impossible', error.message);
+  try {
+    // `redirect: false` : on veut rendre notre propre message plutôt que de
+    // laisser la bibliothèque naviguer. Le formulaire reste à l'écran, avec la
+    // saisie intacte si quelque chose échoue.
+    await signIn('nodemailer', { email, redirectTo: safeNext, redirect: false });
+  } catch (error) {
+    if (error instanceof AuthError) {
+      console.error('[auth] envoi du lien impossible', error.type, error.message);
+    } else {
+      console.error('[auth] envoi du lien impossible', error);
+    }
 
     /*
-      Deux pannes très différentes se ressemblent ici : un service momentanément
-      occupé, et un projet Supabase MIS EN PAUSE — ce que le palier gratuit fait
-      après sept jours sans activité. La seconde dure jusqu'à ce que quelqu'un
-      relance le projet, et « réessayez dans un instant » serait alors une
-      indication fausse, qui ferait douter la personne de son adresse.
-
-      On ne peut pas distinguer les deux de façon fiable depuis ici, alors on
-      n'annonce aucun délai. Le détail part dans les journaux, où il est utile ;
-      /api/keep-alive, lui, nomme explicitement la pause.
+      On n'annonce AUCUN délai. Deux pannes très différentes se ressemblent
+      ici — un serveur d'envoi momentanément occupé, et une configuration SMTP
+      fausse qui durera jusqu'à correction. Promettre « réessayez dans un
+      instant » dans le second cas ferait douter la personne de son adresse.
     */
     return {
       ok: false,
-      message:
-        'Le service de comptes ne répond pas. Ce n’est pas votre adresse : réessayez plus tard.',
+      message: 'Le service de connexion ne répond pas. Ce n’est pas votre adresse : réessayez plus tard.',
     };
   }
 
@@ -114,9 +93,7 @@ export async function requestSignInLink(
 }
 
 export async function signOut(): Promise<void> {
-  const client = await supabaseServer();
-  if (client) await client.auth.signOut();
-  redirect('/compte');
+  await authSignOut({ redirectTo: '/compte' });
 }
 
 /** Création du profil : le nom affiché et la trace du consentement. */
@@ -135,7 +112,10 @@ export async function createProfile(
   if (!result.ok) return { ok: false, message: result.message };
 
   revalidatePath('/compte');
-  return { ok: true, message: `Profil créé. Vos contributions s’afficheront sous « ${result.data.displayName} ».` };
+  return {
+    ok: true,
+    message: `Profil créé. Vos contributions s’afficheront sous « ${result.data.displayName} ».`,
+  };
 }
 
 export async function renameProfile(
@@ -214,14 +194,19 @@ export async function saveReview(
   const path = await spotSpeciesPath(formData);
   if (path) revalidatePath(path);
 
-  return { ok: true, message: 'Avis enregistré. Merci : c’est ce qui remplit la partie que les modèles ne savent pas dire.' };
+  return {
+    ok: true,
+    message: 'Avis enregistré. Merci : c’est ce qui remplit la partie que les modèles ne savent pas dire.',
+  };
 }
 
 export async function deleteReview(formData: FormData): Promise<void> {
   const user = await currentUser();
   if (!user) return;
 
-  await contributions.deleteReview(String(formData.get('review_id') ?? ''));
+  // L'identifiant du propriétaire part avec la requête : c'est lui qui tient
+  // lieu, en MySQL, de la politique de sécurité que PostgreSQL appliquait.
+  await contributions.deleteReview(String(formData.get('review_id') ?? ''), user.id);
 
   const path = await spotSpeciesPath(formData);
   if (path) revalidatePath(path);
@@ -287,7 +272,7 @@ export async function deleteCatch(formData: FormData): Promise<void> {
   const user = await currentUser();
   if (!user) return;
 
-  await contributions.deleteCatch(String(formData.get('catch_id') ?? ''));
+  await contributions.deleteCatch(String(formData.get('catch_id') ?? ''), user.id);
 
   const path = await spotSpeciesPath(formData);
   if (path) revalidatePath(path);
@@ -312,13 +297,35 @@ export async function deleteAccount(
     return { ok: false, message: 'Recopiez le mot « supprimer » pour confirmer.' };
   }
 
+  /*
+    Les spots concernés sont relevés AVANT la suppression : après, les lignes
+    n'existent plus et on ne saurait plus quelles pages rafraîchir.
+
+    Sans cela, les données étaient bien effacées de la base mais restaient
+    AFFICHÉES jusqu'à une heure sur les pages de spot, qui sont pré-rendues.
+    Mesuré en conditions réelles : compte supprimé, base vide, avis toujours
+    visible. Un effacement qui se voit encore n'est pas un effacement, et
+    c'est la seule partie du droit à l'oubli que l'utilisateur constate.
+  */
+  const mine = await contributions.listForUser(user.id);
+  const touchedSlugs = new Set([
+    ...mine.reviews.map((review) => review.spotSlug),
+    ...mine.catches.map((entry) => entry.spotSlug),
+  ]);
+
   const result = await contributions.deleteAccount(user.id);
   if (!result.ok) return { ok: false, message: result.message };
 
-  // La session est invalidée dans la foulée : laisser un cookie valide pointant
-  // vers un compte effacé produirait des pages à moitié connectées.
-  const client = await supabaseServer();
-  if (client) await client.auth.signOut();
+  for (const slug of touchedSlugs) {
+    const spot = await spots.findBySlug(slug);
+    if (spot) revalidatePath(`${spotPath(spot)}/especes`);
+  }
 
+  /*
+    La session vit EN BASE et part avec l'utilisateur, par cascade : elle est
+    donc déjà caduque à cet instant. On efface tout de même le cookie, pour que
+    le navigateur cesse d'envoyer un jeton qui ne désigne plus rien.
+  */
+  await authSignOut({ redirect: false });
   redirect('/compte?efface=1');
 }

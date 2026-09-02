@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { contributions } from '@/lib/providers';
 import { deleteCatch, deleteReview, signOut } from '@/lib/auth/actions';
 import { absoluteUrl } from '@/lib/routes';
-import { currentUser } from '@/lib/supabase/server';
+import { currentUser } from '@/lib/auth/session';
 import { formatDateTime } from '@/lib/time';
 
 /** Une page de compte ne se met pas en cache : elle dépend de la session. */

@@ -25,6 +25,15 @@ describe('contributions, comptes fermés', () => {
     expect(spot.reviewCount).toBe(0);
   });
 
+  it('exige un propriétaire pour supprimer, jusque dans les types', () => {
+    // La signature est ce qui remplace la politique appliquée par PostgreSQL :
+    // on ne PEUT pas écrire un appel de suppression sans dire au nom de qui on
+    // agit, le compilateur refuse. C'est vérifié à la compilation, ici on
+    // documente simplement l'intention.
+    expect(repository.deleteReview.length).toBe(2);
+    expect(repository.deleteCatch.length).toBe(2);
+  });
+
   it('rend `null` comme note moyenne, jamais zéro', async () => {
     // Zéro se lirait comme « très mauvais spot ». L'absence de note n'est pas
     // une mauvaise note.
@@ -33,15 +42,28 @@ describe('contributions, comptes fermés', () => {
   });
 
   it('refuse chaque écriture, avec un motif exploitable', async () => {
+    const ANY_USER = '00000000-0000-4000-8000-000000000000';
     const attempts = [
-      repository.createProfile(),
-      repository.renameProfile(),
-      repository.saveReview(),
-      repository.addCatch(),
-      repository.deleteReview(),
-      repository.deleteCatch(),
-      repository.exportAccount(),
-      repository.deleteAccount(),
+      repository.createProfile(ANY_USER, 'Pêcheur'),
+      repository.renameProfile(ANY_USER, 'Pêcheur'),
+      repository.saveReview({ spotSlug: 'pen-hat', rating: 4, comment: null }, { userId: ANY_USER, displayName: 'Pêcheur' }),
+      repository.addCatch(
+        {
+          spotSlug: 'pen-hat',
+          species: 'Bar',
+          lengthCm: null,
+          weightG: null,
+          released: false,
+          caughtAt: '2026-09-01T16:30:00.000Z',
+          note: null,
+          photoPath: null,
+        },
+        { userId: ANY_USER, displayName: 'Pêcheur' },
+      ),
+      repository.deleteReview('r1', ANY_USER),
+      repository.deleteCatch('c1', ANY_USER),
+      repository.exportAccount(ANY_USER, 'test@exemple.fr'),
+      repository.deleteAccount(ANY_USER),
     ];
 
     for (const result of await Promise.all(attempts)) {
@@ -56,7 +78,7 @@ describe('contributions, comptes fermés', () => {
   it('n’annonce jamais une suppression de compte qu’il n’a pas faite', async () => {
     // Le pire mensonge possible sur cet écran : « votre compte a été supprimé »
     // alors que rien n'a été touché.
-    const result = await repository.deleteAccount();
+    const result = await repository.deleteAccount('00000000-0000-4000-8000-000000000000');
     expect(result.ok).toBe(false);
   });
 

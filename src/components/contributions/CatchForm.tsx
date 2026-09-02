@@ -24,12 +24,10 @@ type PhotoState =
 export function CatchForm({
   spotSlug,
   spotPath,
-  userId,
   speciesSuggestions,
 }: {
   spotSlug: string;
   spotPath: string;
-  userId: string;
   speciesSuggestions: readonly string[];
 }) {
   const [photo, setPhoto] = useState<PhotoState>({ kind: 'none' });
@@ -44,7 +42,7 @@ export function CatchForm({
     if (!file) return setPhoto({ kind: 'none' });
 
     setPhoto({ kind: 'working' });
-    const result = await uploadCatchPhoto(file, userId);
+    const result = await uploadCatchPhoto(file);
     setPhoto(result.ok ? { kind: 'ready', path: result.path } : { kind: 'error', message: result.message });
   }
 

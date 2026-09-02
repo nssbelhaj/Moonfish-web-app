@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { LegalDraftNotice, LegalValue } from '@/components/legal/LegalValue';
 import { CLIENT_STORAGE, CNIL, LEGAL_UPDATED, PROCESSORS, PUBLISHER } from '@/data/legal';
 import { absoluteUrl } from '@/lib/routes';
-import { accountsEnabled } from '@/lib/supabase/config';
+import { accountsEnabled } from '@/lib/auth/config';
 import { formatDateLong } from '@/lib/time';
 
 export const metadata: Metadata = {

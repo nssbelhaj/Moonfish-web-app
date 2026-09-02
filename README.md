@@ -35,7 +35,7 @@ Node 20 ou plus. Aucune variable d'environnement n'est requise pour démarrer.
 | `WEATHER_PROVIDER` | non | Open-Meteo | `mock` force les données simulées : build hors ligne, démonstration sans réseau, tests. |
 | `OPEN_METEO_MARINE_URL` | non | API publique | Redirige vers une instance Open-Meteo auto-hébergée ou le stub local. |
 | `OPEN_METEO_FORECAST_URL` | non | API publique | Idem pour le modèle atmosphérique. |
-| `WAITLIST_FILE` | non | `var/waitlist.jsonl` | Chemin du fichier d'inscriptions, utilisé tant que Supabase n'est pas configuré. |
+| `WAITLIST_FILE` | non | `var/waitlist.jsonl` | Chemin du fichier d'inscriptions, utilisé tant qu'aucune base n'est configurée. |
 | `NEXT_PUBLIC_SUPABASE_URL` | non | — | Ouvre les comptes et les contributions. Absente, le site le dit et n'affiche aucun formulaire de connexion. |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | non | — | Clé publique du projet. Ce qu'elle autorise est décidé par les politiques RLS, pas par son secret. |
 | `SUPABASE_SERVICE_ROLE_KEY` | non | — | Uniquement pour effacer un compte dans `auth.users`. Sans elle, la suppression refuse explicitement plutôt que de faire semblant. |
@@ -46,7 +46,7 @@ Node 20 ou plus. Aucune variable d'environnement n'est requise pour démarrer.
 | Script | Effet |
 | --- | --- |
 | `npm run dev` | Serveur de développement |
-| `node scripts/verifier-supabase.mjs` | Contrôle un projet Supabase réel : tables, politiques, seau de photos |
+| `npm run migrate` | Applique `db/migrations/*.sql` à la base configurée |
 | `node scripts/verifier-exif.mjs` | Prouve le retrait des métadonnées d'une photo, dans Chromium |
 | `npm run build` | Build de production — 38 pages statiques |
 | `npm start` | Sert le build de production |
@@ -78,6 +78,11 @@ src/
 │   ├── donnees/                  D'où viennent les données, bloc par bloc
 │   ├── mentions-legales/         Éditeur, hébergeur, responsabilité
 │   ├── confidentialite/          Traitements, stockage navigateur, droits
+│   ├── compte/                   Connexion, profil, export, effacement
+│   ├── api/auth/[...nextauth]/   Auth.js : lien de connexion, retour, sortie
+│   ├── api/compte/               Photo, état de session, export JSON
+│   ├── api/photos/[...chemin]/   Lecture des photos, hors répertoire d'app
+│   ├── api/entretien/            Purge quotidienne des sessions périmées
 │   ├── api/waitlist/route.ts     POST — Zod + limiteur de débit + écriture
 │   ├── sitemap.ts, robots.ts     Générés depuis les mêmes sources que les pages
 │   ├── tokens.css                Variables CSS des deux thèmes ← POINT D'ENTRÉE DESIGN
@@ -96,6 +101,8 @@ src/
 │   │                             WaterValue, SlotRow, DayRuler, SpeciesCard,
 │   │                             SpotsMap, SeaStateCard
 │   ├── legal/                    LegalValue — une mention manquante s'affiche
+│   ├── account/                  Connexion, profil, effacement de compte
+│   ├── contributions/            Avis, prises, panneau de contribution
 │   ├── data/                     DataSourceTag, DemoDataNotice ← honnêteté des données
 │   ├── forms/                    EmailCaptureForm, SpotSearch, SpotFilters
 │   ├── layout/                   SiteHeader, SiteFooter, ThemeToggle
@@ -128,6 +135,10 @@ src/
     │   ├── tide-coefficient.ts   Coefficient français, défini sur le marnage de Brest
     │   ├── wave-statistics.ts    Loi de Rayleigh : hauteur fréquente et maximale
     │   └── slots.ts              Découpage en 12 créneaux de 2 h, journée LOCALE
+    ├── auth/                     Auth.js : configuration, adaptateur MySQL,
+    │                             session, actions serveur
+    ├── db/mysql.ts               LE seul module qui ouvre une connexion
+    ├── photo/                    Retrait des métadonnées, stockage, URL
     ├── map/                      Projection équirectangulaire des spots
     ├── providers/                ← LE POINT DE BASCULE (voir plus bas)
     ├── guides.ts, markdown.ts    Chargement et rendu des articles
@@ -282,7 +293,7 @@ OPEN_METEO_FORECAST_URL=http://127.0.0.1:4000/v1/forecast \
 npm run build
 ```
 
-### 3. Spots → Supabase
+### 3. Spots → base de données
 
 | | |
 | --- | --- |
@@ -290,7 +301,7 @@ npm run build
 | **À implémenter** | `list()`, `findBySlug()`, `findByPath()` |
 | **Mock à remplacer** | `src/lib/providers/mock/spots.ts` |
 | **Nouveau fichier** | `src/lib/providers/supabase/spots.ts` |
-| **Ligne à changer** | `export const spots: SpotRepository = new SupabaseSpotRepository()` |
+| **Ligne à changer** | `export const spots: SpotRepository = new MysqlSpotRepository()` |
 
 Le schéma de la table découle directement de `spotSchema`
 (`src/data/schemas.ts`). Conserver `slug`, `country_slug` et `region_slug` :
@@ -299,31 +310,33 @@ ce sont les clés d'URL, et les changer casserait l'indexation.
 `generateStaticParams` du détail spot appelle `spots.list()` : le build ira donc
 chercher les spots en base. Prévoir `export const revalidate` en conséquence.
 
-### 4. Liste d'attente → Supabase ✅ FAIT
+### 4. Liste d'attente → MySQL ✅ FAIT
 
 | | |
 | --- | --- |
 | **Interface** | `WaitlistRepository` |
-| **Implémentation** | `src/lib/providers/supabase/waitlist.ts` |
-| **Repli** | `src/lib/providers/mock/waitlist.ts` — fichier, éphémère, tant que Supabase n'est pas configuré |
-| **Bascule** | automatique : `accountsEnabled()` dans `src/lib/providers/index.ts` |
+| **Implémentation** | `src/lib/providers/mysql/waitlist.ts` |
+| **Repli** | `src/lib/providers/mock/waitlist.ts` — fichier, éphémère, tant qu'aucune base n'est configurée |
+| **Bascule** | automatique : `databaseEnabled()` dans `src/lib/providers/index.ts` |
 
 Le route handler `src/app/api/waitlist/route.ts` n'a pas changé d'une ligne :
 c'était l'objet de l'interface.
 
-Deux détails imposés par la sécurité de la table, qui est en écriture seule :
+Deux détails imposés par le fait qu'AUCUN chemin de lecture n'existe sur cette
+table — c'est ce qui empêche d'aspirer les adresses depuis l'application, et un
+test échoue si un `select` y apparaît :
 
 - une adresse déjà inscrite ne peut pas être détectée par une lecture préalable.
-  C'est la contrainte de clé primaire qui la rejette, et son code d'erreur
-  (`23505`) qui nous dit « déjà inscrite » ;
-- `count()` rend `null`. Voir plus haut : ne pas avoir le droit de compter n'est
-  pas la même chose que compter zéro.
+  C'est `insert ignore` qui la rejette, et le nombre de lignes affectées qui
+  nous dit « déjà inscrite » ;
+- `count()` rend `null` : ne pas avoir de chemin de lecture n'est pas la même
+  chose que compter zéro.
 
 **Reste à faire, et ce n'est pas cosmétique :** le limiteur de débit de
 `src/lib/rate-limit.ts` est en mémoire de processus. Il ne protège rien dès
 qu'il y a plusieurs instances ou du serverless — chaque instance a son propre
-compteur. Le remplacer par un compteur partagé (Redis, ou une table Supabase
-avec une fenêtre glissante).
+compteur. Le remplacer par un compteur partagé — une table MySQL avec une
+fenêtre glissante suffirait, maintenant qu'une base est là.
 
 ### 5. Les avertissements de démonstration se retirent seuls
 
@@ -453,67 +466,117 @@ avis, enregistrer une prise. Elles arrivent ensemble parce qu'elles posent la
 même question — que détenons-nous sur quelqu'un, et comment le lui rendre ou
 l'effacer.
 
-### Ce qui s'ouvre avec deux variables
+Tout tient chez un seul hébergeur : l'application, la base MySQL, les photos
+sur disque, l'envoi des courriels. Aucun service tiers n'entre en jeu, et le
+navigateur ne joint aucun domaine hors du nôtre.
 
-`NEXT_PUBLIC_SUPABASE_URL` et `NEXT_PUBLIC_SUPABASE_ANON_KEY` suffisent.
-Absentes, le site **fonctionne entièrement** et annonce que les comptes ne sont
-pas ouverts : ni formulaire de connexion qui échouerait, ni avis d'exemple pour
-meubler. C'est la seule partie du projet sans mode démonstration, et c'est
-délibéré — une marée simulée illustre un mécanisme, un faux avis serait un faux
-témoignage sur la page qui promet précisément de rapporter ce que de vraies
-personnes ont déclaré.
+### Ce qui les ouvre
 
-### La sécurité est dans la base, pas dans le code
+Une base ET un envoi de courriel. Les deux, pas l'un ou l'autre : une base sans
+courriel donnerait un formulaire de connexion qui n'envoie jamais rien, un
+courriel sans base n'aurait nulle part où écrire la session.
 
-`supabase/migrations/0001_comptes_et_contributions.sql` crée les tables ET leurs
-politiques de sécurité au niveau des lignes. Toutes les écritures de
-l'application passent par le client de session : c'est PostgreSQL qui refuse
-qu'on écrive au nom d'autrui, pas une condition dans un fichier TypeScript
-qu'un jour on oubliera.
+Sans eux, le site **fonctionne entièrement** et annonce que les comptes ne sont
+pas ouverts : ni formulaire qui échouerait, ni avis d'exemple pour meubler.
+C'est la seule partie du projet sans mode démonstration, et c'est délibéré — une
+marée simulée illustre un mécanisme, un faux avis serait un faux témoignage sur
+la page qui promet précisément de rapporter ce que de vraies personnes ont
+déclaré.
 
-| Table | Lecture | Écriture |
-| --- | --- | --- |
-| `waitlist` | **personne** | tout le monde (formulaire public) |
-| `profiles` | soi-même | soi-même |
-| `spot_reviews` | tout le monde | soi-même |
-| `catches` | tout le monde | soi-même |
-| photos (`prises`) | tout le monde | son propre dossier, préfixé par son identifiant |
+### La garantie perdue, et ce qui la remplace
 
-La liste d'attente est en écriture seule : la clé publique, qui part dans chaque
-navigateur, ne permet pas d'aspirer les adresses. Conséquence acceptée —
-`count()` rend `null`, pas `0`, parce que « je n'ai pas le droit de savoir » et
-« il n'y a personne » ne sont pas la même chose.
+La première version reposait sur PostgreSQL et sa sécurité au niveau des
+lignes : le MOTEUR refusait une écriture au nom d'autrui, et un filtre oublié
+dans le code ne pouvait pas provoquer de fuite. **MySQL n'a pas d'équivalent.**
 
-Ces politiques ne peuvent pas être exécutées ici (aucun projet Supabase
-n'est joignable depuis cet environnement), mais elles sont **vérifiées
-statiquement** : `src/lib/supabase/__tests__/schema.test.ts` échoue si une table
-oublie `enable row level security`, si une politique d'écriture ne compare pas
-`auth.uid()`, si une politique de lecture apparaît sur la liste d'attente, ou si
-le SQL et les types TypeScript cessent de décrire les mêmes colonnes.
+C'est la seule chose que ce portage a coûtée, et elle mérite d'être nommée
+plutôt que noyée. Trois mécanismes la remplacent :
+
+| | Ce que ça empêche |
+| --- | --- |
+| Les signatures : `deleteReview(id, userId)` | Le compilateur refuse une suppression qui ne dit pas au nom de qui elle agit. |
+| `src/lib/db/__tests__/proprietaire.test.ts` | Une modification sans `user_id = ?`, du SQL hors des modules autorisés, une valeur interpolée dans une requête, un `select` sur la liste d'attente. |
+| Les tests d'intégration | Ils essaient réellement de supprimer le bien d'autrui, contre une vraie base, et vérifient que la ligne ET la photo sont intactes après le refus. |
+
+C'est plus faible qu'une politique appliquée par le moteur : la garantie est
+devenue conventionnelle. En contrepartie, **tout est vérifiable en local** — ce
+que la version PostgreSQL ne permettait pas, faute de serveur joignable.
+
+### Ce que les tests exercent réellement
+
+```bash
+DATABASE_URL=mysql://user:pass@127.0.0.1:3306/moonfish_test npm run test
+```
+
+Dix-sept tests d'intégration contre un vrai serveur, dont :
+
+- **un pêcheur ne peut pas supprimer l'avis d'un autre** — le test central ;
+- une suppression refusée ne touche pas non plus à la photo ;
+- l'instant d'une prise survit à l'aller-retour sans dérive de fuseau. MySQL
+  rend un `datetime` sans fuseau : une conversion négligée décalerait la prise
+  de deux heures en été, donc de créneau de marée — l'erreur exacte que ce site
+  existe pour éviter ;
+- l'effacement d'un compte emporte profil, avis, prises et photos, et rien de
+  ce qui appartient à quelqu'un d'autre ;
+- une valeur hostile est traitée comme du texte, pas comme du SQL.
+
+Sans `DATABASE_URL`, ils sont ignorés plutôt que rouges : un clone du dépôt doit
+pouvoir lancer les tests sans installer de serveur.
+
+### Un défaut que seule l'exécution pouvait révéler
+
+Les schémas de saisie sont appliqués DEUX fois sur le même trajet : une fois
+sur le formulaire, une fois à l'entrée du dépôt, qui ne fait confiance à
+personne. Le premier passage transformait un commentaire vide en `null`, et le
+second refusait `null`.
+
+Conséquence en production : **tout avis sans commentaire et toute prise sans
+mesure étaient rejetés** avec « saisie invalide ». Le défaut existait déjà dans
+la version PostgreSQL et y a survécu entièrement — il ne se voyait qu'en
+exécutant le trajet complet contre une vraie base. Les schémas sont désormais
+idempotents, et trois tests le vérifient.
+
+### Authentification
+
+Un lien reçu par courriel, pas de mot de passe : ce que nous ne stockons pas ne
+peut pas fuir. Aucun fournisseur externe non plus — « se connecter avec
+Google » ferait savoir à Google que vous pêchez.
+
+Auth.js gère le flux ; l'adaptateur MySQL est écrit à la main
+(`src/lib/auth/mysql-adapter.ts`) plutôt que tiré d'un ORM, parce qu'il ne fait
+que traduire une quinzaine d'appels en autant de requêtes de trois lignes.
+
+Les sessions vivent **en base**, pas dans un jeton signé. Conséquence qui
+compte : une déconnexion ou une suppression de compte prend effet
+immédiatement, alors qu'un jeton auto-porté reste valable jusqu'à son
+expiration — y compris après un « supprimez mes données ».
 
 ### Photos : les métadonnées ne partent jamais
 
-Une photo de téléphone porte les coordonnées GPS de la prise de vue. Publier une
-photo de bar sans y toucher, c'est publier la position d'un poste — ou, si la
-photo a été prise en rentrant, celle d'un domicile.
+Une photo de téléphone porte les coordonnées GPS de la prise de vue. Publier
+une photo de bar sans y toucher, c'est publier la position d'un poste — ou,
+si la photo a été prise en rentrant, celle d'un domicile.
 
-Le nettoyage a donc lieu **dans le navigateur, avant l'envoi** : décodage,
+Le nettoyage a lieu **dans le navigateur, avant l'envoi** : décodage,
 réencodage dans un canevas, puis retrait des segments APP1–APP15 et des
-commentaires. L'original ne quitte pas l'appareil.
+commentaires. L'original ne quitte pas l'appareil, et le fichier part vers
+notre serveur, pas vers un tiers.
 
-`node scripts/verifier-exif.mjs` le prouve plutôt que de l'affirmer : il
-fabrique un JPEG portant des coordonnées GPS, le passe dans la fonction réelle
-du site au sein de Chromium, et inspecte les octets de sortie.
+`node scripts/verifier-exif.mjs` le prouve plutôt que de l'affirmer :
 
 ```
 before: ["APP1","APP2"]   after: []   foundExifString: false
 54 535 octets → 24 134,  2400×1800 → 1600×1200
 ```
 
-Le réencodage seul ne suffisait pas : mesuré, Chromium laisse un profil
-colorimétrique en APP2. Il ne contient aucune donnée personnelle, mais le
-garder aurait obligé à écrire « presque toutes les métadonnées sont retirées ».
-Il part aussi.
+Vérifié aussi **sur le fichier réellement stocké** après un parcours complet en
+navigateur : aucun segment de métadonnées, aucune chaîne « Exif », rangé dans
+le dossier de son auteur.
+
+Les photos vivent HORS du répertoire de l'application (`UPLOADS_DIR`) : un
+déploiement depuis Git remplace ce répertoire, et une photo écrite dedans
+disparaîtrait à la mise en ligne suivante, sans erreur ni trace. Le code
+avertit au démarrage en production si le chemin est à l'intérieur.
 
 ### Géolocalisation : nous ne la recevons pas
 
@@ -531,57 +594,54 @@ La demande d'autorisation part d'un clic, jamais du chargement de la page.
 | Rectification | modification d'un avis, renommage du profil |
 | Retrait du consentement | la suppression du compte l'emporte |
 
-L'effacement passe par la cascade `on delete cascade` du schéma : c'est la base
-qui garantit qu'il ne reste rien, pas une suite d'appels qu'on pourrait oublier.
-Les photos, non liées par une clé étrangère, sont supprimées explicitement juste
-avant. Et si la clé de service manque, la suppression **refuse** au lieu
-d'annoncer un effacement qui n'a pas eu lieu.
+L'effacement repose sur la cascade du schéma : c'est la base qui garantit qu'il
+ne reste rien, pas une suite d'appels qu'on pourrait oublier. Les photos, non
+liées par une clé étrangère, sont supprimées explicitement juste avant.
+
+**Un défaut trouvé en conditions réelles, et corrigé.** À la première
+vérification, le compte était bien supprimé et la base vide — mais l'avis
+restait AFFICHÉ jusqu'à une heure sur la page du spot, qui est pré-rendue. Un
+effacement qui se voit encore n'est pas un effacement, et c'est la seule partie
+du droit à l'oubli que l'utilisateur constate. Les spots concernés sont
+désormais relevés avant la suppression, et leurs pages rafraîchies après.
 
 ### Un rendu statique préservé
 
-La page des espèces reste pré-rendue et mise en cache une heure, comptes ouverts
-ou non. Lire une session veut dire lire les cookies, et lire les cookies bascule
-toute la route en rendu dynamique dans Next. Les avis et les prises sont donc
-lus **sans session** (ils sont publics et identiques pour tous), et chaque
-écriture révalide le chemin du spot. Seule la zone « contribuer » résout la
-session côté navigateur, et apparaît après l'hydratation — compromis explicite :
-ce qui doit être lisible sans JavaScript et indexable, ce sont les listes, pas
-les formulaires.
+La page des espèces reste pré-rendue et mise en cache une heure, comptes
+ouverts ou non. Lire une session veut dire lire les cookies, et lire les
+cookies bascule toute la route en rendu dynamique dans Next. Les avis et les
+prises sont donc lus **sans session** — ils sont publics et identiques pour
+tous — et chaque écriture révalide le chemin du spot. Seule la zone
+« contribuer » résout la session côté navigateur, par un appel à
+`/api/compte/etat`, et apparaît après l'hydratation.
+
+Compromis explicite : ce qui doit être lisible sans JavaScript et indexable, ce
+sont les listes, pas les formulaires.
 
 ### Mise en service
 
-Le pas-à-pas complet est dans **`docs/mise-en-service-supabase.md`** : création
-du projet, migration, variables, URL de retour, SMTP, et le parcours à vérifier
-à la main.
+Le pas-à-pas est dans **`docs/mise-en-service-comptes.md`** : base, migration,
+SMTP, secrets, tâche d'entretien, et le parcours à refaire à la main.
 
-Deux points que ce document existe pour éviter :
+Deux pièges qui ne se voient pas :
 
-- **la limite de deux projets actifs.** Elle vaut pour toutes vos organisations
-  confondues, mais un projet EN PAUSE ne compte pas — d'où une rotation
-  possible, sans rien payer. Un projet en pause ne se réveille cependant que
-  d'un clic : ni une requête, ni `/api/keep-alive` ne le relancent ;
-- **l'envoi des e-mails.** Le serveur de Supabase est limité à quelques
-  messages par heure sur le palier gratuit. Assez pour se tester soi-même, pas
-  pour des testeurs. Le document explique comment brancher un SMTP.
+- le `@` de l'identifiant SMTP doit être encodé `%40` dans `EMAIL_SERVER` —
+  c'est une URL, et un `@` non encodé la coupe en deux ;
+- `UPLOADS_DIR` doit sortir du répertoire de l'application, sous peine de
+  perdre les photos au déploiement suivant.
 
-`node scripts/verifier-supabase.mjs` contrôle un projet réel avec la seule clé
-publique : projet joignable, tables présentes, seau de photos, et surtout que
-les profils et la liste d'attente REFUSENT un visiteur anonyme.
+### Ce qui a été exercé, et ce qui reste à voir
 
-### Ce qui n'a pas été exercé
+Le parcours COMPLET a été joué dans un vrai navigateur, contre une vraie base
+MariaDB et un vrai serveur SMTP : demande de lien, réception du courriel,
+échange du jeton, création du profil, publication d'un avis, déclaration d'une
+prise avec photo, affichage pour un visiteur anonyme, export JSON, suppression
+du compte, disparition immédiate de la contribution.
 
-Aucun projet Supabase n'est joignable depuis cet environnement. Sont donc
-vérifiés : la compilation, le typage de bout en bout, la cohérence SQL/types,
-les règles de sécurité par lecture du SQL, la validation des saisies, le retrait
-des métadonnées dans un vrai navigateur, la préservation des champs après un
-échec, et le rendu des deux états (comptes ouverts, comptes fermés).
+Reste à voir en production, et personne ne peut le simuler : que les courriels
+**arrivent** — SPF, DKIM et réputation du domaine ne se testent pas en local.
+C'est le premier point à vérifier après la mise en ligne.
 
-**N'a pas été exercé** : un aller-retour réel avec Supabase — envoi du lien de
-connexion, échange du code, écriture d'une ligne sous RLS, envoi d'une photo
-dans le seau. Ces chemins sont écrits d'après le contrat documenté du service,
-pas contre le service lui-même. La première mise en service demandera de le
-vérifier, et le premier point à regarder sera la liste des « Redirect URLs »
-dans Authentication.
 
 ## Le Soleil et la Lune
 
@@ -729,7 +789,7 @@ sous le seuil AA sur les deux pages légales, dans les deux thèmes, à 390 et
 1440 px.
 
 `npm run build`, `npm run typecheck` et `npm run lint` passent sans erreur ni
-avertissement. 388 tests unitaires. Aucun débordement horizontal à 375 px.
+avertissement. 407 tests, dont 17 d'intégration contre une vraie base. Aucun débordement horizontal à 375 px.
 
 ## Pages légales
 
@@ -792,9 +852,10 @@ les dons ne comptent pas, mais la question se posera le jour de la monétisation
 Node 20.9 ou plus est exigé via `engines`. Un projet Vercel resté sur Node 18
 échoue avant même la compilation ; ce champ force le bon choix.
 
-Les inscriptions à la liste d'attente atterrissent dans le répertoire temporaire
-de l'instance et **n'y survivent pas** — acceptable pour une démonstration, pas
-pour une collecte réelle, d'où l'étape Supabase.
+Sans base configurée, les inscriptions à la liste d'attente atterrissent dans le
+répertoire temporaire de l'instance et **n'y survivent pas** — acceptable pour
+une démonstration, pas pour une collecte réelle. Avec `DATABASE_URL`, elles
+passent en base et le repli n'est plus utilisé.
 
 ### Si le build échoue
 

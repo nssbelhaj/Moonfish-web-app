@@ -58,15 +58,19 @@ export function missingPublisherFields(): readonly string[] {
  * la dénomination sociale, l'adresse et le téléphone de l'hébergeur EFFECTIF,
  * pas de celui qu'on avait prévu.
  */
-export const HOST = {
-  name: 'Vercel Inc.',
-  // Numéro de suite écrit en toutes lettres, sans croisillon : le test D22 lit
-  // un croisillon suivi de quatre caractères comme une couleur littérale. Il a
-  // raison de le faire, et l'adresse se lit aussi bien ainsi.
-  address: '340 S Lemon Ave, Suite 4133, Walnut, CA 91789, États-Unis',
-  site: 'https://vercel.com',
-  contact: 'https://vercel.com/contact',
-} as const;
+export const HOST: { name: string; address: string | null; site: string; contact: string } = {
+  name: 'Hostinger International Ltd',
+  /*
+    À COMPLÉTER : l'adresse exacte du siège, telle qu'elle figure sur les
+    documents de votre contrat d'hébergement. La LCEN veut celle de
+    l'hébergeur EFFECTIF, et une adresse approximative dans des mentions
+    légales vaut moins que pas d'adresse du tout — elle donne l'apparence de la
+    conformité sans en avoir la substance.
+  */
+  address: null,
+  site: 'https://www.hostinger.fr',
+  contact: 'https://www.hostinger.fr/contact',
+};
 
 /**
  * Sous-traitants et destinataires réels des données.
@@ -98,20 +102,12 @@ export interface Processor {
 
 export const PROCESSORS: readonly Processor[] = [
   {
-    name: 'Vercel Inc.',
-    role: 'Hébergement du site et journaux techniques',
-    data: 'Adresse IP, date, page demandée, user-agent, dans les journaux de service',
-    location: 'États-Unis, avec clauses contractuelles types',
+    name: 'Hostinger International Ltd',
+    role: 'Hébergement du site, base de données, stockage des photos et envoi des courriels',
+    data: 'Adresse IP, date, page demandée, user-agent dans les journaux de service ; adresse e-mail, nom affiché, contributions et photos dans la base',
+    location: 'Union européenne',
     browserContact: true,
     scope: 'always',
-  },
-  {
-    name: 'Supabase',
-    role: 'Base de données des comptes, des avis et des prises ; envoi des liens de connexion ; stockage des photos',
-    data: 'Adresse e-mail, nom affiché, contenu des contributions, photos. Le navigateur dialogue directement avec ce service pour la connexion et l’envoi des photos.',
-    location: 'Région choisie à la création du projet — prendre une région de l’Union européenne',
-    browserContact: true,
-    scope: 'accounts',
   },
   {
     name: 'Stormglass AB',
@@ -161,12 +157,12 @@ export const CLIENT_STORAGE: readonly ClientStorageEntry[] = [
     scope: 'always',
   },
   {
-    key: 'sb-…-auth-token',
+    key: 'authjs.session-token',
     kind: 'cookie',
     purpose:
-      'Vous garder connecté d’une page à l’autre. Il est posé à la connexion et n’existe pas tant que vous ne vous connectez pas.',
+      'Vous garder connecté d’une page à l’autre. Il est posé à la connexion et n’existe pas tant que vous ne vous connectez pas. Il ne contient qu’un identifiant de session opaque : la session elle-même vit dans notre base, ce qui rend une déconnexion ou une suppression de compte immédiatement effective.',
     retention:
-      'Jusqu’à la déconnexion, ou son expiration. Se déconnecter le supprime immédiatement.',
+      'Trente jours, ou jusqu’à la déconnexion. Se déconnecter le supprime immédiatement.',
     // Dispensé de consentement, et ce n'est pas une facilité : un cookie
     // strictement nécessaire à un service EXPRESSÉMENT DEMANDÉ par
     // l'utilisateur — ici, rester connecté — est exempté par l'article 82 de la
@@ -203,19 +199,17 @@ export const CLIENT_STORAGE_WRITE_SITES: readonly StorageWriteSite[] = [
     entry: 'moonfish-theme',
     why: 'Mémorise le thème choisi.',
   },
-  {
-    file: 'src/middleware.ts',
-    writes: 2,
-    entry: 'sb-…-auth-token',
-    why: 'Renouvelle le cookie de session : une fois sur la requête, une fois sur la réponse.',
-  },
-  {
-    file: 'src/lib/supabase/server.ts',
-    writes: 1,
-    entry: 'sb-…-auth-token',
-    why: 'Tentative d’écriture depuis un composant serveur, sans effet : c’est le middleware qui pose le cookie.',
-  },
 ];
+
+/**
+ * Le cookie de session n'apparaît PAS dans la liste ci-dessus, et ce n'est pas
+ * un oubli : il est posé par la bibliothèque d'authentification, dans son
+ * propre code, pas dans le nôtre. Le balayage ne peut donc pas le voir.
+ *
+ * Il n'en est pas moins déclaré à l'utilisateur — c'est `CLIENT_STORAGE` qui
+ * fait foi pour la page, et le test vérifie seulement que rien de NOTRE code
+ * n'écrit dans le navigateur sans être annoncé.
+ */
 
 /** Dernière révision des deux pages légales. À dater à la main : une date automatique mentirait. */
 export const LEGAL_UPDATED = '2026-09-01';

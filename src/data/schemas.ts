@@ -185,6 +185,50 @@ export const spotReviewSchema = z.object({
 
 export type SpotReview = z.infer<typeof spotReviewSchema>;
 
+/**
+ * Un texte facultatif : absent, vide ou nul deviennent tous `null`.
+ *
+ * ═══ CES SCHÉMAS DOIVENT ÊTRE IDEMPOTENTS ═══
+ *
+ * Ils sont appliqués DEUX FOIS sur le même trajet : une première fois sur la
+ * saisie du formulaire, une seconde à l'entrée du dépôt, qui ne fait confiance
+ * à personne. Si la sortie du premier passage n'était pas une entrée valable
+ * pour le second, la seconde validation rejetterait ce que la première vient
+ * d'accepter.
+ *
+ * C'est exactement ce qui se produisait : le premier passage transformait un
+ * commentaire vide en `null`, et le second refusait `null` parce qu'il
+ * n'acceptait qu'une chaîne ou une absence. Résultat, tout avis SANS
+ * commentaire et toute prise SANS mesure étaient rejetés avec « saisie
+ * invalide » — un défaut que seul un test contre une vraie base pouvait
+ * révéler, et qui a survécu à toute la version PostgreSQL faute de pouvoir
+ * l'exécuter.
+ */
+const optionalText = (max: number, message: string) =>
+  z
+    .union([z.string(), z.null()])
+    .optional()
+    .transform((value) => (value === undefined || value === null ? null : value.trim()))
+    .refine((value) => value === null || value.length <= max, { message })
+    .transform((value) => (value === null || value.length === 0 ? null : value));
+
+/**
+ * Une taille facultative se saisit comme un champ vide, pas comme un zéro.
+ * `''` et `null` deviennent donc `null` AVANT la validation des bornes, sans
+ * quoi le formulaire refuserait une prise dont on n'a pas mesuré la longueur.
+ */
+const optionalMeasure = (max: number, message: string) =>
+  z
+    .union([z.literal(''), z.null(), z.coerce.number()])
+    .optional()
+    .transform((value) =>
+      value === '' || value === undefined || value === null ? null : Number(value),
+    )
+    .refine((value) => value === null || (Number.isFinite(value) && value >= 1 && value <= max), {
+      message,
+    })
+    .transform((value) => (value === null ? null : Math.round(value)));
+
 export const spotReviewInputSchema = z.object({
   spotSlug: z.string().min(1),
   rating: z.coerce
@@ -192,12 +236,7 @@ export const spotReviewInputSchema = z.object({
     .int()
     .min(1, 'La note va de 1 à 5.')
     .max(5, 'La note va de 1 à 5.'),
-  comment: z
-    .string()
-    .trim()
-    .max(1200, 'Commentaire trop long (1 200 caractères au maximum).')
-    .optional()
-    .transform((value) => (value === undefined || value.length === 0 ? null : value)),
+  comment: optionalText(1200, 'Commentaire trop long (1 200 caractères au maximum).'),
 });
 
 export type SpotReviewInput = z.infer<typeof spotReviewInputSchema>;
@@ -220,21 +259,6 @@ export const catchSchema = z.object({
 
 export type Catch = z.infer<typeof catchSchema>;
 
-/**
- * Une taille facultative se saisit comme un champ vide, pas comme un zéro.
- * `''` doit donc devenir `null` AVANT la validation des bornes, sans quoi le
- * formulaire refuserait une prise dont on n'a pas mesuré la longueur.
- */
-const optionalMeasure = (max: number, message: string) =>
-  z
-    .union([z.literal(''), z.coerce.number()])
-    .optional()
-    .transform((value) => (value === '' || value === undefined ? null : Number(value)))
-    .refine((value) => value === null || (Number.isFinite(value) && value >= 1 && value <= max), {
-      message,
-    })
-    .transform((value) => (value === null ? null : Math.round(value)));
-
 export const catchInputSchema = z.object({
   spotSlug: z.string().min(1),
   species: z
@@ -246,12 +270,7 @@ export const catchInputSchema = z.object({
   weightG: optionalMeasure(200_000, 'Poids invalide (1 g à 200 kg).'),
   released: z.coerce.boolean().default(false),
   caughtAt: isoDateTime,
-  note: z
-    .string()
-    .trim()
-    .max(600, 'Note trop longue (600 caractères au maximum).')
-    .optional()
-    .transform((value) => (value === undefined || value.length === 0 ? null : value)),
+  note: optionalText(600, 'Note trop longue (600 caractères au maximum).'),
   photoPath: z.string().max(300).nullable().optional().default(null),
 });
 

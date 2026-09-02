@@ -166,10 +166,17 @@ export interface ContributionsRepository {
   renameProfile(userId: string, displayName: string): Promise<ContributionResult<Profile>>;
 
   saveReview(input: SpotReviewInput, author: Author): Promise<ContributionResult<SpotReview>>;
-  deleteReview(reviewId: string): Promise<ContributionResult<null>>;
-
   addCatch(input: CatchInput, author: Author): Promise<ContributionResult<Catch>>;
-  deleteCatch(catchId: string): Promise<ContributionResult<null>>;
+
+  /*
+    Les suppressions exigent l'identifiant du PROPRIÉTAIRE, et ce n'est pas une
+    commodité : c'est ce qui remplace la politique que PostgreSQL appliquait
+    lui-même. MySQL ne connaît pas la sécurité au niveau des lignes ; la
+    signature force donc l'appelant à dire au nom de qui il agit, et le
+    compilateur refuse l'appel sans propriétaire.
+  */
+  deleteReview(reviewId: string, userId: string): Promise<ContributionResult<null>>;
+  deleteCatch(catchId: string, userId: string): Promise<ContributionResult<null>>;
 
   /** Droit d'accès et de portabilité : tout ce que nous détenons, en une fois. */
   exportAccount(userId: string, email: string | null): Promise<ContributionResult<AccountExport>>;

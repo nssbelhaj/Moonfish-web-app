@@ -5,7 +5,7 @@ import type { SpotRepository } from '../types';
 /**
  * Catalogue de spots en mémoire.
  *
- * ➜ POUR BRANCHER SUPABASE : créer `src/lib/providers/supabase/spots.ts`
+ * ➜ POUR PASSER EN BASE : créer `src/lib/providers/mysql/spots.ts`
  *   exposant le même `SpotRepository` (`select * from spots`, filtre sur
  *   `slug` / `country_slug` / `region_slug`), puis changer la ligne `spots:`
  *   de `src/lib/providers/index.ts`. Les pages n'ont aucune connaissance de

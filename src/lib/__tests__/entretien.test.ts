@@ -6,16 +6,15 @@ import { describe, expect, it } from 'vitest';
  * La tâche planifiée et la route qu'elle appelle doivent rester d'accord.
  *
  * C'est une paire fragile par nature : deux fichiers sans lien de compilation,
- * dont l'un peut être renommé sans que rien n'échoue — jusqu'au jour où le
- * projet Supabase se met en pause faute d'activité, une semaine plus tard, et
- * où personne ne fait le rapprochement.
+ * dont l'un peut être renommé sans que rien n'échoue — jusqu'au jour où l'on
+ * s'aperçoit que les sessions périmées s'accumulent depuis des mois.
  */
 const ROOT = process.cwd();
 const VERCEL = JSON.parse(readFileSync(path.join(ROOT, 'vercel.json'), 'utf8')) as {
   crons?: { path: string; schedule: string }[];
 };
 
-describe('maintien en éveil du projet Supabase', () => {
+describe('entretien quotidien de la base', () => {
   it('déclare une tâche planifiée vers une route qui existe', () => {
     const crons = VERCEL.crons ?? [];
     expect(crons.length).toBeGreaterThan(0);
@@ -37,14 +36,14 @@ describe('maintien en éveil du projet Supabase', () => {
     }
   });
 
-  it('n’interroge que des tables publiques', () => {
+  it('ne touche qu’à ce qui est expiré, et à rien d’autre', () => {
     // Ce point d'accès peut être appelé sans session. Il ne doit donc jamais
-    // toucher aux profils ni à la liste d'attente, quand bien même la sécurité
-    // au niveau des lignes le lui refuserait.
-    const source = readFileSync(path.join(ROOT, 'src/app/api/keep-alive/route.ts'), 'utf8');
-    for (const table of ['profiles', 'waitlist']) {
-      expect(source, `table non publique interrogée : ${table}`).not.toContain(`from('${table}')`);
+    // toucher aux profils, aux avis, aux prises ni à la liste d'attente — la
+    // purge se limite aux sessions et aux jetons dont la date est passée.
+    const source = readFileSync(path.join(ROOT, 'src/app/api/entretien/route.ts'), 'utf8');
+    for (const table of ['profiles', 'waitlist', 'catches', 'spot_reviews']) {
+      expect(source, `table hors périmètre citée : ${table}`).not.toContain(table);
     }
-    expect(source).toContain('supabasePublic');
+    expect(source).toContain('purgeExpired');
   });
 });

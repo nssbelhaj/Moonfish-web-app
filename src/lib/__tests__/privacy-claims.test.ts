@@ -155,13 +155,19 @@ describe('« aucune requête vers un tiers depuis votre navigateur »', () => {
   it('n’annonce comme joignables par le navigateur que les tiers qui le sont', () => {
     // Les fournisseurs de données sont appelés depuis le serveur. Si l'un d'eux
     // passait côté client, sa ligne devrait changer sur la page AVANT le code.
-    // Les fournisseurs de données sont appelés depuis le serveur ; l'hébergeur
-    // et la base, eux, sont bien joints par le navigateur. Si l'un des premiers
-    // passait côté client, sa ligne devrait changer sur la page AVANT le code.
+    /*
+      Les fournisseurs de données — marée, météo — sont appelés depuis le
+      SERVEUR : ni Stormglass ni Open-Meteo ne voient l'adresse IP du visiteur,
+      et ne peuvent donc pas savoir quel spot il consulte.
+
+      Depuis le passage à MySQL, l'hébergeur est le SEUL tiers que le navigateur
+      joigne — la base, les photos et les courriels sont chez lui, et tout passe
+      par notre domaine. Si un fournisseur de données basculait côté client, sa
+      ligne devrait changer sur la page AVANT le code.
+    */
     const browserFacing = PROCESSORS.filter((processor) => processor.browserContact);
     expect(browserFacing.map((processor) => processor.name)).toStrictEqual([
-      'Vercel Inc.',
-      'Supabase',
+      'Hostinger International Ltd',
     ]);
   });
 });

@@ -1,14 +1,22 @@
-import { SUPABASE_CONFIG } from '@/lib/supabase/config';
-import { PHOTO_BUCKET } from '@/lib/supabase/database.types';
-
 /**
- * URL publique d'une photo de prise.
+ * URL d'affichage d'une photo de prise.
  *
- * Construite ici plutôt que stockée en base : une URL enregistrée fige le
- * domaine du projet, et une restauration ailleurs rendrait toutes les photos
- * introuvables. La base ne garde que le chemin, qui, lui, ne dépend de rien.
+ * La base ne stocke qu'un CHEMIN relatif, jamais une URL : une URL enregistrée
+ * figerait le domaine, et une restauration ailleurs rendrait toutes les photos
+ * introuvables. Le chemin, lui, ne dépend de rien.
+ *
+ * Les segments sont encodés : un chemin venu de la base n'est pas digne de
+ * confiance, et il ne doit pas pouvoir sortir de `/api/photos/` en glissant un
+ * `?` ou un `#` dans une URL.
  */
 export function photoUrl(path: string | null): string | null {
-  if (path === null || SUPABASE_CONFIG === null) return null;
-  return `${SUPABASE_CONFIG.url}/storage/v1/object/public/${PHOTO_BUCKET}/${path}`;
+  if (path === null || path.length === 0) return null;
+
+  const segments = path
+    .split('/')
+    .filter((segment) => segment.length > 0 && segment !== '.' && segment !== '..');
+
+  if (segments.length === 0) return null;
+
+  return `/api/photos/${segments.map(encodeURIComponent).join('/')}`;
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { contributions } from '@/lib/providers';
-import { currentUser } from '@/lib/supabase/server';
+import { currentUser } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
 

@@ -5,38 +5,25 @@ import { useEffect, useState } from 'react';
 
 import { CatchForm } from '@/components/contributions/CatchForm';
 import { ReviewForm } from '@/components/contributions/ReviewForm';
-import { supabaseBrowser } from '@/lib/supabase/browser';
+
 
 interface OwnReview {
   rating: number;
   comment: string | null;
 }
 
+interface AccountState {
+  signedIn: boolean;
+  hasProfile?: boolean;
+  ownReview?: OwnReview | null;
+}
+
 type Session =
   | { kind: 'loading' }
   | { kind: 'signed-out' }
   | { kind: 'no-profile' }
-  | { kind: 'ready'; userId: string; ownReview: OwnReview | null };
+  | { kind: 'ready'; ownReview: OwnReview | null };
 
-/**
- * Zone de contribution, résolue DANS LE NAVIGATEUR.
- *
- * Pourquoi côté client alors que tout le reste du site est rendu au serveur :
- * lire la session sur le serveur veut dire lire les cookies, et lire les
- * cookies bascule la route entière en rendu dynamique. La page des espèces —
- * qui est d'abord du contenu éditorial identique pour tout le monde — aurait
- * alors perdu son pré-rendu et son cache d'une heure, pour un encadré de
- * formulaire.
- *
- * Le compromis est explicite : cet encadré apparaît après l'hydratation, une
- * fraction de seconde plus tard que le reste. Les listes d'avis et de prises,
- * elles, sont bien rendues au serveur — ce sont elles qui doivent être lisibles
- * sans JavaScript et indexables.
- *
- * Rien de sensible ne dépend de cette lecture : la session est REVÉRIFIÉE au
- * serveur à chaque écriture, et la base refuserait de toute façon une écriture
- * au nom d'autrui.
- */
 export function ContributePanel({
   spotSlug,
   spotPath,
@@ -49,45 +36,36 @@ export function ContributePanel({
   const [session, setSession] = useState<Session>({ kind: 'loading' });
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
 
     async function resolve(): Promise<void> {
-      const client = supabaseBrowser();
-      if (!client) return setSession({ kind: 'signed-out' });
+      try {
+        const response = await fetch(`/api/compte/etat?spot=${encodeURIComponent(spotSlug)}`, {
+          signal: controller.signal,
+          // Une réponse de session ne se met JAMAIS en cache : le navigateur
+          // servirait l'état d'une autre personne sur un appareil partagé.
+          cache: 'no-store',
+        });
 
-      const { data, error } = await client.auth.getUser();
-      if (cancelled) return;
-      if (error || !data.user) return setSession({ kind: 'signed-out' });
+        if (!response.ok) return setSession({ kind: 'signed-out' });
 
-      // La politique RLS n'autorise la lecture que de SON propre profil : cette
-      // requête ne peut rien apprendre sur les autres comptes.
-      const [{ data: profile }, { data: review }] = await Promise.all([
-        client.from('profiles').select('id').eq('id', data.user.id).maybeSingle(),
-        client
-          .from('spot_reviews')
-          .select('rating, comment')
-          .eq('spot_slug', spotSlug)
-          .eq('user_id', data.user.id)
-          .maybeSingle(),
-      ]);
+        const state = (await response.json()) as AccountState;
+        if (!state.signedIn) return setSession({ kind: 'signed-out' });
+        if (!state.hasProfile) return setSession({ kind: 'no-profile' });
 
-      if (cancelled) return;
-      if (!profile) return setSession({ kind: 'no-profile' });
-
-      // Le formulaire est PRÉ-REMPLI avec l'avis existant : un pêcheur qui
-      // revient doit voir ce qu'il avait écrit, pas un champ vide qui donnerait
-      // l'impression que son avis a disparu.
-      setSession({
-        kind: 'ready',
-        userId: data.user.id,
-        ownReview: review ? { rating: review.rating, comment: review.comment } : null,
-      });
+        // Le formulaire est PRÉ-REMPLI avec l'avis existant : un pêcheur qui
+        // revient doit voir ce qu'il avait écrit, pas un champ vide qui
+        // donnerait l'impression que son avis a disparu.
+        setSession({ kind: 'ready', ownReview: state.ownReview ?? null });
+      } catch {
+        // Requête annulée ou réseau absent : on retombe sur l'état non
+        // connecté, qui propose simplement le lien de connexion.
+        if (!controller.signal.aborted) setSession({ kind: 'signed-out' });
+      }
     }
 
     void resolve();
-    return () => {
-      cancelled = true;
-    };
+    return () => controller.abort();
   }, [spotSlug]);
 
   if (session.kind === 'loading') return null;
@@ -146,7 +124,6 @@ export function ContributePanel({
           <CatchForm
             spotSlug={spotSlug}
             spotPath={spotPath}
-            userId={session.userId}
             speciesSuggestions={speciesSuggestions}
           />
         </div>

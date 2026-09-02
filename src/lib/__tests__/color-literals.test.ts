@@ -16,6 +16,10 @@ const ALLOWED = new Set([
   'src/lib/og-palette.ts',
   'src/lib/contrast.ts',
   'src/lib/theme.ts',
+  // Un courriel n'a pas de variables CSS : les clients de messagerie ne les
+  // appliquent pas, et beaucoup n'acceptent que le style en ligne. Le gabarit
+  // reprend les tokens du thème clair, écrits en clair faute d'alternative.
+  'src/lib/auth/email-template.ts',
 ]);
 
 /** Les tests de palette manipulent forcément des littéraux. */

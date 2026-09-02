@@ -1,5 +1,7 @@
+import type { CatchInput, SpotReviewInput } from '@/data/schemas';
 import type {
   AccountExport,
+  Author,
   ContributionResult,
   ContributionsRepository,
   SpotContributions,
@@ -48,35 +50,35 @@ export class ClosedContributionsRepository implements ContributionsRepository {
     return null;
   }
 
-  async createProfile(): Promise<ContributionResult<never>> {
+  async createProfile(_userId: string, _displayName: string): Promise<ContributionResult<never>> {
     return closed();
   }
 
-  async renameProfile(): Promise<ContributionResult<never>> {
+  async renameProfile(_userId: string, _displayName: string): Promise<ContributionResult<never>> {
     return closed();
   }
 
-  async saveReview(): Promise<ContributionResult<never>> {
+  async saveReview(_input: SpotReviewInput, _author: Author): Promise<ContributionResult<never>> {
     return closed();
   }
 
-  async deleteReview(): Promise<ContributionResult<null>> {
+  async deleteReview(_reviewId: string, _userId: string): Promise<ContributionResult<null>> {
     return closed();
   }
 
-  async addCatch(): Promise<ContributionResult<never>> {
+  async addCatch(_input: CatchInput, _author: Author): Promise<ContributionResult<never>> {
     return closed();
   }
 
-  async deleteCatch(): Promise<ContributionResult<null>> {
+  async deleteCatch(_catchId: string, _userId: string): Promise<ContributionResult<null>> {
     return closed();
   }
 
-  async exportAccount(): Promise<ContributionResult<AccountExport>> {
+  async exportAccount(_userId: string, _email: string | null): Promise<ContributionResult<AccountExport>> {
     return closed();
   }
 
-  async deleteAccount(): Promise<ContributionResult<null>> {
+  async deleteAccount(_userId: string): Promise<ContributionResult<null>> {
     return closed();
   }
 }
