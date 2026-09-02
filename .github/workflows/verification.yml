@@ -71,6 +71,12 @@ jobs:
           echo "$sortie"
           echo "$sortie" | grep -q 'schéma déjà à jour'
 
+      - name: Le fichier d'import manuel suit les migrations
+        # Il inscrit des empreintes. Périmées, elles arrêteraient le PROCHAIN
+        # déploiement sur « a CHANGÉ depuis son application » — un refus juste
+        # déclenché par une cause fausse, au pire moment.
+        run: node scripts/generer-import-sql.mjs --verifier
+
       - name: Tests, base comprise
         run: npm run test
 

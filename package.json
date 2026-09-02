@@ -15,7 +15,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "migrate": "node scripts/migrer-mysql.mjs"
+    "migrate": "node scripts/migrer-mysql.mjs",
+    "import-sql": "node scripts/generer-import-sql.mjs"
   },
   "dependencies": {
     "mysql2": "^3.24.3",

@@ -50,6 +50,7 @@ Node 20 ou plus. Aucune variable d'environnement n'est requise pour démarrer.
 | --- | --- |
 | `npm run dev` | Serveur de développement |
 | `npm run migrate` | Applique les migrations non encore passées à la base configurée |
+| `npm run import-sql` | Régénère `db/import-manuel.sql` — le schéma en un fichier, pour phpMyAdmin |
 | `node scripts/verifier-exif.mjs` | Prouve le retrait des métadonnées d'une photo, dans Chromium |
 | `npm run build` | Build de production — 77 pages pré-rendues |
 | `npm start` | Sert le build de production — `prestart` migre la base avant, tout seul |

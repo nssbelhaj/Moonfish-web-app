@@ -61,13 +61,13 @@ export function missingPublisherFields(): readonly string[] {
 export const HOST: { name: string; address: string | null; site: string; contact: string } = {
   name: 'Hostinger International Ltd',
   /*
-    À COMPLÉTER : l'adresse exacte du siège, telle qu'elle figure sur les
-    documents de votre contrat d'hébergement. La LCEN veut celle de
-    l'hébergeur EFFECTIF, et une adresse approximative dans des mentions
-    légales vaut moins que pas d'adresse du tout — elle donne l'apparence de la
-    conformité sans en avoir la substance.
+    Siège social publié par Hostinger. À RECOUPER avec vos factures : c'est
+    l'adresse de l'hébergeur EFFECTIF que la LCEN demande, et l'entité qui
+    facture peut différer selon le pays de souscription. Une adresse
+    approximative vaut moins que pas d'adresse du tout — elle donne
+    l'apparence de la conformité sans en avoir la substance.
   */
-  address: null,
+  address: '61 Lordou Vironos Street, 6023 Larnaca, Chypre',
   site: 'https://www.hostinger.fr',
   contact: 'https://www.hostinger.fr/contact',
 };

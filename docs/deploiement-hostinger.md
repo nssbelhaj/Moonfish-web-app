@@ -99,6 +99,26 @@ Pour l'appliquer manuellement depuis un poste ayant accès à la base :
 `npm run migrate`. Là, une base injoignable est une erreur : on a demandé une
 migration.
 
+### Si vous préférez importer le schéma à la main
+
+`db/import-manuel.sql` contient tout en un seul fichier :
+**phpMyAdmin → votre base → Importer → Exécuter**. Choisissez la base AVANT :
+le fichier n'en crée ni n'en sélectionne aucune, exprès — sur un hébergement
+mutualisé, son nom est imposé par le panneau.
+
+Ce n'est **pas nécessaire** : `prestart` fait la même chose tout seul. C'est un
+recours pour le cas où vous n'auriez pas de terminal.
+
+Sa dernière section inscrit chaque migration comme déjà appliquée, avec son
+empreinte. Sans elle, le premier démarrage les rejouerait toutes. Le fichier
+est donc **généré** (`npm run import-sql`) et jamais écrit à la main : une
+empreinte recopiée vieillit en silence, et périmée elle arrêterait le
+déploiement suivant sur « a CHANGÉ depuis son application » — un refus juste
+pour une cause fausse. L'intégration continue échoue si le fichier a vieilli.
+
+Le réimporter est sans danger : tout est en `create table if not exists`, et
+l'inscription est en `insert ignore`.
+
 ## 5. Après le premier déploiement
 
 À vérifier dans l'ordre, parce que chacun de ces points échoue silencieusement :
