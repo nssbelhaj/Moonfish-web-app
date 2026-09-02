@@ -48,7 +48,7 @@ rien à adapter dans le dépôt. Vérifié.
 
 | Variable | Obligatoire ici | Pourquoi |
 | --- | --- | --- |
-| `NEXT_PUBLIC_SITE_URL` | **oui** | Sur Vercel, le domaine est injecté automatiquement. Ailleurs, non : sans cette variable, les URL canoniques, le sitemap et les aperçus de partage pointent vers le domaine de repli `moonfish.fish`. C'est l'oubli le plus coûteux de cette liste, et il ne casse rien de visible. |
+| `NEXT_PUBLIC_SITE_URL` | **oui** | Sur Vercel, le domaine est injecté automatiquement. Ailleurs, non : sans cette variable, les URL canoniques, le sitemap et les aperçus de partage pointent vers le domaine de repli `moonfish.fish`. C'est l'oubli le plus coûteux de cette liste, et il ne casse rien de visible — constaté sur le premier déploiement, site en HTTP 200 et sitemap entièrement faux. **Elle est insérée à la COMPILATION : la définir ne suffit pas, il faut redéployer.** Le site l'annonce au démarrage. |
 | `STORMGLASS_API_KEY` | non | Sans elle, les marées restent simulées et le site le dit. |
 | `TIDE_REAL_SPOTS` | non | Borne la dépense de quota. Voir le README. |
 | `DATABASE_URL` | non | Ouvre les comptes, avec l'envoi de courriel. Absente, le site fonctionne et annonce qu'ils sont fermés. |

@@ -53,6 +53,47 @@ export const SITE_URL = normalizeSiteUrl(
     process.env.VERCEL_URL,
 );
 
+/**
+ * Le repli a-t-il été utilisé faute de configuration ?
+ *
+ * ─── Pourquoi cet avertissement a dû exister ──────────────────────────────
+ *
+ * C'est la panne la plus coûteuse de la liste, et la seule qui ne se voie pas
+ * en visitant le site : sans `NEXT_PUBLIC_SITE_URL`, tout fonctionne, tout
+ * s'affiche, et le sitemap, les URL canoniques et les aperçus de partage
+ * désignent `moonfish.fish` — un domaine qui n'est pas le vôtre. Les moteurs
+ * indexent l'autre adresse, les liens partagés pointent ailleurs, et rien
+ * dans l'interface ne le laisse deviner.
+ *
+ * Constaté en conditions réelles sur le premier déploiement : site en HTTP
+ * 200, sitemap entièrement faux.
+ *
+ * ─── Le piège dans le piège ───────────────────────────────────────────────
+ *
+ * Les variables `NEXT_PUBLIC_*` sont INSÉRÉES DANS LE CODE À LA COMPILATION.
+ * Les définir dans le panneau puis redémarrer ne change rien : il faut
+ * RECONSTRUIRE. C'est la partie que personne ne devine, et le message le dit.
+ */
+export function siteUrlWarning(): string | null {
+  if (process.env.NODE_ENV !== 'production') return null;
+  if (SITE_URL !== FALLBACK_SITE_URL) return null;
+
+  /*
+    Un domaine de repli délibérément choisi comme valeur reste légitime : on
+    ne signale que l'absence de configuration, pas le fait de viser ce
+    domaine-là.
+  */
+  const configured = (process.env.NEXT_PUBLIC_SITE_URL ?? '').trim();
+  if (normalizeSiteUrl(configured) === FALLBACK_SITE_URL && configured.length > 0) return null;
+
+  return (
+    `NEXT_PUBLIC_SITE_URL n’est pas définie : le sitemap, les URL canoniques et ` +
+    `les aperçus de partage annoncent ${FALLBACK_SITE_URL}, qui n’est probablement ` +
+    'pas votre domaine. Le site fonctionne, mais il se désigne sous une autre adresse. ' +
+    'Cette variable est insérée À LA COMPILATION : la définir ne suffit pas, il faut RECONSTRUIRE.'
+  );
+}
+
 export function absoluteUrl(path: string): string {
   return `${SITE_URL}${path.startsWith('/') ? path : `/${path}`}`;
 }

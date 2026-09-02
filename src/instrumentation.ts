@@ -31,12 +31,13 @@ export async function register(): Promise<void> {
   // à ces modules, et y importer `node:path` casserait la compilation.
   if (process.env.NEXT_RUNTIME !== 'nodejs') return;
 
-  const [{ smtpWarning }, { storageWarning }] = await Promise.all([
+  const [{ smtpWarning }, { storageWarning }, { siteUrlWarning }] = await Promise.all([
     import('@/lib/auth/config'),
     import('@/lib/photo/storage'),
+    import('@/lib/routes'),
   ]);
 
-  const avertissements = [smtpWarning(), storageWarning()].filter(
+  const avertissements = [siteUrlWarning(), smtpWarning(), storageWarning()].filter(
     (message): message is string => message !== null,
   );
 

@@ -44,3 +44,36 @@ describe('normalizeSiteUrl', () => {
     }
   });
 });
+
+/*
+  ────────────────────────────────────────────────────────────────────────────
+   Le repli est utile — il empêche le build d'échouer sur une valeur illisible.
+   Mais utilisé faute de configuration, il produit un site en parfait état de
+   marche qui se désigne sous une adresse qui n'est pas la sienne : sitemap,
+   canonicals et aperçus de partage renvoient au domaine par défaut.
+
+   Constaté sur un déploiement réel — HTTP 200, sitemap entièrement faux.
+   D'où le fait que `normalizeSiteUrl` DOIT distinguer « rien de fourni » de
+   « valeur fournie », même quand les deux mènent au même repli.
+  ────────────────────────────────────────────────────────────────────────────
+*/
+describe('le repli sur le domaine par défaut est repérable', () => {
+  it.each([undefined, null, '', '   '])(
+    'une valeur vide (%p) mène au domaine de repli',
+    (valeur) => {
+      expect(normalizeSiteUrl(valeur)).toBe('https://moonfish.fish');
+    },
+  );
+
+  it('un domaine fourni est respecté, protocole ou non', () => {
+    for (const saisie of ['https://moonfish.nssbelhaj.com', 'moonfish.nssbelhaj.com']) {
+      expect(normalizeSiteUrl(saisie)).toBe('https://moonfish.nssbelhaj.com');
+    }
+  });
+
+  it('la barre finale est retirée : elle doublerait les séparateurs', () => {
+    expect(normalizeSiteUrl('https://moonfish.nssbelhaj.com/')).toBe(
+      'https://moonfish.nssbelhaj.com',
+    );
+  });
+});
