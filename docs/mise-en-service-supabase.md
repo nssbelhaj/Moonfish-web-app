@@ -30,6 +30,35 @@ tâche planifiée `/api/keep-alive` ne le relancent. Seul un clic depuis le
 tableau de bord le fait. La tâche planifiée sert à *empêcher* la pause, jamais
 à en sortir.
 
+### Si vos deux projets sont occupés
+
+La rotation suppose de pouvoir endormir un projet. Quand les deux servent
+réellement, il reste une voie qui ne coûte rien et ne casse rien : **loger
+Moonfish dans un schéma dédié d'un projet existant**.
+
+Ce n'est pas une modification de ce qui tourne. Un `create schema moonfish` et
+nos quatre tables dedans : aucune table existante n'est touchée, aucune
+politique changée, aucune migration jouée sur les données en place. Purement
+additif, et réversible en une commande.
+
+Ce qui serait réellement **partagé**, et qu'il faut accepter les yeux ouverts :
+
+| Partagé | Conséquence concrète |
+| --- | --- |
+| `auth.users` | Le vivier de comptes est commun au projet. Une personne inscrite sur l'autre application pourrait se connecter à Moonfish avec la même adresse, et réciproquement. Les données, elles, restent cloisonnées par les politiques. |
+| Les gabarits d'e-mail | Ils sont définis par projet. Le lien de connexion de Moonfish partirait avec l'identité configurée pour l'autre application, sauf à rendre le gabarit neutre pour les deux. |
+| Les quotas | 500 Mo de base et le stockage, partagés entre toutes les applications du projet. |
+
+Le premier point est le seul qui mérite réflexion. Il n'ouvre aucune faille —
+la sécurité au niveau des lignes ne connaît que `auth.uid()` — mais il crée un
+lien entre deux produits qui n'ont rien à voir. À trancher avant, pas après :
+séparer des comptes déjà mélangés est autrement plus pénible que de les séparer
+d'emblée.
+
+Le code n'a pas besoin d'être réécrit pour cela : il faut rendre le schéma
+configurable, ce qui représente une petite heure de travail. Demandez-le et je
+le fais.
+
 ---
 
 ## 1. Créer le projet

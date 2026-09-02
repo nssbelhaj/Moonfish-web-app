@@ -779,6 +779,16 @@ de clé. Sur Vercel : importer le dépôt et déployer. **Aucune variable
 d'environnement n'est requise** — sans `NEXT_PUBLIC_SITE_URL`, les URL
 canoniques sont déduites du domaine que Vercel injecte lui-même.
 
+Ailleurs que sur Vercel, cette déduction n'existe pas : `NEXT_PUBLIC_SITE_URL`
+devient obligatoire, sans quoi le sitemap et les balises de partage désignent le
+domaine de repli. Le pas-à-pas pour Hostinger — création de la Web App, variables,
+tâche planifiée, contrôles après mise en ligne — est dans
+**`docs/deploiement-hostinger.md`**, qui compare aussi les deux hébergements.
+
+Un point à connaître : le plan **Hobby de Vercel interdit l'usage commercial**.
+Publicité ou paiement imposent le plan Pro. Moonfish n'a ni l'un ni l'autre, et
+les dons ne comptent pas, mais la question se posera le jour de la monétisation.
+
 Node 20.9 ou plus est exigé via `engines`. Un projet Vercel resté sur Node 18
 échoue avant même la compilation ; ce champ force le bon choix.
 
