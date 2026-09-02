@@ -43,26 +43,13 @@ export const PUBLISHER: PublisherIdentity = {
   */
   legalForm: null,
   /*
-    ⚠️ SEULE MENTION OBLIGATOIRE ENCORE MANQUANTE.
+    VOLONTAIREMENT ABSENTE, sous le régime de l'article 6-III-2 de la LCEN.
 
-    La LCEN (art. 6-III-1) impose l'adresse postale de l'éditeur. Mais son
-    alinéa 2 ouvre une porte à qui édite à titre NON PROFESSIONNEL : ne
-    publier que le nom de l'hébergeur, à condition d'avoir communiqué son
-    identité à celui-ci — ce qui est le cas, Hostinger la détient par le
-    contrat. C'est le régime prévu pour ne pas obliger un particulier à
-    afficher son domicile.
+    Ce n'est pas un champ oublié : la dispense est explicitement revendiquée
+    sur la page, qui nomme l'hébergeur détenteur de l'identité. Sans cette
+    mention, l'absence d'adresse ne serait pas une dispense mais une omission.
 
-    Deux voies, donc, et le choix vous appartient :
-
-      · publier l'adresse — obligatoire dès que le site devient
-        professionnel, c'est-à-dire dès la première recette : publicité,
-        paiement, partenariat rémunéré. Les dons n'y suffisent pas ;
-      · rester sur le régime non professionnel — alors ce champ demeure
-        `null`, et il faut RETIRER `address` de REQUIRED_FIELDS pour que le
-        bandeau cesse, sans quoi la page continuera de s'annoncer incomplète.
-
-    Tant que rien n'est décidé, le champ reste `null` et la page le dit. Une
-    adresse inventée serait pire que l'absence.
+    À RENSEIGNER le jour où `PUBLICATION_REGIME` repasse à `professionnel`.
   */
   address: null,
   email: 'contact@nssbelhaj.com',
@@ -114,14 +101,22 @@ export const HOST: { name: string; address: string | null; site: string; contact
  * seulement un affichage : il change la liste des mentions obligatoires, donc
  * ce que le bandeau d'incomplétude réclame.
  *
- * ⚠️ `professionnel` est la valeur par défaut, et c'est délibéré. Se déclarer
- * non professionnel à tort est une infraction ; publier une adresse alors
- * qu'on aurait pu s'en dispenser n'en est pas une. Entre les deux erreurs,
- * seule la première coûte quelque chose.
+ * ⚠️ CE RÉGLAGE SE PÉRIME. Il est juste tant que le site ne rapporte rien, et
+ * il devient FAUX le jour où il rapporte : publicité, paiement, affiliation,
+ * partenariat rémunéré. Se déclarer non professionnel à tort est une
+ * infraction ; publier une adresse dont on aurait pu se dispenser n'en est pas
+ * une. C'est pourquoi `regime-publication.test.ts` échoue si une dépendance de
+ * paiement ou de régie publicitaire apparaît alors que ce réglage vaut encore
+ * `non-professionnel` : la bascule ne doit pas dépendre du souvenir qu'on en a.
  */
 export type PublicationRegime = 'professionnel' | 'non-professionnel';
 
-export const PUBLICATION_REGIME: PublicationRegime = 'professionnel';
+/*
+  Choisi par l'éditeur le 2 septembre 2026 : Moonfish n'affiche ni publicité ni
+  paiement, et les dons — qu'il n'accepte pas non plus aujourd'hui — ne
+  suffiraient pas à faire basculer le régime.
+*/
+export const PUBLICATION_REGIME: PublicationRegime = 'non-professionnel';
 
 /**
  * Les champs sans lesquels les mentions légales ne sont pas valables.

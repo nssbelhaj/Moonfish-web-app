@@ -69,3 +69,56 @@ describe('la page suit la donnée', () => {
     }
   });
 });
+
+/*
+  ────────────────────────────────────────────────────────────────────────────
+   Le régime non professionnel se PÉRIME, et c'est son danger.
+
+   Il est juste tant que le site ne rapporte rien. Il devient faux — et se
+   déclarer ainsi devient une infraction — le jour où une régie publicitaire
+   ou un encaissement apparaît. Or ce jour-là, personne ne pense aux mentions
+   légales : on pense à faire marcher le paiement.
+
+   Ce test attache donc la bascule à un fait vérifiable plutôt qu'au souvenir
+   qu'on en a. Il ne prétend pas détecter toute forme de recette : un lien
+   d'affiliation écrit à la main lui échappe. Il attrape ce qui laisse une
+   trace dans les dépendances, c'est-à-dire l'écrasante majorité des cas.
+  ────────────────────────────────────────────────────────────────────────────
+*/
+describe('le régime non professionnel ne survit pas à une monétisation', () => {
+  /** Bibliothèques dont la seule raison d'être est d'encaisser ou d'afficher de la publicité. */
+  const MONETISATION = [
+    'stripe',
+    'paypal',
+    'braintree',
+    'lemonsqueezy',
+    'paddle',
+    'adsense',
+    'google-adsense',
+    'react-adsense',
+    'gpt-ads',
+    'prebid',
+    'sumup',
+    'mollie',
+    'revolut',
+  ];
+
+  it('aucune dépendance de paiement ou de régie tant que le régime l’exclut', () => {
+    if (PUBLICATION_REGIME !== 'non-professionnel') return;
+
+    const pkg: { dependencies?: Record<string, string>; devDependencies?: Record<string, string> } =
+      JSON.parse(readFileSync('package.json', 'utf8'));
+
+    const installees = Object.keys({ ...pkg.dependencies, ...pkg.devDependencies });
+    const trouvees = installees.filter((nom) =>
+      MONETISATION.some((marqueur) => nom.toLowerCase().includes(marqueur)),
+    );
+
+    expect(
+      trouvees,
+      `« ${trouvees.join(', ')} » indique une recette. Le site n’est alors plus édité à ` +
+        'titre non professionnel : passez PUBLICATION_REGIME à « professionnel » et ' +
+        'renseignez PUBLISHER.address, que la LCEN redevient en droit d’exiger.',
+    ).toStrictEqual([]);
+  });
+});

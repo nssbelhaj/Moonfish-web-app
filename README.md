@@ -56,7 +56,7 @@ Node 20 ou plus. Aucune variable d'environnement n'est requise pour démarrer.
 | `npm start` | Sert le build de production — `prestart` migre la base avant, tout seul |
 | `npm run typecheck` | `tsc --noEmit` en mode strict renforcé |
 | `npm run lint` | ESLint (config `next/core-web-vitals` + `next/typescript`) |
-| `npm test` | 459 tests (Vitest). 442 hermétiques — aucun accès réseau ; les 17 d'intégration de la couche de données sont ignorés sans `DATABASE_URL`, et exécutés en intégration continue contre un vrai MySQL |
+| `npm test` | 460 tests (Vitest). 443 hermétiques — aucun accès réseau ; les 17 d'intégration de la couche de données sont ignorés sans `DATABASE_URL`, et exécutés en intégration continue contre un vrai MySQL |
 | `npm run test:watch` | Tests en mode surveillance |
 
 ---
@@ -814,13 +814,20 @@ L'article 6-III de la LCEN ne demande pas la même chose selon qui édite, et
 
 | Régime | Adresse | Quand il s'applique |
 | --- | --- | --- |
-| `professionnel` (défaut) | **publiée** | dès qu'il y a une recette : publicité, paiement, partenariat rémunéré. Les dons ne comptent pas. |
-| `non-professionnel` | **dispensée** | un particulier peut ne publier que le nom de l'hébergeur, à condition que celui-ci détienne son identité — ce qu'un contrat d'hébergement suffit à établir. |
+| `professionnel` | **publiée** | dès qu'il y a une recette : publicité, paiement, partenariat rémunéré. Les dons ne comptent pas. |
+| `non-professionnel` **← actif** | **dispensée** | un particulier peut ne publier que le nom de l'hébergeur, à condition que celui-ci détienne son identité — ce qu'un contrat d'hébergement suffit à établir. |
 
-Le défaut est `professionnel`, et c'est délibéré : se déclarer non
-professionnel à tort est une infraction, publier une adresse dont on aurait pu
-se dispenser n'en est pas une. Entre les deux erreurs, une seule coûte quelque
-chose.
+Moonfish est sur le second : il n'affiche ni publicité ni paiement.
+
+**Ce réglage se périme, et c'est son danger.** Il devient faux — et s'en
+prévaloir devient une infraction — le jour où le site encaisse quoi que ce
+soit. Or ce jour-là, on pense à faire marcher le paiement, pas aux mentions
+légales. `regime-publication.test.ts` échoue donc si une dépendance de paiement
+ou de régie publicitaire apparaît alors que le régime vaut encore
+`non-professionnel` : la bascule est attachée à un fait vérifiable plutôt qu'au
+souvenir qu'on en a. Le test ne prétend pas tout attraper — un lien
+d'affiliation écrit à la main lui échappe — mais il couvre ce qui laisse une
+trace dans les dépendances.
 
 Sous le régime non professionnel, l'absence d'adresse est **expliquée** sur la
 page, pas tue : la dispense n'est acquise que si l'on dit qui héberge et que
