@@ -46,6 +46,8 @@ Node 20 ou plus. Aucune variable d'environnement n'est requise pour démarrer.
 | Script | Effet |
 | --- | --- |
 | `npm run dev` | Serveur de développement |
+| `node scripts/verifier-supabase.mjs` | Contrôle un projet Supabase réel : tables, politiques, seau de photos |
+| `node scripts/verifier-exif.mjs` | Prouve le retrait des métadonnées d'une photo, dans Chromium |
 | `npm run build` | Build de production — 38 pages statiques |
 | `npm start` | Sert le build de production |
 | `npm run typecheck` | `tsc --noEmit` en mode strict renforcé |
@@ -545,6 +547,26 @@ lus **sans session** (ils sont publics et identiques pour tous), et chaque
 session côté navigateur, et apparaît après l'hydratation — compromis explicite :
 ce qui doit être lisible sans JavaScript et indexable, ce sont les listes, pas
 les formulaires.
+
+### Mise en service
+
+Le pas-à-pas complet est dans **`docs/mise-en-service-supabase.md`** : création
+du projet, migration, variables, URL de retour, SMTP, et le parcours à vérifier
+à la main.
+
+Deux points que ce document existe pour éviter :
+
+- **la limite de deux projets actifs.** Elle vaut pour toutes vos organisations
+  confondues, mais un projet EN PAUSE ne compte pas — d'où une rotation
+  possible, sans rien payer. Un projet en pause ne se réveille cependant que
+  d'un clic : ni une requête, ni `/api/keep-alive` ne le relancent ;
+- **l'envoi des e-mails.** Le serveur de Supabase est limité à quelques
+  messages par heure sur le palier gratuit. Assez pour se tester soi-même, pas
+  pour des testeurs. Le document explique comment brancher un SMTP.
+
+`node scripts/verifier-supabase.mjs` contrôle un projet réel avec la seule clé
+publique : projet joignable, tables présentes, seau de photos, et surtout que
+les profils et la liste d'attente REFUSENT un visiteur anonyme.
 
 ### Ce qui n'a pas été exercé
 
