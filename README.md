@@ -56,7 +56,7 @@ Node 20 ou plus. Aucune variable d'environnement n'est requise pour démarrer.
 | `npm start` | Sert le build de production — `prestart` migre la base avant, tout seul |
 | `npm run typecheck` | `tsc --noEmit` en mode strict renforcé |
 | `npm run lint` | ESLint (config `next/core-web-vitals` + `next/typescript`) |
-| `npm test` | 447 tests (Vitest). 430 hermétiques — aucun accès réseau ; les 17 d'intégration de la couche de données sont ignorés sans `DATABASE_URL`, et exécutés en intégration continue contre un vrai MySQL |
+| `npm test` | 453 tests (Vitest). 436 hermétiques — aucun accès réseau ; les 17 d'intégration de la couche de données sont ignorés sans `DATABASE_URL`, et exécutés en intégration continue contre un vrai MySQL |
 | `npm run test:watch` | Tests en mode surveillance |
 
 ---
@@ -118,7 +118,7 @@ src/
 │   ├── schemas.ts                Schémas Zod — la FRONTIÈRE avec les futures API
 │   ├── spots.ts                  Les 12 spots (contenu éditorial réel)
 │   ├── species.ts                Catalogue d'espèces : mailles, fonds, montages
-│   ├── legal.ts                  Éditeur, sous-traitants, stockages ← À COMPLÉTER
+│   ├── legal.ts                  Éditeur, régime LCEN, sous-traitants, stockages
 │   └── generators/               Marée (onde M2) et conditions marines simulées
 │
 └── lib/
@@ -805,14 +805,34 @@ de page de toutes les pages. Leur contenu est exact pour ce que le site fait
 aujourd'hui : une seule donnée personnelle collectée (l'adresse e-mail de la
 liste d'attente), aucun compte, aucune mesure d'audience, aucun cookie.
 
-**Une chose reste à faire avant toute mise en ligne publique** : compléter
-`PUBLISHER` dans `src/data/legal.ts`. Nom ou raison sociale, adresse postale,
-adresse de contact et directeur de la publication sont exigés par l'article
-6-III de la LCEN, et nous ne pouvons pas les inventer. Tant que ces champs
-valent `null`, les deux pages affichent un bandeau qui dit qu'elles sont
-incomplètes, et chaque mention manquante s'affiche comme telle plutôt que de
-laisser un blanc qui aurait l'air conforme. Le bandeau disparaît tout seul une
-fois les champs renseignés : rien à penser à retirer.
+`PUBLISHER` dans `src/data/legal.ts` porte l'identité de l'éditeur. Nom,
+contact et directeur de la publication sont renseignés. **Il reste l'adresse
+postale**, et le choix qu'elle suppose.
+
+L'article 6-III de la LCEN ne demande pas la même chose selon qui édite, et
+`PUBLICATION_REGIME` exprime cette différence :
+
+| Régime | Adresse | Quand il s'applique |
+| --- | --- | --- |
+| `professionnel` (défaut) | **publiée** | dès qu'il y a une recette : publicité, paiement, partenariat rémunéré. Les dons ne comptent pas. |
+| `non-professionnel` | **dispensée** | un particulier peut ne publier que le nom de l'hébergeur, à condition que celui-ci détienne son identité — ce qu'un contrat d'hébergement suffit à établir. |
+
+Le défaut est `professionnel`, et c'est délibéré : se déclarer non
+professionnel à tort est une infraction, publier une adresse dont on aurait pu
+se dispenser n'en est pas une. Entre les deux erreurs, une seule coûte quelque
+chose.
+
+Sous le régime non professionnel, l'absence d'adresse est **expliquée** sur la
+page, pas tue : la dispense n'est acquise que si l'on dit qui héberge et que
+l'identité lui a été communiquée. Taire l'adresse sans le dire ne serait pas
+une dispense, seulement une omission.
+
+Tant qu'une mention obligatoire vaut `null`, les deux pages affichent un
+bandeau qui dit qu'elles sont incomplètes, et chaque champ manquant s'affiche
+comme tel plutôt que de laisser un blanc qui aurait l'air conforme. Le bandeau
+disparaît tout seul une fois le nécessaire renseigné : rien à penser à retirer.
+`src/lib/__tests__/regime-publication.test.ts` fixe les deux régimes et vérifie
+que la page LIT l'identité au lieu de la recopier.
 
 Le même fichier tient la liste des sous-traitants (`PROCESSORS`) et celle de ce
 que le site écrit dans le navigateur (`CLIENT_STORAGE` — aujourd'hui la seule

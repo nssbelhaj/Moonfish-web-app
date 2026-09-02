@@ -34,22 +34,43 @@ export interface PublisherIdentity {
 }
 
 export const PUBLISHER: PublisherIdentity = {
-  name: null,
+  name: 'Youness BELHAJ',
+  /*
+    Laissé vide volontairement : édité par une personne physique, sans société
+    ni association. Écrire « Éditeur individuel » suggérerait une immatriculation
+    qui n'existe pas, et « entrepreneur individuel » est un statut, pas une
+    description. À renseigner le jour où une structure édite le site.
+  */
   legalForm: null,
+  /*
+    ⚠️ SEULE MENTION OBLIGATOIRE ENCORE MANQUANTE.
+
+    La LCEN (art. 6-III-1) impose l'adresse postale de l'éditeur. Mais son
+    alinéa 2 ouvre une porte à qui édite à titre NON PROFESSIONNEL : ne
+    publier que le nom de l'hébergeur, à condition d'avoir communiqué son
+    identité à celui-ci — ce qui est le cas, Hostinger la détient par le
+    contrat. C'est le régime prévu pour ne pas obliger un particulier à
+    afficher son domicile.
+
+    Deux voies, donc, et le choix vous appartient :
+
+      · publier l'adresse — obligatoire dès que le site devient
+        professionnel, c'est-à-dire dès la première recette : publicité,
+        paiement, partenariat rémunéré. Les dons n'y suffisent pas ;
+      · rester sur le régime non professionnel — alors ce champ demeure
+        `null`, et il faut RETIRER `address` de REQUIRED_FIELDS pour que le
+        bandeau cesse, sans quoi la page continuera de s'annoncer incomplète.
+
+    Tant que rien n'est décidé, le champ reste `null` et la page le dit. Une
+    adresse inventée serait pire que l'absence.
+  */
   address: null,
-  email: null,
+  email: 'contact@nssbelhaj.com',
   phone: null,
   registration: null,
   vat: null,
-  publicationDirector: null,
+  publicationDirector: 'Youness BELHAJ',
 };
-
-/** Les champs sans lesquels les mentions légales ne sont pas valables. */
-const REQUIRED_FIELDS = ['name', 'address', 'email', 'publicationDirector'] as const;
-
-export function missingPublisherFields(): readonly string[] {
-  return REQUIRED_FIELDS.filter((field) => PUBLISHER[field] === null);
-}
 
 /**
  * Hébergeur.
@@ -71,6 +92,72 @@ export const HOST: { name: string; address: string | null; site: string; contact
   site: 'https://www.hostinger.fr',
   contact: 'https://www.hostinger.fr/contact',
 };
+
+/**
+ * Régime de publication, au sens de l'article 6-III de la LCEN.
+ *
+ * ─── Pourquoi ce réglage existe ───────────────────────────────────────────
+ *
+ * La loi ne demande PAS la même chose selon qui édite :
+ *
+ *   · `professionnel` (alinéa 1) — identité ET adresse postale publiées. Ce
+ *     régime s'impose dès qu'il y a une recette : publicité, paiement,
+ *     partenariat rémunéré, affiliation. Les dons n'y suffisent pas ;
+ *
+ *   · `non-professionnel` (alinéa 2) — un particulier peut ne publier que le
+ *     nom de l'hébergeur, à condition d'avoir communiqué son identité à
+ *     celui-ci. C'est le cas dès qu'un contrat d'hébergement est signé. Le
+ *     but du texte est de ne pas obliger un particulier à afficher son
+ *     domicile pour tenir un site.
+ *
+ * Le réglage est ici plutôt que dans la page, parce qu'il ne change pas
+ * seulement un affichage : il change la liste des mentions obligatoires, donc
+ * ce que le bandeau d'incomplétude réclame.
+ *
+ * ⚠️ `professionnel` est la valeur par défaut, et c'est délibéré. Se déclarer
+ * non professionnel à tort est une infraction ; publier une adresse alors
+ * qu'on aurait pu s'en dispenser n'en est pas une. Entre les deux erreurs,
+ * seule la première coûte quelque chose.
+ */
+export type PublicationRegime = 'professionnel' | 'non-professionnel';
+
+export const PUBLICATION_REGIME: PublicationRegime = 'professionnel';
+
+/**
+ * Les champs sans lesquels les mentions légales ne sont pas valables.
+ *
+ * L'adresse en sort sous le régime non professionnel — et SEULEMENT elle :
+ * le nom, le contact et le directeur de la publication restent dus dans les
+ * deux cas.
+ */
+const REQUIRED_FIELDS = ['name', 'address', 'email', 'publicationDirector'] as const;
+
+export function missingPublisherFields(): readonly string[] {
+  return REQUIRED_FIELDS.filter((field) => {
+    if (field === 'address' && PUBLICATION_REGIME === 'non-professionnel') return false;
+    return PUBLISHER[field] === null;
+  });
+}
+
+/**
+ * Mention qui remplace l'adresse sous le régime non professionnel.
+ *
+ * Elle n'est pas décorative : l'alinéa 2 ne dispense de publier l'adresse
+ * qu'à la condition que l'hébergeur détienne l'identité de l'éditeur. Dire
+ * lequel héberge, et que l'identité lui a été communiquée, est ce qui rend la
+ * dispense opposable. Sans cette phrase, la page a juste l'air incomplète.
+ */
+export function anonymityStatement(): string | null {
+  if (PUBLICATION_REGIME !== 'non-professionnel') return null;
+
+  return (
+    `Ce site est édité à titre non professionnel. Conformément à l’article 6-III-2 ` +
+    `de la loi du 21 juin 2004, l’adresse de l’éditeur n’est pas publiée : elle est ` +
+    `détenue par l’hébergeur, ${HOST.name}, qui la communiquera sur réquisition ` +
+    `judiciaire.`
+  );
+}
+
 
 /**
  * Sous-traitants et destinataires réels des données.

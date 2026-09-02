@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 import { LegalDraftNotice, LegalValue } from '@/components/legal/LegalValue';
-import { HOST, LEGAL_UPDATED, PUBLISHER } from '@/data/legal';
+import { anonymityStatement, HOST, LEGAL_UPDATED, PUBLISHER } from '@/data/legal';
 import { absoluteUrl } from '@/lib/routes';
 import { formatDateLong } from '@/lib/time';
 
@@ -38,7 +38,14 @@ export default function MentionsLegalesPage() {
             {[
               { term: 'Éditeur', value: PUBLISHER.name, hint: 'nom ou raison sociale' },
               { term: 'Forme juridique', value: PUBLISHER.legalForm, hint: 'statut de l’éditeur' },
-              { term: 'Adresse', value: PUBLISHER.address, hint: 'adresse postale complète' },
+              {
+                term: 'Adresse',
+                value: PUBLISHER.address,
+                // Sous le régime non professionnel, l'absence d'adresse n'est
+                // pas un oubli : la phrase sous le tableau l'explique, et
+                // « À compléter » y serait faux.
+                hint: anonymityStatement() ? 'non publiée — voir ci-dessous' : 'adresse postale complète',
+              },
               { term: 'Contact', value: PUBLISHER.email, hint: 'adresse e-mail publiée' },
               { term: 'Téléphone', value: PUBLISHER.phone, hint: 'obligatoire pour un éditeur professionnel' },
               { term: 'Immatriculation', value: PUBLISHER.registration, hint: 'SIREN, SIRET ou RCS le cas échéant' },
@@ -57,6 +64,10 @@ export default function MentionsLegalesPage() {
               </div>
             ))}
           </dl>
+
+          {anonymityStatement() !== null && (
+            <p className="mt-4 max-w-prose text-read text-fg-muted">{anonymityStatement()}</p>
+          )}
         </section>
 
         <section aria-labelledby="hebergeur" className="mt-10 max-w-prose">
