@@ -85,7 +85,8 @@ export const HOST: { name: string; address: string | null; site: string; contact
  * Quand une ligne s'applique.
  *
  * `always` : sur tout déploiement. `accounts` : seulement là où les comptes
- * sont ouverts, c'est-à-dire là où un projet Supabase est configuré. La page
+ * sont ouverts, c'est-à-dire là où une base et un envoi de courriel sont
+ * configurés. La page
  * FILTRE sur ce champ plutôt que de tout afficher : décrire des comptes sur un
  * site qui n'en a pas serait aussi faux que taire ceux qui existent.
  */

@@ -5,7 +5,7 @@
  * l'état vit dans le processus. Avec plusieurs instances ou en serverless, il
  * ne protège plus rien. C'est acceptable pour un MVP sans base ; ça ne l'est
  * plus le jour où l'inscription vaut quelque chose. Le remplaçant naturel est
- * un compteur Redis ou une contrainte d'unicité côté Supabase.
+ * maintenant à portée : une table MySQL à fenêtre glissante, la base étant là.
  */
 export interface RateLimitDecision {
   allowed: boolean;

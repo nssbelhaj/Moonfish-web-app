@@ -9,17 +9,15 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "prestart": "node scripts/migrer-mysql.mjs --au-demarrage",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:db": "vitest run",
     "migrate": "node scripts/migrer-mysql.mjs"
   },
   "dependencies": {
-    "@supabase/ssr": "^0.12.5",
-    "@supabase/supabase-js": "^2.112.4",
     "mysql2": "^3.24.3",
     "next": "15.5.25",
     "next-auth": "^5.0.0-beta.32",

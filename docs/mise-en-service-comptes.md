@@ -38,8 +38,15 @@ Puis :
 node scripts/migrer-mysql.mjs
 ```
 
-Le script applique `db/migrations/*.sql` instruction par instruction et liste
-les tables obtenues. Il est idempotent : le relancer ne casse rien.
+Le script applique les migrations non encore passées, dans l'ordre de leur nom,
+et garde la trace de chacune — nom et empreinte — dans `schema_migrations`. Le
+relancer ne rejoue rien.
+
+**En production, il n'y a rien à lancer.** `prestart` l'exécute avant
+`next start` à chaque déploiement, avec une politique d'échec adaptée : sans
+base configurée il passe sans bruit, base injoignable il avertit et laisse le
+site démarrer, migration en échec il arrête le déploiement. Le détail est dans
+`docs/deploiement-hostinger.md`.
 
 ## 2. Le courriel
 

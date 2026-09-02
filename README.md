@@ -36,23 +36,26 @@ Node 20 ou plus. Aucune variable d'environnement n'est requise pour démarrer.
 | `OPEN_METEO_MARINE_URL` | non | API publique | Redirige vers une instance Open-Meteo auto-hébergée ou le stub local. |
 | `OPEN_METEO_FORECAST_URL` | non | API publique | Idem pour le modèle atmosphérique. |
 | `WAITLIST_FILE` | non | `var/waitlist.jsonl` | Chemin du fichier d'inscriptions, utilisé tant qu'aucune base n'est configurée. |
-| `NEXT_PUBLIC_SUPABASE_URL` | non | — | Ouvre les comptes et les contributions. Absente, le site le dit et n'affiche aucun formulaire de connexion. |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | non | — | Clé publique du projet. Ce qu'elle autorise est décidé par les politiques RLS, pas par son secret. |
-| `SUPABASE_SERVICE_ROLE_KEY` | non | — | Uniquement pour effacer un compte dans `auth.users`. Sans elle, la suppression refuse explicitement plutôt que de faire semblant. |
-| `CRON_SECRET` | non | — | Ferme `/api/keep-alive` au public. Vercel l'envoie automatiquement à ses appels planifiés dès que la variable existe. |
+| `DATABASE_URL` | non | — | `mysql://…`. Ouvre les comptes, les contributions et la liste d'attente persistante. Absente, le site le dit et n'affiche aucun formulaire de connexion. Quatre variables `MYSQL_*` sont acceptées à la place : les hébergeurs ne s'accordent pas. |
+| `EMAIL_SERVER` | avec les comptes | — | SMTP des liens de connexion. Le `@` de l'identifiant doit être encodé `%40` — c'est une URL. |
+| `EMAIL_FROM` | avec les comptes | — | Adresse d'expédition. |
+| `AUTH_SECRET` | avec les comptes | — | Signe les jetons d'Auth.js. `openssl rand -base64 32`. |
+| `AUTH_URL` | avec les comptes | — | Domaine public, pour construire les liens de connexion. |
+| `UPLOADS_DIR` | avec les comptes | `var/uploads` | Photos de prises. **Hors du répertoire de l'application** : un déploiement le remplace et les photos disparaîtraient. Le code avertit au démarrage si le chemin est à l'intérieur. |
+| `CRON_SECRET` | non | — | Ferme `/api/entretien` au public. Vercel l'envoie automatiquement à ses appels planifiés dès que la variable existe ; sur Hostinger, c'est la tâche cron qui porte l'en-tête. |
 
 ## Scripts
 
 | Script | Effet |
 | --- | --- |
 | `npm run dev` | Serveur de développement |
-| `npm run migrate` | Applique `db/migrations/*.sql` à la base configurée |
+| `npm run migrate` | Applique les migrations non encore passées à la base configurée |
 | `node scripts/verifier-exif.mjs` | Prouve le retrait des métadonnées d'une photo, dans Chromium |
-| `npm run build` | Build de production — 38 pages statiques |
-| `npm start` | Sert le build de production |
+| `npm run build` | Build de production — 77 pages pré-rendues |
+| `npm start` | Sert le build de production — `prestart` migre la base avant, tout seul |
 | `npm run typecheck` | `tsc --noEmit` en mode strict renforcé |
 | `npm run lint` | ESLint (config `next/core-web-vitals` + `next/typescript`) |
-| `npm test` | 195 tests unitaires (Vitest), hermétiques — aucun accès réseau |
+| `npm test` | 407 tests (Vitest). 390 hermétiques — aucun accès réseau ; les 17 d'intégration de la couche de données sont ignorés sans `DATABASE_URL`, et exécutés en intégration continue contre un vrai MySQL |
 | `npm run test:watch` | Tests en mode surveillance |
 
 ---
@@ -300,7 +303,7 @@ npm run build
 | **Interface** | `SpotRepository` |
 | **À implémenter** | `list()`, `findBySlug()`, `findByPath()` |
 | **Mock à remplacer** | `src/lib/providers/mock/spots.ts` |
-| **Nouveau fichier** | `src/lib/providers/supabase/spots.ts` |
+| **Nouveau fichier** | `src/lib/providers/mysql/spots.ts` |
 | **Ligne à changer** | `export const spots: SpotRepository = new MysqlSpotRepository()` |
 
 Le schéma de la table découle directement de `spotSchema`
@@ -856,6 +859,79 @@ Sans base configurée, les inscriptions à la liste d'attente atterrissent dans 
 répertoire temporaire de l'instance et **n'y survivent pas** — acceptable pour
 une démonstration, pas pour une collecte réelle. Avec `DATABASE_URL`, elles
 passent en base et le repli n'est plus utilisé.
+
+### Ce qui est automatique, et où vivent les secrets
+
+Une question revient, et elle mérite une réponse nette : **faut-il confier des
+identifiants d'hébergement pour que la mise en ligne et la base se tiennent à
+jour toutes seules ?** Non. Aucun secret n'a à passer par une conversation, un
+ticket ou un fichier du dépôt. Une conversation se conserve, se recopie et
+s'exporte ; un mot de passe qui y est passé doit être considéré comme connu, et
+il faut le changer. La bonne architecture est l'inverse : **les secrets vivent
+chez la plateforme, et le dépôt contient la mécanique qui s'en sert.**
+
+Concrètement, trois endroits et un seul geste manuel :
+
+| Où | Quoi | Qui le fait |
+| --- | --- | --- |
+| hPanel → Web App → Variables | `DATABASE_URL`, `EMAIL_SERVER`, `AUTH_SECRET`, `UPLOADS_DIR`… | vous, une fois |
+| GitHub → *Settings → Secrets* | rien d'obligatoire aujourd'hui : l'intégration lit le dépôt public | vous, si un jour un déploiement sortant en a besoin |
+| Le dépôt | le code, les migrations, les contrôles | ici |
+
+Ensuite, plus rien à faire à la main :
+
+1. **le code** part à chaque poussée sur la branche connectée — Hostinger
+   reconstruit tout seul, comme Vercel ;
+2. **le schéma** suit le code. `prestart` lance
+   `node scripts/migrer-mysql.mjs --au-demarrage` juste avant `next start` :
+   les migrations non encore appliquées passent, les autres non ;
+3. **les contrôles** tournent avant, dans `.github/workflows/verification.yml` :
+   typage, lint, migrations **contre une vraie base MySQL**, tests, build.
+
+#### Pourquoi les migrations ont un registre
+
+Le script tenait une trace de rien : il rejouait tous les fichiers à chaque
+démarrage. Cela marchait tant que tout était en `create table if not exists` —
+et la première migration qui ajoute une colonne aurait échoué au deuxième
+passage, **en pleine mise en ligne**. La table `schema_migrations` garde
+maintenant le nom de chaque fichier appliqué et son empreinte SHA-256.
+
+L'empreinte n'est pas décorative. Modifier une migration déjà passée est la
+façon la plus discrète de faire diverger deux environnements : la base garde
+l'ancienne forme, le dépôt affiche la nouvelle, et plus personne ne sait
+laquelle fait foi. Le script refuse, s'arrête, et dit de créer une nouvelle
+migration à la place.
+
+#### Une politique d'échec qui n'est pas la même partout
+
+Elle est délibérément asymétrique, parce que les conséquences ne sont pas
+symétriques :
+
+| Situation | Au démarrage | En manuel |
+| --- | --- | --- |
+| Aucune base configurée | on passe, sans bruit — le site sans comptes est un mode prévu | erreur : on a demandé une migration |
+| Base injoignable | **avertissement, et on démarre quand même** | erreur |
+| Une migration échoue | **arrêt** — le déploiement échoue, la version précédente reste en ligne | erreur |
+
+La deuxième ligne est celle qui compte. Marées, météo, guides et score ne
+touchent pas la base : refuser de démarrer parce que MySQL a hoqueté ferait
+tomber tout le site pour protéger la seule partie qui en dépend. Les comptes
+restent fermés le temps que la base revienne, et le site le dit.
+
+La troisième aussi, dans l'autre sens : faire tourner du code contre un schéma
+à moitié migré corrompt des données en silence. Mieux vaut un déploiement qui
+échoue bruyamment.
+
+#### Ce que le workflow d'intégration vérifie vraiment
+
+Il applique les migrations sur une base MySQL 8 jetable, **puis les applique une
+seconde fois** et exige que le second passage ne fasse rien. C'est le seul moyen
+de démontrer l'idempotence avant qu'un déploiement ne la mette à l'épreuve.
+
+Les tests d'intégration de la couche de données s'exécutent alors pour de vrai :
+en local ils sont ignorés faute de `DATABASE_URL`, et c'est là qu'ils sont le
+plus utiles, puisqu'ils vérifient qu'un utilisateur ne peut pas supprimer l'avis
+d'un autre.
 
 ### Si le build échoue
 

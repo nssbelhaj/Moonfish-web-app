@@ -15,7 +15,7 @@ function closed<T>(): ContributionResult<T> {
 }
 
 /**
- * Implémentation par défaut, quand aucun projet Supabase n'est configuré.
+ * Implémentation par défaut, quand aucune base n'est configurée.
  *
  * Elle ne SIMULE rien. C'est la différence avec les fournisseurs de marée ou de
  * météo, qui ont un mode démonstration : une marée inventée reste une

@@ -1,0 +1,82 @@
+name: Vérification
+
+# Chaque poussée est vérifiée contre une VRAIE base MySQL.
+#
+# C'est le point de tout ce fichier. La version PostgreSQL du projet n'a jamais
+# été exécutée contre un serveur : deux défauts y ont survécu — des saisies
+# rejetées à tort, et un effacement qui restait visible — que seule l'exécution
+# pouvait révéler. Faire tourner les tests d'intégration ici, à chaque commit,
+# est ce qui empêche la situation de se reproduire.
+#
+# Aucun secret n'est nécessaire : la base de test est jetable et créée par le
+# service ci-dessous. Les identifiants de production restent chez l'hébergeur.
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: verification
+          MYSQL_DATABASE: moonfish_test
+        ports: ['3306:3306']
+        # Sans cette attente, les premières requêtes partent avant que le
+        # serveur n'accepte les connexions, et l'échec ressemble à un bug du
+        # code plutôt qu'à une course au démarrage.
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -pverification"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      DATABASE_URL: mysql://root:verification@127.0.0.1:3306/moonfish_test
+      # Les fournisseurs réels ne sont pas joignables en intégration continue,
+      # et n'ont rien à y faire : on veut vérifier NOTRE code.
+      WEATHER_PROVIDER: mock
+      TIDE_PROVIDER: mock
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.9'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Types
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Migrations
+        run: npm run migrate
+
+      # Rejouer NE SUFFIT PAS : il faut vérifier que le second passage ne fait
+      # rien. Un script qui réapplique tout en silence passerait ce test sans
+      # broncher, et casserait à la première migration qui ajoute une colonne.
+      - name: Migrations rejouées — le second passage ne doit rien refaire
+        run: |
+          sortie=$(npm run migrate)
+          echo "$sortie"
+          echo "$sortie" | grep -q 'schéma déjà à jour'
+
+      - name: Tests, base comprise
+        run: npm run test
+
+      - name: Build
+        # `AUTH_SECRET` est exigé par Auth.js à la compilation ; la valeur n'a
+        # aucune importance ici, rien n'est signé pour de bon.
+        env:
+          AUTH_SECRET: verification-uniquement
+        run: npm run build

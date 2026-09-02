@@ -102,8 +102,9 @@ export interface WaitlistRepository {
   /**
    * Nombre d'inscrits, ou `null` quand le dépôt n'a pas le DROIT de le savoir.
    *
-   * Le dépôt Supabase est dans ce cas : la table est en écriture seule pour le
-   * public, ce qui empêche d'aspirer les adresses — et donc aussi de les
+   * Le dépôt MySQL est dans ce cas : AUCUN chemin de lecture n'existe sur la
+   * table `waitlist` — un test échoue si un `select` y apparaît. C'est ce qui
+   * empêche d'aspirer les adresses depuis l'application, et donc aussi de les
    * compter. Rendre `0` ferait passer une absence de droit pour une liste vide.
    */
   count(): Promise<number | null>;

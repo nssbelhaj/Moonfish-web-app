@@ -37,8 +37,8 @@ describe('tout ce que le site écrit dans le navigateur est déclaré', () => {
    * On compte les points d'ÉCRITURE par fichier, pas les clés.
    *
    * Les clés ne suffisent pas : celle du thème est une constante importée, et
-   * celle de la session porte l'identifiant du projet Supabase, inconnu du
-   * dépôt. Le lieu et le nombre des écritures, eux, sont vérifiables — et une
+   * le cookie de session est posé par Auth.js, pas par une ligne de ce dépôt.
+   * Le lieu et le nombre des écritures, eux, sont vérifiables — et une
    * écriture ajoutée quelque part est exactement ce qu'on veut voir échouer.
    */
   function scanWrites(): Map<string, number> {
@@ -134,10 +134,9 @@ describe('« aucune requête vers un tiers depuis votre navigateur »', () => {
   });
 
   it('ne fait partir aucun appel réseau du navigateur vers une URL écrite en dur', () => {
-    // Le navigateur joint bien Supabase — pour la connexion et l'envoi des
-    // photos — mais par une adresse VENUE DE LA CONFIGURATION, déclarée sur la
-    // page. Une URL en dur dans un composant client serait, elle, un tiers
-    // qu'aucune déclaration ne couvre.
+    // Le navigateur ne joint que NOTRE origine — connexion, envoi des photos —
+    // par des chemins relatifs. Une URL en dur dans un composant client serait,
+    // elle, un tiers qu'aucune déclaration ne couvre.
     const offenders: string[] = [];
 
     for (const file of SOURCES.filter((f) => f.endsWith('.tsx') || f.endsWith('.ts'))) {

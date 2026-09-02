@@ -12,6 +12,18 @@ deviennent des déploiements sans intervention.
 
 Autrement dit : vous faites le branchement, je fais le reste.
 
+### Et les identifiants ?
+
+Ils ne sortent pas de hPanel. Pas de mot de passe MySQL, pas d'identifiant
+Hostinger, pas de clé SMTP dans une conversation, un ticket ou un fichier du
+dépôt : une conversation se conserve, se recopie et s'exporte, et un secret qui
+y est passé doit être considéré comme connu — donc changé.
+
+Ce n'est pas une limite : rien n'en a besoin. Vous collez les variables dans le
+panneau, Hostinger les injecte dans l'application, et le dépôt ne contient que
+la mécanique qui s'en sert. Le schéma se met à jour tout seul au démarrage
+(voir §5), sans qu'aucun accès à la base soit nécessaire depuis l'extérieur.
+
 ---
 
 ## 1. Créer la Web App
@@ -60,7 +72,34 @@ Elle purge les sessions et les liens de connexion périmés. Sans base
 configurée, la route répond `{"ok":true,"state":"sans-base"}` et ne fait
 rien.
 
-## 4. Après le premier déploiement
+## 4. La base se met à jour toute seule
+
+`package.json` déclare :
+
+```json
+"prestart": "node scripts/migrer-mysql.mjs --au-demarrage"
+```
+
+npm exécute `prestart` avant `start`. Chaque déploiement applique donc les
+migrations qui manquent, dans l'ordre, **une seule fois chacune** : la table
+`schema_migrations` garde le nom et l'empreinte SHA-256 de celles déjà passées.
+Il n'y a aucune commande à lancer à la main après une mise en ligne, et aucun
+accès distant à la base à ouvrir.
+
+Ce qui se passe quand ça se passe mal, et pourquoi ce n'est pas uniforme :
+
+| Situation | Effet |
+| --- | --- |
+| Pas de `DATABASE_URL` | on passe, sans bruit. Le site sans comptes est un mode prévu. |
+| Base injoignable | **avertissement, et le site démarre quand même.** Marées, météo, guides et score n'en dépendent pas ; les comptes restent fermés le temps que la base revienne, et le site le dit. |
+| Une migration échoue | **arrêt.** Le déploiement échoue et la version précédente reste en ligne — plutôt que de faire tourner du code contre un schéma à moitié migré, ce qui corrompt en silence. |
+| Une migration déjà passée a été modifiée | **refus.** La base garderait l'ancienne forme et le dépôt afficherait la nouvelle. Il faut une nouvelle migration, pas une retouche. |
+
+Pour l'appliquer manuellement depuis un poste ayant accès à la base :
+`npm run migrate`. Là, une base injoignable est une erreur : on a demandé une
+migration.
+
+## 5. Après le premier déploiement
 
 À vérifier dans l'ordre, parce que chacun de ces points échoue silencieusement :
 

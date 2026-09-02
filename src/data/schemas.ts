@@ -9,7 +9,8 @@ import { z } from 'zod';
  *    (`time`, `type`, `height`), enrichi du coefficient français ;
  *  - `MarinePoint` est l'aplatissement d'une heure d'Open-Meteo Marine +
  *    Open-Meteo Forecast, dont les réponses arrivent en tableaux parallèles ;
- *  - `Spot` est ce que Supabase renverra pour une ligne de la table `spots`.
+ *  - `Spot` est ce qu'une table `spots` renverra pour une ligne, le jour où
+ *    les spots quitteront le fichier.
  *
  * Le jour du branchement, seul l'adaptateur change : ces schémas restent la
  * frontière et `safeParse` reste le garde-fou.
@@ -151,7 +152,7 @@ export type WaitlistInput = z.infer<typeof waitlistInputSchema>;
 
    Ces schémas sont la FRONTIÈRE de confiance : tout ce qui vient d'un
    formulaire ou de la base y passe. Les bornes reprennent exactement celles
-   des contraintes SQL de `supabase/migrations/0001_comptes_et_contributions.sql`
+   des contraintes SQL de `db/migrations/0001_comptes_et_contributions.sql`
    — un écart ferait rejeter par la base ce que le formulaire a accepté, avec
    une erreur technique en pleine figure de l'utilisateur.
    ──────────────────────────────────────────────────────────────────────────── */
