@@ -56,7 +56,7 @@ Node 20 ou plus. Aucune variable d'environnement n'est requise pour démarrer.
 | `npm start` | Sert le build de production — `prestart` migre la base avant, tout seul |
 | `npm run typecheck` | `tsc --noEmit` en mode strict renforcé |
 | `npm run lint` | ESLint (config `next/core-web-vitals` + `next/typescript`) |
-| `npm test` | 460 tests (Vitest). 443 hermétiques — aucun accès réseau ; les 17 d'intégration de la couche de données sont ignorés sans `DATABASE_URL`, et exécutés en intégration continue contre un vrai MySQL |
+| `npm test` | 461 tests (Vitest). 444 hermétiques — aucun accès réseau ; les 17 d'intégration de la couche de données sont ignorés sans `DATABASE_URL`, et exécutés en intégration continue contre un vrai MySQL |
 | `npm run test:watch` | Tests en mode surveillance |
 
 ---
@@ -822,12 +822,15 @@ Moonfish est sur le second : il n'affiche ni publicité ni paiement.
 **Ce réglage se périme, et c'est son danger.** Il devient faux — et s'en
 prévaloir devient une infraction — le jour où le site encaisse quoi que ce
 soit. Or ce jour-là, on pense à faire marcher le paiement, pas aux mentions
-légales. `regime-publication.test.ts` échoue donc si une dépendance de paiement
-ou de régie publicitaire apparaît alors que le régime vaut encore
-`non-professionnel` : la bascule est attachée à un fait vérifiable plutôt qu'au
-souvenir qu'on en a. Le test ne prétend pas tout attraper — un lien
-d'affiliation écrit à la main lui échappe — mais il couvre ce qui laisse une
-trace dans les dépendances.
+légales. `regime-publication.test.ts` échoue donc si le régime vaut encore
+`non-professionnel` alors qu'apparaît soit une dépendance de paiement ou de
+régie, soit un lien d'affiliation ou de don écrit à la main dans `src/`
+(`buymeacoffee.com`, `amzn.to`, `paypal.me`…). La bascule est attachée à un
+fait vérifiable plutôt qu'au souvenir qu'on en a, et le message rappelle les
+TROIS conséquences simultanées : l'adresse redevient obligatoire, la relation
+commerciale doit être divulguée, et la page de confidentialité — qui affirme
+aujourd'hui ne poser aucun cookie ni joindre aucun tiers — devient fausse dès
+que le lien en dépose un.
 
 Sous le régime non professionnel, l'absence d'adresse est **expliquée** sur la
 page, pas tue : la dispense n'est acquise que si l'on dit qui héberge et que

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 import {
   anonymityStatement,
@@ -102,6 +103,66 @@ describe('le régime non professionnel ne survit pas à une monétisation', () =
     'mollie',
     'revolut',
   ];
+
+  /**
+   * Marqueurs d'une recette écrite À LA MAIN, que l'inspection des dépendances
+   * ne peut pas voir : un lien d'affiliation ou un bouton de don est du texte
+   * dans un composant, pas un paquet installé.
+   */
+  const LIENS = [
+    'buymeacoffee.com',
+    'ko-fi.com',
+    'patreon.com',
+    'tipeee.com',
+    'paypal.me',
+    'amzn.to',
+    'amazon.fr/dp',
+    'amazon.com/dp',
+    'awin1.com',
+    'shareasale.com',
+    'tradedoubler',
+    'affilae',
+    'utm_medium=affiliate',
+    'tag=moonfish',
+  ];
+
+  it('aucun lien d’affiliation ni bouton de don dans les sources', () => {
+    if (PUBLICATION_REGIME !== 'non-professionnel') return;
+
+    const trouves: string[] = [];
+
+    const parcourir = (dossier: string): void => {
+      for (const entree of readdirSync(dossier, { withFileTypes: true })) {
+        const chemin = join(dossier, entree.name);
+        if (entree.isDirectory()) {
+          if (entree.name !== '__tests__') parcourir(chemin);
+          continue;
+        }
+        if (!/\.(ts|tsx|md)$/.test(entree.name)) continue;
+
+        const source = readFileSync(chemin, 'utf8').toLowerCase();
+        for (const marqueur of LIENS) {
+          if (source.includes(marqueur)) trouves.push(`${chemin} → ${marqueur}`);
+        }
+      }
+    };
+
+    parcourir('src');
+
+    expect(
+      trouves,
+      `${trouves.join(', ')}\n\n` +
+        'Un lien d’affiliation ou un bouton de don rémunéré rend le site COMMERCIAL. ' +
+        'Trois choses changent en même temps, et les oublier coûte cher :\n' +
+        '  1. PUBLICATION_REGIME passe à « professionnel », et PUBLISHER.address ' +
+        'redevient obligatoire (art. 6-III-1 de la LCEN) ;\n' +
+        '  2. la plupart des programmes d’affiliation imposent une mention visible ' +
+        'de la relation commerciale sur les pages concernées ;\n' +
+        '  3. si le lien dépose un cookie ou charge une ressource tierce, la page ' +
+        'de confidentialité — qui affirme aujourd’hui n’en poser AUCUN — devient ' +
+        'fausse, et un recueil de consentement devient nécessaire.',
+    ).toStrictEqual([]);
+  });
 
   it('aucune dépendance de paiement ou de régie tant que le régime l’exclut', () => {
     if (PUBLICATION_REGIME !== 'non-professionnel') return;
