@@ -88,12 +88,36 @@ export function viewHeightFor(spots: readonly Spot[], width: number): number {
  * déplacement reste petit et symétrique, si bien qu'un spot ne traverse jamais
  * son voisin — la carte reste une carte, pas un diagramme réarrangé.
  */
-export function spreadMarkers(
-  points: readonly Projected[],
+export interface Point2D {
+  x: number;
+  y: number;
+}
+
+/**
+ * Écarte des points trop proches, en conservant leur disposition d'ensemble.
+ *
+ * ─── Pourquoi cette fonction est partagée ─────────────────────────────────
+ *
+ * Deux cartes en ont besoin : celle dessinée au serveur et celle à tuiles. Le
+ * problème y est identique — Agadir et Taghazout sont à quinze kilomètres, ce
+ * qui fait moins d'un marqueur d'écart à l'échelle des deux pays, et l'un
+ * RECOUVRE l'autre au point de le rendre incliquable. Constaté dans un vrai
+ * navigateur, pas déduit : une tentative de clic sur Taghazout atterrissait
+ * sur Agadir.
+ *
+ * Deux implémentations du même écartement divergeraient, et la divergence se
+ * verrait sur la seule carte que personne ne regarde à ce moment-là.
+ *
+ * La méthode est une relaxation : à chaque passe, toute paire trop proche est
+ * repoussée de moitié de part et d'autre. Quelques passes suffisent pour une
+ * douzaine de points, et le résultat est déterministe — deux rendus du même
+ * jeu donnent la même image.
+ */
+export function separatePoints<T extends Point2D>(
+  points: readonly T[],
   minDistance: number,
-  view: Viewport,
   passes = 24,
-): Projected[] {
+): T[] {
   const out = points.map((p) => ({ ...p }));
 
   for (let pass = 0; pass < passes; pass++) {
@@ -123,8 +147,18 @@ export function spreadMarkers(
     if (!moved) break;
   }
 
+  return out;
+}
+
+export function spreadMarkers(
+  points: readonly Projected[],
+  minDistance: number,
+  view: Viewport,
+  passes = 24,
+): Projected[] {
   const min = view.padding;
-  return out.map((p) => ({
+
+  return separatePoints(points, minDistance, passes).map((p) => ({
     ...p,
     x: Math.min(Math.max(p.x, min), view.width - min),
     y: Math.min(Math.max(p.y, min), view.height - min),

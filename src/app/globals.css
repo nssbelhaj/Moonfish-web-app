@@ -296,3 +296,152 @@
     font-weight: 600;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Carte à tuiles (/carte)
+
+   Leaflet apporte sa feuille de style, qui ne connaît ni nos jetons ni le
+   thème nuit. Ce bloc la raccorde : tout ce qui a une couleur la prend d'une
+   variable, sinon la carte resterait blanche sur un site passé en nuit.
+
+   Les marqueurs sont du HTML, pas des images : trois canaux redondants — le
+   chiffre, la couleur du palier, la forme selon le type de spot — et zéro
+   requête réseau supplémentaire.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.leaflet-container {
+  background-color: var(--surface-2);
+  font-family: inherit;
+  /* Leaflet pose un fond blanc en dur ; sans cette règle, les bords de carte
+     et les tuiles manquantes trouent le thème nuit. */
+  outline-offset: 2px;
+}
+
+/*
+  En thème nuit, les tuiles claires d'OpenStreetMap éblouissent. On ne peut pas
+  demander un fond sombre au fournisseur : on assombrit et on désature côté
+  client, ce qui garde les marqueurs — qui ne sont pas des tuiles — pleinement
+  lisibles par-dessus.
+*/
+[data-theme='night'] .carte-tuiles {
+  filter: brightness(0.62) saturate(0.55) contrast(1.05);
+}
+
+.carte-icone {
+  background: transparent;
+  border: 0;
+}
+
+.carte-marqueur {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  color: var(--fg-on-accent);
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  /* Un liseré clair détache la pastille d'un fond de carte chargé, là où une
+     ombre seule disparaît sur les zones sombres. */
+  box-shadow: 0 0 0 2px var(--card), var(--ombre-marqueur);
+}
+
+/*
+  Le point d'exclamation de la règle de sécurité.
+
+  Il ne dépend PAS du score : houle et vent déclenchent le danger même quand la
+  note reste correcte, et c'est précisément le cas où l'on risque de partir
+  quand même.
+*/
+.carte-danger {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--danger);
+  color: var(--fg-on-accent);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 0 0 2px var(--card);
+}
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: var(--card);
+  color: var(--fg);
+  border-radius: 10px;
+  box-shadow: 0 0 0 1px var(--edge), var(--ombre-flottante);
+}
+
+.leaflet-popup-content {
+  margin: 12px 14px;
+  line-height: 1.4;
+}
+
+.carte-popup-titre {
+  font-family: var(--font-spectral), Spectral, Georgia, serif;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.carte-popup-lieu {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--fg-muted);
+}
+
+.carte-popup-score {
+  margin: 8px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.carte-popup-lien {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.leaflet-control-zoom a {
+  background: var(--card);
+  color: var(--fg);
+  border-color: var(--edge);
+}
+
+.leaflet-control-zoom a:hover {
+  background: var(--surface-2);
+  color: var(--fg);
+}
+
+/*
+  Couche d'écartement des marqueurs.
+
+  Deux spots trop proches à l'échelle affichée se recouvrent ; l'écartement les
+  sépare le temps du zoom concerné. Le liseré pointillé dit qu'un marqueur
+  n'est PAS exactement sur sa position — sans lui, la carte mentirait
+  discrètement sur quinze kilomètres.
+*/
+.carte-decalage {
+  position: relative;
+  display: block;
+  width: 34px;
+  height: 34px;
+}
+
+.carte-decalage[data-ecarte='oui'] .carte-marqueur {
+  outline: 1px dashed var(--card);
+  outline-offset: 2px;
+}
+

@@ -56,7 +56,7 @@ Node 20 ou plus. Aucune variable d'environnement n'est requise pour démarrer.
 | `npm start` | Sert le build de production — `prestart` migre la base avant, tout seul |
 | `npm run typecheck` | `tsc --noEmit` en mode strict renforcé |
 | `npm run lint` | ESLint (config `next/core-web-vitals` + `next/typescript`) |
-| `npm test` | 463 tests (Vitest). 446 hermétiques — aucun accès réseau ; les 17 d'intégration de la couche de données sont ignorés sans `DATABASE_URL`, et exécutés en intégration continue contre un vrai MySQL |
+| `npm test` | 470 tests (Vitest). 453 hermétiques — aucun accès réseau ; les 17 d'intégration de la couche de données sont ignorés sans `DATABASE_URL`, et exécutés en intégration continue contre un vrai MySQL |
 | `npm run test:watch` | Tests en mode surveillance |
 
 ---
@@ -78,7 +78,7 @@ src/
 │   │       ├── spot-page-data.ts Résolution partagée par le layout et les onglets
 │   │       └── opengraph-image.tsx  Image OG dynamique, pré-rendue au build
 │   ├── guides/                   Index + article ([slug])
-│   ├── carte/                    Carte des spots (SVG projeté au serveur)
+│   ├── carte/                    Carte à tuiles interactive (+ repli SVG serveur)
 │   ├── donnees/                  D'où viennent les données, bloc par bloc
 │   ├── mentions-legales/         Éditeur, hébergeur, responsabilité
 │   ├── confidentialite/          Traitements, stockage navigateur, droits
@@ -87,6 +87,7 @@ src/
 │   ├── api/compte/               Photo, état de session, export JSON
 │   ├── api/photos/[...chemin]/   Lecture des photos, hors répertoire d'app
 │   ├── api/entretien/            Purge quotidienne des sessions périmées
+│   ├── api/tuiles/[z]/[x]/[y]/   Relais des tuiles de carte — le navigateur ne joint aucun tiers
 │   ├── api/waitlist/route.ts     POST — Zod + limiteur de débit + écriture
 │   ├── sitemap.ts, robots.ts     Générés depuis les mêmes sources que les pages
 │   ├── tokens.css                Variables CSS des deux thèmes ← POINT D'ENTRÉE DESIGN
@@ -445,6 +446,74 @@ faute d'écran montrant les horaires côte à côte.
 associe un créneau à une autre durée. Les commentaires sont exclus du contrôle :
 `slots.ts` explique légitimement pourquoi trois heures a été écarté, et
 interdire la phrase là reviendrait à interdire d'expliquer la décision.
+
+## La carte
+
+Une carte à tuiles, un marqueur par spot portant son score, cliquable pour
+ouvrir la fiche.
+
+### Les tuiles passent par le serveur, et ce n'est pas un détail
+
+Une carte ordinaire fait charger vingt à quarante images par le navigateur
+depuis un tiers. Ce tiers reçoit alors l'adresse IP du visiteur, la zone qu'il
+regarde — donc approximativement **où il pêche** — et la page d'origine.
+
+`/confidentialite` affirme qu'aucune requête ne part du navigateur vers un
+tiers. Brancher la carte en direct rendrait cette phrase fausse, et
+`privacy-claims.test.ts` échouerait : c'est exactement son rôle.
+
+`/api/tuiles/[z]/[x]/[y]` renverse la chose. Le navigateur ne parle qu'à notre
+origine ; c'est le serveur qui va chercher la tuile. Mesuré dans un navigateur
+pendant le chargement complet de la page : **un seul hôte joint, le nôtre.**
+
+Trois conséquences, dont deux non évidentes :
+
+| | |
+| --- | --- |
+| **Le fournisseur ne voit rien du visiteur** | il voit une poignée de requêtes venant d'une machine |
+| **Une clé d'API resterait secrète** | une carte en direct l'exposerait dans le paquet du navigateur, lisible et dépensable par n'importe qui |
+| **`TILE_URL` change de fournisseur sans toucher au code** | stub local pour vérifier hors ligne, service à clé le jour où la fréquentation dépasse ce que tolère la politique d'OpenStreetMap |
+
+Les bornes de zoom (3 à 13) ne sont pas décoratives : sans elles la route
+serait un proxy d'images ouvert, où n'importe qui ferait tirer à votre serveur
+des tuiles du monde entier, à vos frais, derrière votre domaine. Les
+coordonnées hors grille sont refusées avant d'aller déranger l'amont.
+
+Quand l'amont ne répond pas, la route sert un pixel transparent plutôt qu'une
+erreur : Leaflet afficherait sinon une mosaïque de cases cassées, ce qui
+ressemble à un site en panne. La carte perd son décor, pas son information —
+les positions et les scores ne viennent pas de l'amont.
+
+### Un marqueur qu'on ne pouvait pas cliquer
+
+Agadir et Taghazout sont à quinze kilomètres. À l'échelle où la France et le
+Maroc tiennent sur le même écran, cela fait moins d'un marqueur d'écart, et
+l'un **recouvrait l'autre entièrement**. Seule l'interaction réelle pouvait le
+montrer : un clic sur Taghazout atterrissait sur Agadir.
+
+L'écartement réutilise l'algorithme de la carte SVG — `separatePoints`, extrait
+pour que les deux cartes ne divergent pas — recalculé à chaque zoom. Il
+**disparaît** dès que les marqueurs cessent de se toucher : en s'approchant,
+chacun revient exactement sur sa position. Un marqueur écarté porte un liseré
+pointillé, parce qu'il n'est alors plus exactement là où il devrait être.
+
+La première correction ne déplaçait que le DESSIN, par une transformation CSS.
+Visuellement juste, et parfaitement inutile : Leaflet garde la zone cliquable
+sur l'élément parent, resté en place. Le clic continuait d'atterrir au mauvais
+endroit, mais l'écran ne le montrait plus — un défaut invisible est pire que le
+défaut d'origine. C'est le marqueur lui-même qui bouge désormais.
+
+### Ce que la carte coûte, et ce qu'elle ne coûte pas
+
+C'est le seul écran interactif du site. Le coût est borné : Leaflet n'est
+chargé que sur `/carte` — la page passe de 103 à 107 ko de JavaScript initial,
+la bibliothèque arrivant ensuite dans un fragment séparé. Les marqueurs sont du
+HTML, pas des images : zéro requête supplémentaire, là où Leaflet en ferait une
+douzaine pour ses icônes par défaut.
+
+Sans JavaScript, la carte dessinée au serveur prend le relais, et la liste des
+spots — toujours présente sous la carte — reste le chemin le plus court au
+clavier.
 
 ## Thèmes clair et nuit
 

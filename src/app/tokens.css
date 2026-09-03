@@ -97,6 +97,18 @@
   --score-2: var(--score-2-l);
   --score-3: var(--sonde-700);
   --score-4: var(--score-4-l);
+
+  /*
+    Ombres portées. Les seuls endroits du site qui en posent une sont les
+    marqueurs de carte et l'infobulle qui les accompagne : posés SUR un fond
+    photographique, un filet plat ne les décollerait pas.
+
+    Elles sont des jetons plutôt que des littéraux pour la même raison que les
+    couleurs — le thème nuit demande une ombre plus dense, l'encre y étant
+    déjà sombre, et un littéral figé donnerait la même dans les deux thèmes.
+  */
+  --ombre-marqueur: 0 1px 4px rgb(0 0 0 / 0.35);
+  --ombre-flottante: 0 6px 18px rgb(0 0 0 / 0.18);
 }
 
 /**
@@ -123,6 +135,8 @@
   --fg-muted: var(--brume-400);
   --danger: var(--balise-400);
   --focus: var(--lagon-300n);
+  --ombre-marqueur: 0 1px 5px rgb(0 0 0 / 0.6);
+  --ombre-flottante: 0 8px 22px rgb(0 0 0 / 0.5);
   --fg-on-accent: var(--abysse-on-accent);
   --warn: var(--score-2-n);
 
