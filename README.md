@@ -40,7 +40,7 @@ Node 20 ou plus. Aucune variable d'environnement n'est requise pour démarrer.
 | `EMAIL_SERVER` | avec les comptes | — | SMTP des liens de connexion. Le `@` de l'identifiant n'a rien à encoder ; `/`, `?`, `#` et `%` **dans le mot de passe**, si — sinon l'envoi part vers le mauvais hôte, sans erreur. |
 | `EMAIL_FROM` | avec les comptes | — | Adresse d'expédition. |
 | `AUTH_SECRET` | avec les comptes | — | Signe les jetons d'Auth.js. `openssl rand -base64 32`. |
-| `AUTH_URL` | avec les comptes | — | Domaine public, pour construire les liens de connexion. |
+| `AUTH_URL` | **avec les comptes, obligatoire** | — | Domaine public. Sans elle, Auth.js refuse CHAQUE requête de connexion (`UntrustedHost`) hors Vercel et hors développement : le formulaire s'affiche, la demande sort en 500, aucun courriel ne part. Reproduit, et signalé au démarrage. |
 | `UPLOADS_DIR` | avec les comptes | `var/uploads` | Photos de prises. **Hors du répertoire de l'application** : un déploiement le remplace et les photos disparaîtraient. Le code avertit au démarrage si le chemin est à l'intérieur. |
 | `CRON_SECRET` | non | — | Ferme `/api/entretien` au public. Vercel l'envoie automatiquement à ses appels planifiés dès que la variable existe ; sur Hostinger, c'est la tâche cron qui porte l'en-tête. |
 
@@ -56,7 +56,7 @@ Node 20 ou plus. Aucune variable d'environnement n'est requise pour démarrer.
 | `npm start` | Sert le build de production — `prestart` migre la base avant, tout seul |
 | `npm run typecheck` | `tsc --noEmit` en mode strict renforcé |
 | `npm run lint` | ESLint (config `next/core-web-vitals` + `next/typescript`) |
-| `npm test` | 498 tests (Vitest). 470 hermétiques — aucun accès réseau ; les 28 d'intégration de la couche de données sont ignorés sans `DATABASE_URL`, et exécutés en intégration continue contre un vrai MySQL |
+| `npm test` | 505 tests (Vitest). 477 hermétiques — aucun accès réseau ; les 28 d'intégration de la couche de données sont ignorés sans `DATABASE_URL`, et exécutés en intégration continue contre un vrai MySQL |
 | `npm run test:watch` | Tests en mode surveillance |
 
 ---

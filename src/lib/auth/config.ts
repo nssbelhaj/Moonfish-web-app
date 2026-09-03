@@ -122,4 +122,56 @@ export function accountsEnabled(): boolean {
   return databaseEnabled() && mailEnabled();
 }
 
+/**
+ * Les connexions vont-elles échouer faute d'hôte de confiance ?
+ *
+ * ─── La panne, telle qu'elle se présente ──────────────────────────────────
+ *
+ * Auth.js v5 refuse de servir une requête d'authentification si l'hôte n'est
+ * pas déclaré digne de confiance. Le défaut est calculé ainsi
+ * (`@auth/core/lib/utils/env.js`) :
+ *
+ *   trustHost ??= !!(AUTH_URL ?? AUTH_TRUST_HOST ?? VERCEL ?? CF_PAGES
+ *                    ?? NODE_ENV !== 'production')
+ *
+ * En développement, `NODE_ENV !== 'production'` suffit. Sur Vercel, `VERCEL`
+ * suffit. Sur un hébergement mutualisé en production, AUCUNE de ces
+ * conditions n'est remplie : il faut `AUTH_URL`.
+ *
+ * ─── Pourquoi cela méritait un avertissement ──────────────────────────────
+ *
+ * Reproduit avant d'écrire ces lignes. Sans `AUTH_URL`, en production : la
+ * page `/compte` répond 200, le formulaire de connexion s'affiche
+ * normalement, on saisit son adresse — et la demande sort en 500 avec
+ * `UntrustedHost` dans le journal. AUCUN courriel ne part, jamais.
+ *
+ * Le message montré à la personne était alors « Le service de connexion ne
+ * répond pas. Ce n'est pas votre adresse : réessayez plus tard. » C'est vrai
+ * sur le fond et trompeur sur la durée : « plus tard » n'arrivera pas, la
+ * configuration ne se corrigera pas d'elle-même.
+ */
+export function authHostWarning(): string | null {
+  if (process.env.NODE_ENV !== 'production') return null;
+
+  // L'avertissement ne concerne que les déploiements où les comptes sont
+  // censés fonctionner : ailleurs, il n'y a rien à casser.
+  if (!accountsEnabled()) return null;
+
+  const confiance =
+    process.env.AUTH_URL ??
+    process.env.AUTH_TRUST_HOST ??
+    process.env.VERCEL ??
+    process.env.CF_PAGES;
+
+  if (confiance) return null;
+
+  return (
+    'AUTH_URL n’est pas définie : Auth.js refusera CHAQUE requête de connexion ' +
+    '(UntrustedHost), et aucun courriel de connexion ne partira. La page ' +
+    'affichera « le service de connexion ne répond pas », ce qui laissera croire ' +
+    'à une panne passagère. Définissez AUTH_URL sur l’adresse publique du site, ' +
+    'par exemple AUTH_URL=https://lunamarea.fr'
+  );
+}
+
 export { smtpServer };

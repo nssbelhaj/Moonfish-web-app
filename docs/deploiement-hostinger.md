@@ -54,7 +54,7 @@ rien à adapter dans le dépôt. Vérifié.
 | `DATABASE_URL` | non | Ouvre les comptes, avec l'envoi de courriel. Absente, le site fonctionne et annonce qu'ils sont fermés. |
 | `EMAIL_SERVER` et `EMAIL_FROM` | non | Envoi des liens de connexion. Voir `docs/mise-en-service-comptes.md`. |
 | `AUTH_SECRET` | avec les comptes | Signe les jetons d'Auth.js. `openssl rand -base64 32`. |
-| `AUTH_URL` | avec les comptes | Domaine public, pour construire les liens de connexion. |
+| `AUTH_URL` | **oui, dès les comptes** | Auth.js v5 calcule `trustHost` ainsi : `AUTH_URL ?? AUTH_TRUST_HOST ?? VERCEL ?? CF_PAGES ?? NODE_ENV !== 'production'`. Sur un mutualisé en production, aucune de ces conditions n'est remplie — sans cette variable, TOUTE connexion échoue en `UntrustedHost` et aucun courriel ne part, alors que le formulaire s'affiche normalement. Reproduit. Le site le signale au démarrage. |
 | `UPLOADS_DIR` | avec les comptes | **Hors du répertoire de l'application** : un déploiement le remplace, et les photos disparaîtraient. |
 | `CRON_SECRET` | non | Ferme `/api/entretien`. Voir ci-dessous. |
 
