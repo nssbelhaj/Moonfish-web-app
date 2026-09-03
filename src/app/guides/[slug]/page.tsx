@@ -110,7 +110,7 @@ export default async function GuidePage({ params }: { params: Promise<RouteParam
         <footer className="mt-12 border-t border-edge pt-8">
           <p className="text-body text-fg-muted">
             Les scores affichés sur Moonfish traduisent ce qui est décrit ici en une note par
-            créneau de trois heures.{' '}
+            créneau de deux heures.{' '}
             <Link href="/spots" className="underline decoration-dotted underline-offset-4">
               Voir les 12 spots suivis
             </Link>

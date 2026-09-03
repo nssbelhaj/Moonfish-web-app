@@ -56,7 +56,7 @@ Node 20 ou plus. Aucune variable d'environnement n'est requise pour démarrer.
 | `npm start` | Sert le build de production — `prestart` migre la base avant, tout seul |
 | `npm run typecheck` | `tsc --noEmit` en mode strict renforcé |
 | `npm run lint` | ESLint (config `next/core-web-vitals` + `next/typescript`) |
-| `npm test` | 461 tests (Vitest). 444 hermétiques — aucun accès réseau ; les 17 d'intégration de la couche de données sont ignorés sans `DATABASE_URL`, et exécutés en intégration continue contre un vrai MySQL |
+| `npm test` | 463 tests (Vitest). 446 hermétiques — aucun accès réseau ; les 17 d'intégration de la couche de données sont ignorés sans `DATABASE_URL`, et exécutés en intégration continue contre un vrai MySQL |
 | `npm run test:watch` | Tests en mode surveillance |
 
 ---
@@ -102,7 +102,7 @@ src/
 │   ├── spot/                     SpotCard, SpotResults, SafetyBanner
 │   ├── v3/                       Pièces du handoff v3 : TideActivityChart,
 │   │                             ScoreCartouche, ScoreScale, CompassMark,
-│   │                             WaterValue, SlotRow, DayRuler, SpeciesCard,
+│   │                             WaterValue, SlotTable, DayRuler, SpeciesCard,
 │   │                             SpotsMap, SeaStateCard
 │   ├── legal/                    LegalValue — une mention manquante s'affiche
 │   ├── account/                  Connexion, profil, effacement de compte
@@ -394,6 +394,59 @@ Tests : `src/lib/__tests__/data-freshness.test.ts` et le bloc « les puces de
 fraîcheur » de `src/lib/__tests__/contrast.test.ts`.
 
 ---
+
+## Les créneaux, et la navigation par jour
+
+### Un tableau plutôt qu'une jauge
+
+Un créneau n'affichait que son heure, une barre et sa note. « 8,7 » sans motif
+demande qu'on lui fasse confiance, alors que tout l'argument du site est de
+montrer son calcul — et pour savoir POURQUOI, il fallait remonter au graphique
+puis redescendre à une autre carte.
+
+`SlotTable` porte les facteurs sur la ligne : note, état de la marée avec
+l'écart à la pleine mer (« PM +2 h 30 »), vent et rafales avec le secteur,
+houle et période, phase de lumière. Deux créneaux notés pareil ne se
+ressemblent pas — l'un porté par une descendante, l'autre par une aube calme —
+et c'est cette différence qui décide de la sortie.
+
+L'ordre des colonnes est un choix : en téléphone le tableau défile
+horizontalement, donc ce qui sort de l'écran en premier est ce dont on peut se
+passer. Heure, note et marée restent visibles sans défiler.
+
+### Sept jours en onglets, sans une ligne de JavaScript
+
+La prévision empilait les sept jours. Avec un graphique et douze créneaux
+chacun, atteindre samedi demandait six écrans de défilement — et une prévision
+se consulte par comparaison, ce que l'empilement rendait pénible.
+
+Un onglet réclame d'ordinaire un état, donc du JavaScript, donc une page
+rendue côté client. Ici l'état est déjà dans l'URL : c'est le fragment.
+`:target` le lit, et trois propriétés en découlent :
+
+| | |
+| --- | --- |
+| **Zéro JavaScript ajouté** | la page reste entièrement pré-rendue — le site se consulte au bord de l'eau, en 4G faible |
+| **Partageable** | `…/prevision#jour-2026-09-06` ouvre directement dimanche, ce qu'un état client ne permet pas |
+| **Sans JavaScript** | fonctionne quand même |
+
+Le masquage s'appuie sur `:has()`, faute de quoi CSS ne sait pas exprimer
+« aucun jour n'est ciblé ». Un navigateur qui l'ignore affiche les sept jours
+empilés — exactement le comportement précédent. La dégradation ramène à
+l'ancienne page, jamais à une page cassée.
+
+### Une durée annoncée qui ne correspondait pas au calcul
+
+`SLOT_HOURS` vaut 2. Pourtant la page d'accueil, **sa balise de description —
+celle que Google affiche** — et un guide annonçaient « un score par créneau de
+trois heures » ; la page d'un spot parlait de « huit créneaux » là où il y en a
+douze. L'écart datait d'un changement de granularité et personne ne l'avait vu,
+faute d'écran montrant les horaires côte à côte.
+
+`duree-creneau.test.ts` lit la constante et refuse toute phrase PUBLIÉE qui
+associe un créneau à une autre durée. Les commentaires sont exclus du contrôle :
+`slots.ts` explique légitimement pourquoi trois heures a été écarté, et
+interdire la phrase là reviendrait à interdire d'expliquer la décision.
 
 ## Thèmes clair et nuit
 

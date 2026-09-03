@@ -6,7 +6,7 @@ import { TideActivityChart } from '@/components/v3/TideActivityChart';
 import { MoonPhase } from '@/components/marine/MoonPhase';
 import { WindCompass } from '@/components/marine/WindCompass';
 import { ScoreCartouche } from '@/components/v3/ScoreCartouche';
-import { SlotRow } from '@/components/v3/SlotRow';
+import { SlotTable } from '@/components/v3/SlotTable';
 import { SeaStateCard } from '@/components/v3/SeaStateCard';
 import { MoonTimeCells } from '@/components/v3/MoonTimes';
 import { WaterValue } from '@/components/v3/WaterValue';
@@ -169,7 +169,7 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
                 La journée d’un coup d’œil
               </h2>
               <p className="mt-2 max-w-prose text-body text-fg-muted">
-                La hauteur d’eau, les huit créneaux de trois heures et ceux qui ressortent.{' '}
+                La hauteur d’eau, les douze créneaux de deux heures et ceux qui ressortent.{' '}
                 {tideIsSimulated
                   ? 'Les marées affichées ici sont simulées ; le lever et le coucher du soleil, eux, sont calculés.'
                   : 'Marées et météo sont réelles ; le lever et le coucher du soleil sont calculés localement.'}
@@ -187,18 +187,16 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
               <div className="surface mt-4 p-[14px]">
                 <h3 className="card-title">Les créneaux de la journée</h3>
                 <div className="mt-2">
-                  {today.slots.map((slot, index) => (
-                    <SlotRow
-                      key={slot.start}
-                      slot={slot}
-                      timeZone={spot.timezone}
-                      active={slot.start === current?.start}
-                      last={index === today.slots.length - 1}
-                    />
-                  ))}
+                  <SlotTable
+                    slots={today.slots}
+                    timeZone={spot.timezone}
+                    nowMs={now.getTime()}
+                    legende={`Créneaux de deux heures à ${spot.name} : note, état de la marée, vent, mer et lumière.`}
+                  />
                 </div>
                 <p className="card-source mt-2">
                   Score Moonfish · marée, vent, houle, solunaire, lumière · recalculé à l’heure.
+                  Conditions relevées au MILIEU du créneau, représentatives des deux heures.
                 </p>
               </div>
             </section>

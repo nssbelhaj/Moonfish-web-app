@@ -31,7 +31,7 @@ export interface ForecastSlot {
   end: string;
   score: ScoreResult;
   /**
-   * Conditions relevées au milieu du créneau, représentatives des trois heures.
+   * Conditions relevées au milieu du créneau, représentatives des deux heures.
    * `null` si la série marine ne couvre pas cet instant — même règle que la
    * marée : le créneau reste, et le score dit ce qui lui manque (D11).
    */

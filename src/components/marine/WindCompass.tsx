@@ -1,6 +1,5 @@
 import { classifyWind, WIND_EXPOSURE_LABEL } from '@/lib/scoring';
-
-const CARDINALS = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'] as const;
+import { cardinal, CARDINALS } from '@/lib/wind-direction';
 
 /**
  * Seules les quatre directions cardinales sont écrites (R9).
@@ -11,11 +10,6 @@ const CARDINALS = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'] as const;
  * côté, ce que R9 exige précisément pour ne pas dépendre du dessin.
  */
 const SHOWN = ['N', 'E', 'S', 'O'] as const;
-
-function cardinal(deg: number): string {
-  const index = Math.round((((deg % 360) + 360) % 360) / 45) % 8;
-  return CARDINALS[index] ?? 'N';
-}
 
 /**
  * Compas des vents.

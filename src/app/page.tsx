@@ -17,7 +17,7 @@ export const revalidate = 3600;
 export const metadata: Metadata = {
   title: 'Moonfish — les meilleurs créneaux de pêche en mer, spot par spot',
   description:
-    'Un score sur 10 par créneau de 3 heures, sur 7 jours, pour 12 spots de pêche du bord en France et au Maroc. Surfcasting, lancer-ramener, rockfishing, shore-jigging. Marée, vent, houle et périodes solunaires, expliqués et pondérés.',
+    'Un score sur 10 par créneau de 2 heures, sur 7 jours, pour 12 spots de pêche du bord en France et au Maroc. Surfcasting, lancer-ramener, rockfishing, shore-jigging. Marée, vent, houle et périodes solunaires, expliqués et pondérés.',
   alternates: { canonical: absoluteUrl('/') },
   openGraph: {
     title: 'Moonfish — les meilleurs créneaux de pêche en mer, spot par spot',
@@ -108,7 +108,7 @@ export default async function HomePage() {
           Les meilleurs créneaux de pêche en mer, spot par spot
         </h1>
         <p className="mt-4 max-w-prose text-body text-fg-muted">
-          Un score sur 10 par tranche de trois heures, sur sept jours. Marée, vent, houle, lune et
+          Un score sur 10 par tranche de deux heures, sur sept jours. Marée, vent, houle, lune et
           lumière, pondérés et expliqués — pour choisir quand y aller, pas pour vous promettre une
           prise. Surfcasting, lancer-ramener, rockfishing : chaque spot indique ce qui s’y pratique.
         </p>

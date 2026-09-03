@@ -2,15 +2,21 @@ import type { Metadata } from 'next';
 
 import { DemoDataNotice } from '@/components/data/DemoDataNotice';
 import { SpotTabs } from '@/components/spot/SpotTabs';
-import { SlotRow } from '@/components/v3/SlotRow';
+import { SlotTable } from '@/components/v3/SlotTable';
 import { TideActivityChart } from '@/components/v3/TideActivityChart';
 import { MoonTimesInline } from '@/components/v3/MoonTimes';
 import { WaterValue } from '@/components/v3/WaterValue';
-import { SLOTS_PER_DAY, sourceList } from '@/lib/forecast';
+import { sourceList } from '@/lib/forecast';
 import { tidalRangeOf } from '@/lib/forecast/tide-curve';
 import { absoluteUrl, spotPath } from '@/lib/routes';
 import { formatMeasure, formatScore, tierForOrNull } from '@/lib/score-display';
-import { formatDayLong, formatDayNumber, formatTime, formatWeekdayShort } from '@/lib/time';
+import {
+  formatDayLong,
+  formatDayNumber,
+  formatTime,
+  formatWeekdayShort,
+  localDateKey,
+} from '@/lib/time';
 import { findSpot, resolveSpot, type RouteParams } from '../spot-page-data';
 
 export const revalidate = 3600;
@@ -30,12 +36,62 @@ export async function generateMetadata({
   };
 }
 
+/**
+ * Bascule d'un jour à l'autre, SANS JavaScript.
+ *
+ * ─── Ce que la page faisait avant, et pourquoi ça ne allait pas ───────────
+ *
+ * Les sept jours s'empilaient les uns sous les autres. Chacun portant un
+ * graphique de marée et douze créneaux, atteindre samedi demandait six écrans
+ * de défilement, et rien ne disait où l'on se trouvait. Une prévision se
+ * consulte par comparaison — « et si j'y allais plutôt jeudi ? » — et
+ * l'empilement rendait précisément cette comparaison pénible.
+ *
+ * ─── Pourquoi `:target` plutôt qu'un composant client ─────────────────────
+ *
+ * Un onglet réclame d'ordinaire un état, donc du JavaScript, donc une page
+ * rendue côté client. Ici l'état est déjà dans l'URL : c'est le fragment.
+ * `:target` le lit, et trois conséquences en découlent, toutes voulues :
+ *
+ *   · la page reste ENTIÈREMENT pré-rendue — pas une ligne de JavaScript
+ *     ajoutée au paquet, sur un site consulté au bord de l'eau en 4G faible ;
+ *   · l'adresse d'un jour se partage : `…/prevision#jour-2026-09-05` ouvre
+ *     directement jeudi, ce qu'un état client ne permet pas ;
+ *   · sans JavaScript, ça marche quand même.
+ *
+ * ─── Le repli, qui n'en est pas vraiment un ───────────────────────────────
+ *
+ * Le masquage s'appuie sur `:has()`, faute de quoi CSS ne sait pas exprimer
+ * « aucun jour n'est ciblé ». Un navigateur qui l'ignore affiche les sept
+ * jours empilés, c'est-à-dire EXACTEMENT le comportement précédent. La
+ * dégradation ramène à l'ancienne page, jamais à une page cassée.
+ */
+function styleBascule(dates: readonly string[]): string {
+  const premier = dates[0];
+  if (premier === undefined) return '';
+
+  const actif = dates
+    .map((date) => `body:has(#jour-${date}:target) [data-jour="${date}"]`)
+    .concat(`body:not(:has(.jour:target)) [data-jour="${premier}"]`)
+    .join(',');
+
+  return [
+    'body:has(.jour:target) .jour:not(:target){display:none}',
+    `body:not(:has(.jour:target)) .jour:not(:first-of-type){display:none}`,
+    `${actif}{background-color:var(--surface-2);color:var(--fg)}`,
+    `${actif} .jour-onglet-jour{font-weight:700}`,
+  ].join('');
+}
+
 export default async function SpotForecastPage({ params }: { params: Promise<RouteParams> }) {
   const { spot, forecast, now } = await resolveSpot(params);
   const nowMs = now.getTime();
+  const dates = forecast.days.map((day) => localDateKey(new Date(day.date), spot.timezone));
 
   return (
     <>
+      <style>{styleBascule(dates)}</style>
+
       <div className="mx-auto w-full max-w-shell px-4 pt-6 md:px-8">
         <SpotTabs basePath={spotPath(spot)} active="prevision" />
         <div className="mt-6">
@@ -44,28 +100,25 @@ export default async function SpotForecastPage({ params }: { params: Promise<Rou
       </div>
 
       <div className="mx-auto w-full max-w-shell px-4 py-8 md:px-8 md:py-12">
-        {/*
-          La règle graduée des jours (D1) sert ici d'ancrage : chaque graduation
-          renvoie à la section du jour, plus bas. Ce sont des ancres et non un
-          état client — la page reste entièrement rendue au serveur, chaque jour
-          reste atteignable sans JavaScript, et le lien est partageable.
-        */}
-        <nav aria-label="Aller à un jour" className="surface p-3">
-          <ul className="flex items-end gap-0 overflow-x-auto">
-            {forecast.days.map((day) => {
+        <nav aria-label="Choisir un jour" className="surface p-2">
+          <ul className="flex items-stretch gap-1 overflow-x-auto">
+            {forecast.days.map((day, index) => {
               const date = new Date(day.date);
+              const cle = localDateKey(date, spot.timezone);
               const coefficient = day.tideEvents[0]?.coefficient ?? null;
               const tier = tierForOrNull(day.best?.score.value ?? null);
+
               return (
-                <li key={day.date} className="min-w-[46px] flex-1">
+                <li key={day.date} className="min-w-[54px] flex-1">
                   <a
-                    href={`#jour-${day.date.slice(0, 10)}`}
-                    className="flex min-h-tap flex-col items-center justify-center gap-[5px] rounded-[8px] py-[6px] tappable"
+                    href={`#jour-${cle}`}
+                    data-jour={cle}
+                    className="flex min-h-tap flex-col items-center justify-center gap-[4px] rounded-[8px] py-[7px] text-fg-muted tappable"
                   >
-                    <span className="text-[11px] text-fg-muted">
-                      {formatWeekdayShort(date, spot.timezone)}
+                    <span className="text-[11px]">
+                      {index === 0 ? "auj." : formatWeekdayShort(date, spot.timezone)}
                     </span>
-                    <span className="text-[15px] font-semibold nums" data-numeric="">
+                    <span className="jour-onglet-jour text-[15px] font-semibold nums" data-numeric="">
                       {formatDayNumber(date, spot.timezone)}
                     </span>
                     <WaterValue className="nums text-[12px]">{coefficient ?? '—'}</WaterValue>
@@ -87,19 +140,18 @@ export default async function SpotForecastPage({ params }: { params: Promise<Rou
         {forecast.days.map((day, index) => {
           const range = tidalRangeOf(day.tideEvents);
           const coefficient = day.tideEvents[0]?.coefficient ?? null;
-          const dayEnd = new Date(day.date).getTime() + 24 * 3_600_000;
-          const past = dayEnd <= nowMs;
+          const cle = localDateKey(new Date(day.date), spot.timezone);
 
           return (
             <section
               key={day.date}
-              id={`jour-${day.date.slice(0, 10)}`}
-              aria-labelledby={`titre-${day.date.slice(0, 10)}`}
-              className={`mt-10 scroll-mt-6 ${past ? 'opacity-70' : ''}`}
+              id={`jour-${cle}`}
+              aria-labelledby={`titre-${cle}`}
+              className="jour mt-8 scroll-mt-4"
             >
               <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
                 <h2
-                  id={`titre-${day.date.slice(0, 10)}`}
+                  id={`titre-${cle}`}
                   className="font-serif text-h2 font-semibold first-letter:uppercase"
                 >
                   {formatDayLong(new Date(day.date), spot.timezone)}
@@ -120,7 +172,7 @@ export default async function SpotForecastPage({ params }: { params: Promise<Rou
                 </p>
               </div>
 
-              <div className="mt-4 xl:grid xl:grid-cols-[1fr_360px] xl:gap-6">
+              <div className="mt-4">
                 <TideActivityChart
                   day={day}
                   tideEvents={forecast.tideEvents}
@@ -128,53 +180,51 @@ export default async function SpotForecastPage({ params }: { params: Promise<Rou
                   now={forecast.generatedAt}
                   coefficient={coefficient}
                 />
+              </div>
 
-                <div className="surface mt-4 p-[14px] xl:mt-0">
-                  <h3 className="card-title">Les {SLOTS_PER_DAY} créneaux</h3>
-                  <div className="mt-2">
-                    {day.slots.map((slot, slotIndex) => (
-                      <SlotRow
-                        key={slot.start}
-                        slot={slot}
-                        timeZone={spot.timezone}
-                        active={
-                          new Date(slot.start).getTime() <= nowMs &&
-                          new Date(slot.end).getTime() > nowMs
-                        }
-                        last={slotIndex === day.slots.length - 1}
-                      />
-                    ))}
-                  </div>
-
-                  <p className="card-source mt-2">
-                    Coefficient{' '}
-                    <WaterValue className="nums">{coefficient ?? '—'}</WaterValue>
-                    {range !== null && (
-                      <>
-                        {' · marnage '}
-                        <WaterValue className="nums">{formatMeasure(range, 'm', 2)}</WaterValue>
-                      </>
-                    )}
-                    {day.sunrise && day.sunset && (
-                      <>
-                        {' · soleil '}
-                        <span className="nums">
-                          {formatTime(new Date(day.sunrise), spot.timezone)}
-                        </span>
-                        {'–'}
-                        <span className="nums">
-                          {formatTime(new Date(day.sunset), spot.timezone)}
-                        </span>
-                      </>
-                    )}
-                    {' · '}
-                    <MoonTimesInline
-                      moonrise={day.moonrise}
-                      moonset={day.moonset}
-                      timeZone={spot.timezone}
-                    />
-                  </p>
+              <div className="surface mt-4 p-[14px]">
+                <h3 className="card-title">Les créneaux du jour</h3>
+                <div className="mt-2">
+                  <SlotTable
+                    slots={day.slots}
+                    timeZone={spot.timezone}
+                    /*
+                      Le repère « en cours » n'a de sens que pour aujourd'hui.
+                      Le porter sur les autres jours désignerait un créneau qui
+                      n'est pas en train de se produire.
+                    */
+                    nowMs={index === 0 ? nowMs : null}
+                    legende={`Créneaux du ${formatDayLong(new Date(day.date), spot.timezone)} à ${spot.name} : note, marée, vent, mer et lumière.`}
+                  />
                 </div>
+
+                <p className="card-source mt-2">
+                  Coefficient <WaterValue className="nums">{coefficient ?? '—'}</WaterValue>
+                  {range !== null && (
+                    <>
+                      {' · marnage '}
+                      <WaterValue className="nums">{formatMeasure(range, 'm', 2)}</WaterValue>
+                    </>
+                  )}
+                  {day.sunrise && day.sunset && (
+                    <>
+                      {' · soleil '}
+                      <span className="nums">
+                        {formatTime(new Date(day.sunrise), spot.timezone)}
+                      </span>
+                      {'–'}
+                      <span className="nums">
+                        {formatTime(new Date(day.sunset), spot.timezone)}
+                      </span>
+                    </>
+                  )}
+                  {' · '}
+                  <MoonTimesInline
+                    moonrise={day.moonrise}
+                    moonset={day.moonset}
+                    timeZone={spot.timezone}
+                  />
+                </p>
               </div>
             </section>
           );
