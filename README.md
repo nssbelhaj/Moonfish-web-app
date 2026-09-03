@@ -96,9 +96,7 @@ src/
 ├── components/
 │   ├── score/                    ScoreGauge, ScoreBadge, ScoreShape, ScoreReasons,
 │   │                             ScoreBreakdown — les 4 canaux redondants du palier
-│   ├── marine/                   DayActivityChart (marée + score + créneaux),
-│   │                             TideChart, WindCompass, MoonPhase, TimeWindowBar,
-│   │                             FishGlyph
+│   ├── marine/                   TideChart, WindCompass, MoonPhase, FishGlyph
 │   ├── spot/                     SpotCard, SpotResults, SafetyBanner
 │   ├── v3/                       Pièces du handoff v3 : TideActivityChart,
 │   │                             ScoreCartouche, ScoreScale, CompassMark,
