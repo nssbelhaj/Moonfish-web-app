@@ -1,7 +1,10 @@
 import type {
   Catch,
   CatchInput,
+  Favorite,
   MarinePoint,
+  Outing,
+  OutingInput,
   Profile,
   Spot,
   SpotReview,
@@ -151,6 +154,19 @@ export interface AccountExport {
   profile: Profile | null;
   reviews: SpotReview[];
   catches: Catch[];
+  favorites: Favorite[];
+  outings: Outing[];
+}
+
+/**
+ * Une sortie dont l'alerte est à envoyer, avec l'adresse où l'envoyer.
+ *
+ * L'adresse est jointe ICI, par le dépôt, parce que c'est le seul endroit qui
+ * a le droit de la lire : la tâche d'entretien ne fait que passer le message.
+ */
+export interface PendingAlert {
+  outing: Outing;
+  email: string;
 }
 
 export interface ContributionsRepository {
@@ -178,6 +194,28 @@ export interface ContributionsRepository {
   */
   deleteReview(reviewId: string, userId: string): Promise<ContributionResult<null>>;
   deleteCatch(catchId: string, userId: string): Promise<ContributionResult<null>>;
+
+  /* ── Favoris ─────────────────────────────────────────────────────────── */
+
+  listFavorites(userId: string): Promise<Favorite[]>;
+  isFavorite(userId: string, spotSlug: string): Promise<boolean>;
+  /** Idempotent : ajouter un favori déjà présent ne fait rien et ne se plaint pas. */
+  addFavorite(userId: string, spotSlug: string): Promise<ContributionResult<null>>;
+  removeFavorite(userId: string, spotSlug: string): Promise<ContributionResult<null>>;
+
+  /* ── Sorties programmées ─────────────────────────────────────────────── */
+
+  listOutings(userId: string): Promise<Outing[]>;
+  addOuting(userId: string, input: OutingInput): Promise<ContributionResult<Outing>>;
+  deleteOuting(outingId: string, userId: string): Promise<ContributionResult<null>>;
+
+  /**
+   * Sorties à venir dont l'alerte n'est pas encore partie, dans l'horizon
+   * donné. La tâche d'entretien les prend, envoie, puis marque.
+   */
+  pendingAlerts(now: Date, horizonMs: number): Promise<PendingAlert[]>;
+  /** Marque le courriel comme envoyé. Filtre sur le propriétaire, comme tout `update`. */
+  markNotified(outingId: string, userId: string, at: Date): Promise<void>;
 
   /** Droit d'accès et de portabilité : tout ce que nous détenons, en une fois. */
   exportAccount(userId: string, email: string | null): Promise<ContributionResult<AccountExport>>;

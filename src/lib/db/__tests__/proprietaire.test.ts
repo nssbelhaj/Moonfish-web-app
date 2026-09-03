@@ -24,7 +24,7 @@ const SQL_ALLOWED = [
 ];
 
 /** Tables dont chaque ligne appartient à quelqu'un. */
-const OWNED_TABLES = ['spot_reviews', 'catches', 'profiles'];
+const OWNED_TABLES = ['spot_reviews', 'catches', 'profiles', 'favorites', 'outings'];
 
 function sources(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {
@@ -67,7 +67,7 @@ describe('discipline SQL', () => {
       if (isAllowed(file)) continue;
 
       const source = read(file);
-      if (/\b(from|into)\s+(spot_reviews|catches|profiles|waitlist|users|sessions)\b/i.test(source)) {
+      if (/\b(from|into)\s+(spot_reviews|catches|profiles|favorites|outings|waitlist|users|sessions)\b/i.test(source)) {
         offenders.push(path.relative(ROOT, file));
       }
     }

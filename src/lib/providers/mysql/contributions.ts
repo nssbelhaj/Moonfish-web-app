@@ -4,11 +4,17 @@ import {
   catchInputSchema,
   catchSchema,
   displayNameSchema,
+  favoriteSchema,
+  outingInputSchema,
+  outingSchema,
   profileSchema,
   spotReviewInputSchema,
   spotReviewSchema,
   type Catch,
   type CatchInput,
+  type Favorite,
+  type Outing,
+  type OutingInput,
   type Profile,
   type SpotReview,
   type SpotReviewInput,
@@ -21,6 +27,7 @@ import type {
   Author,
   ContributionResult,
   ContributionsRepository,
+  PendingAlert,
   SpotContributions,
 } from '../types';
 
@@ -80,6 +87,23 @@ interface CatchRow {
   created_at: string;
 }
 
+interface FavoriteRow {
+  spot_slug: string;
+  created_at: string;
+}
+
+interface OutingRow {
+  id: string;
+  user_id: string;
+  spot_slug: string;
+  planned_at: string;
+  note: string | null;
+  alert: number;
+  min_score: number | null;
+  notified_at: string | null;
+  created_at: string;
+}
+
 interface ProfileRow {
   user_id: string;
   display_name: string;
@@ -135,6 +159,24 @@ function toCatch(row: CatchRow): Catch {
     caughtAt: toIso(row.caught_at),
     note: row.note,
     photoPath: row.photo_path,
+    createdAt: toIso(row.created_at),
+  });
+}
+
+function toFavorite(row: FavoriteRow): Favorite {
+  return favoriteSchema.parse({ spotSlug: row.spot_slug, createdAt: toIso(row.created_at) });
+}
+
+function toOuting(row: OutingRow): Outing {
+  return outingSchema.parse({
+    id: row.id,
+    userId: row.user_id,
+    spotSlug: row.spot_slug,
+    plannedAt: toIso(row.planned_at),
+    note: row.note,
+    alert: row.alert === 1,
+    minScore: row.min_score,
+    notifiedAt: toIso(row.notified_at),
     createdAt: toIso(row.created_at),
   });
 }
@@ -393,14 +435,184 @@ export class MysqlContributionsRepository implements ContributionsRepository {
     }
   }
 
+  /* ── Favoris ─────────────────────────────────────────────────────────── */
+
+  async listFavorites(userId: string): Promise<Favorite[]> {
+    try {
+      const rows = await query<FavoriteRow>(
+        'select spot_slug, created_at from favorites where user_id = ? order by created_at desc',
+        [userId],
+      );
+      return rows.map(toFavorite);
+    } catch (error) {
+      console.error('[contributions] lecture des favoris', error);
+      return [];
+    }
+  }
+
+  async isFavorite(userId: string, spotSlug: string): Promise<boolean> {
+    try {
+      const row = await queryOne<{ spot_slug: string }>(
+        'select spot_slug from favorites where user_id = ? and spot_slug = ?',
+        [userId, spotSlug],
+      );
+      return row !== null;
+    } catch (error) {
+      console.error('[contributions] lecture d’un favori', error);
+      return false;
+    }
+  }
+
+  async addFavorite(userId: string, spotSlug: string): Promise<ContributionResult<null>> {
+    if (!/^[a-z0-9-]{1,120}$/.test(spotSlug)) return failure('invalid', 'Spot inconnu.');
+
+    try {
+      // `insert ignore` : la clé primaire composée fait l'unicité, et
+      // réajouter un favori existant n'est pas une erreur, c'est un clic de
+      // trop qu'on absorbe.
+      await execute('insert ignore into favorites (user_id, spot_slug) values (?, ?)', [
+        userId,
+        spotSlug,
+      ]);
+      return { ok: true, data: null };
+    } catch (error) {
+      return storageFailure('ajout d’un favori', error);
+    }
+  }
+
+  async removeFavorite(userId: string, spotSlug: string): Promise<ContributionResult<null>> {
+    try {
+      await execute('delete from favorites where user_id = ? and spot_slug = ?', [
+        userId,
+        spotSlug,
+      ]);
+      // Zéro ligne touchée n'est pas un échec ici : retirer un favori absent
+      // laisse exactement l'état demandé.
+      return { ok: true, data: null };
+    } catch (error) {
+      return storageFailure('retrait d’un favori', error);
+    }
+  }
+
+  /* ── Sorties programmées ─────────────────────────────────────────────── */
+
+  async listOutings(userId: string): Promise<Outing[]> {
+    try {
+      const rows = await query<OutingRow>(
+        'select * from outings where user_id = ? order by planned_at asc',
+        [userId],
+      );
+      return rows.map(toOuting);
+    } catch (error) {
+      console.error('[contributions] lecture des sorties', error);
+      return [];
+    }
+  }
+
+  async addOuting(userId: string, input: OutingInput): Promise<ContributionResult<Outing>> {
+    const parsed = outingInputSchema.safeParse(input);
+    if (!parsed.success) {
+      return failure('invalid', parsed.error.issues[0]?.message ?? 'Sortie invalide.');
+    }
+
+    const id = randomUUID();
+
+    try {
+      await execute(
+        `insert into outings (id, user_id, spot_slug, planned_at, note, alert, min_score)
+         values (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          id,
+          userId,
+          parsed.data.spotSlug,
+          toMysqlDateTime(parsed.data.plannedAt),
+          parsed.data.note,
+          parsed.data.alert ? 1 : 0,
+          parsed.data.minScore,
+        ],
+      );
+
+      const row = await queryOne<OutingRow>('select * from outings where id = ? and user_id = ?', [
+        id,
+        userId,
+      ]);
+      return row
+        ? { ok: true, data: toOuting(row) }
+        : storageFailure('programmation d’une sortie', 'sortie introuvable après écriture');
+    } catch (error) {
+      return storageFailure('programmation d’une sortie', error);
+    }
+  }
+
+  async deleteOuting(outingId: string, userId: string): Promise<ContributionResult<null>> {
+    try {
+      const touched = await execute('delete from outings where id = ? and user_id = ?', [
+        outingId,
+        userId,
+      ]);
+      if (touched === 0) return failure('invalid', 'Cette sortie est introuvable.');
+      return { ok: true, data: null };
+    } catch (error) {
+      return storageFailure('suppression d’une sortie', error);
+    }
+  }
+
+  async pendingAlerts(now: Date, horizonMs: number): Promise<PendingAlert[]> {
+    try {
+      /*
+        La jointure sur `users` sert à UNE chose : l'adresse. Elle n'est lue
+        nulle part ailleurs dans ce dépôt pour être envoyée à un tiers — ici,
+        elle sert à écrire à la personne qui a demandé à l'être.
+
+        `planned_at > now` : une sortie passée n'a plus besoin d'alerte, et une
+        alerte envoyée après coup ferait plus de mal que de bien.
+      */
+      const rows = await query<OutingRow & { email: string | null }>(
+        `select o.*, u.email
+           from outings o
+           join users u on u.id = o.user_id
+          where o.alert = 1
+            and o.notified_at is null
+            and o.planned_at > ?
+            and o.planned_at <= ?
+          order by o.planned_at asc
+          limit 200`,
+        [toMysqlDateTime(now), toMysqlDateTime(new Date(now.getTime() + horizonMs))],
+      );
+
+      return rows
+        .filter((row): row is OutingRow & { email: string } => typeof row.email === 'string')
+        .map((row) => ({ outing: toOuting(row), email: row.email }));
+    } catch (error) {
+      console.error('[contributions] lecture des alertes à envoyer', error);
+      return [];
+    }
+  }
+
+  async markNotified(outingId: string, userId: string, at: Date): Promise<void> {
+    try {
+      await execute('update outings set notified_at = ? where id = ? and user_id = ?', [
+        toMysqlDateTime(at),
+        outingId,
+        userId,
+      ]);
+    } catch (error) {
+      // Journalisé et non levé : la tâche continue pour les autres sorties.
+      // Le pire cas est un second courriel au prochain passage, pas une perte.
+      console.error('[contributions] marquage d’une alerte', error);
+    }
+  }
+
   async exportAccount(
     userId: string,
     email: string | null,
   ): Promise<ContributionResult<AccountExport>> {
     try {
-      const [profile, mine] = await Promise.all([
+      const [profile, mine, favorites, outings] = await Promise.all([
         this.getProfile(userId),
         this.listForUser(userId),
+        this.listFavorites(userId),
+        this.listOutings(userId),
       ]);
 
       return {
@@ -411,6 +623,8 @@ export class MysqlContributionsRepository implements ContributionsRepository {
           profile,
           reviews: mine.reviews,
           catches: mine.catches,
+          favorites,
+          outings,
         },
       };
     } catch (error) {

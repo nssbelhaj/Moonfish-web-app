@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation';
 
 import { signIn, signOut as authSignOut } from '@/auth';
 import { accountsEnabled } from '@/lib/auth/config';
-import { catchInputSchema, spotReviewInputSchema } from '@/data/schemas';
+import { catchInputSchema, outingInputSchema, spotReviewInputSchema } from '@/data/schemas';
 import { localDateTimeToIso } from '@/lib/auth/local-time';
 import { currentUser } from '@/lib/auth/session';
 import { contributions, spots } from '@/lib/providers';
@@ -329,3 +329,95 @@ export async function deleteAccount(
   await authSignOut({ redirect: false });
   redirect('/compte?efface=1');
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Favoris.
+
+   Un favori n'est pas une contribution : il ne demande pas de nom affiché, il
+   n'est vu par personne d'autre, et il ne revalide aucune page publique. Il
+   est donc accessible dès la connexion, avant même le choix du profil.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+export async function toggleFavorite(
+  _previous: ActionState | null,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await currentUser();
+  if (!user) return NOT_SIGNED_IN;
+
+  const slug = String(formData.get('spot_slug') ?? '');
+  const wanted = formData.get('favori') === 'oui';
+
+  const result = wanted
+    ? await contributions.addFavorite(user.id, slug)
+    : await contributions.removeFavorite(user.id, slug);
+
+  if (!result.ok) return { ok: false, message: result.message };
+
+  revalidatePath('/compte');
+  return {
+    ok: true,
+    message: wanted ? 'Ajouté à vos favoris.' : 'Retiré de vos favoris.',
+  };
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Sorties programmées.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+export async function addOuting(
+  _previous: ActionState | null,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await currentUser();
+  if (!user) return NOT_SIGNED_IN;
+
+  // Même lecture d'heure locale que pour une prise : le navigateur transmet
+  // son décalage, et l'instant est stocké en UTC.
+  const localValue = String(formData.get('planned_at') ?? '');
+  const offsetMinutes = Number(formData.get('tz_offset') ?? '0');
+  const plannedAt = localDateTimeToIso(localValue, Number.isFinite(offsetMinutes) ? offsetMinutes : 0);
+
+  if (plannedAt === null) return { ok: false, message: 'Date de sortie invalide.' };
+  if (new Date(plannedAt).getTime() < Date.now() - 60_000) {
+    return { ok: false, message: 'Une sortie se programme dans le futur.' };
+  }
+  if (new Date(plannedAt).getTime() > Date.now() + 90 * 24 * 3_600_000) {
+    return {
+      ok: false,
+      message: 'Au plus trois mois à l’avance : au-delà, aucune prévision n’existe pour vous alerter.',
+    };
+  }
+
+  const parsed = outingInputSchema.safeParse({
+    spotSlug: formData.get('spot_slug'),
+    plannedAt,
+    note: formData.get('note') ?? '',
+    alert: formData.get('alerte') === 'oui',
+    minScore: formData.get('min_score') ?? '',
+  });
+
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.issues[0]?.message ?? 'Sortie invalide.' };
+  }
+
+  const result = await contributions.addOuting(user.id, parsed.data);
+  if (!result.ok) return { ok: false, message: result.message };
+
+  revalidatePath('/compte');
+  return {
+    ok: true,
+    message: parsed.data.alert
+      ? 'Sortie programmée. Vous recevrez les conditions prévues par courriel, la veille.'
+      : 'Sortie programmée. Retrouvez-la sur votre compte.',
+  };
+}
+
+export async function deleteOuting(formData: FormData): Promise<void> {
+  const user = await currentUser();
+  if (!user) return;
+
+  await contributions.deleteOuting(String(formData.get('outing_id') ?? ''), user.id);
+  revalidatePath('/compte');
+}
+

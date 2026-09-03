@@ -68,9 +68,14 @@ jour :
 curl -fsS -H "Authorization: Bearer VOTRE_CRON_SECRET" https://votre-domaine/api/entretien
 ```
 
-Elle purge les sessions et les liens de connexion périmés. Sans base
-configurée, la route répond `{"ok":true,"state":"sans-base"}` et ne fait
-rien.
+Elle purge les sessions et les liens de connexion périmés, puis envoie les
+**alertes de sortie** des 36 prochaines heures — un courriel par sortie, jamais
+deux. Sans base configurée, la route répond `{"ok":true,"state":"sans-base"}`
+et ne fait rien ; sans courriel configuré, `"alerts": null`.
+
+**Une fois par jour suffit, mais l'heure compte un peu** : une sortie prévue le
+matin est alertée par le passage de la veille. Un cron vers 18 h laisse la
+soirée pour lire le message.
 
 ## 4. La base se met à jour toute seule
 

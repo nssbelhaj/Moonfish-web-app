@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { mkdtemp, readFile } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -46,23 +46,27 @@ describeDb('contributions dans MySQL', () => {
     repository = new (await import('../contributions')).MysqlContributionsRepository();
     waitlist = new (await import('../waitlist')).MysqlWaitlistRepository();
 
-    const migration = await readFile(
-      path.join(process.cwd(), 'db/migrations/0001_comptes_et_contributions.sql'),
-      'utf8',
-    );
+    // TOUTES les migrations, dans l'ordre : un test qui n'en appliquerait
+    // qu'une verrait un schéma que la production n'a jamais eu.
+    const dir = path.join(process.cwd(), 'db/migrations');
+    const files = (await readdir(dir)).filter((name) => name.endsWith('.sql')).sort();
 
-    // Le pilote n'exécute qu'une instruction par appel : on découpe. Les
-    // commentaires sont retirés d'abord, sinon un « ; » dans une phrase
-    // française couperait au mauvais endroit.
-    const statements = migration
-      .split('\n')
-      .filter((line) => !line.trim().startsWith('--'))
-      .join('\n')
-      .split(';')
-      .map((statement) => statement.trim())
-      .filter((statement) => statement.length > 0);
+    for (const file of files) {
+      const migration = await readFile(path.join(dir, file), 'utf8');
 
-    for (const statement of statements) await db.execute(statement);
+      // Le pilote n'exécute qu'une instruction par appel : on découpe. Les
+      // commentaires sont retirés d'abord, sinon un « ; » dans une phrase
+      // française couperait au mauvais endroit.
+      const statements = migration
+        .split('\n')
+        .filter((line) => !line.trim().startsWith('--'))
+        .join('\n')
+        .split(';')
+        .map((statement) => statement.trim())
+        .filter((statement) => statement.length > 0);
+
+      for (const statement of statements) await db.execute(statement);
+    }
   });
 
   afterAll(async () => {
@@ -71,7 +75,7 @@ describeDb('contributions dans MySQL', () => {
 
   beforeEach(async () => {
     // Ordre imposé par les clés étrangères : les enfants d'abord.
-    for (const table of ['catches', 'spot_reviews', 'profiles', 'sessions', 'accounts', 'users', 'waitlist']) {
+    for (const table of ['outings', 'favorites', 'catches', 'spot_reviews', 'profiles', 'sessions', 'accounts', 'users', 'waitlist']) {
       await db.execute(`delete from ${table}`);
     }
 

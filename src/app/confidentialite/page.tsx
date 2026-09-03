@@ -62,6 +62,20 @@ const ACCOUNT_TREATMENTS = [
     basis: 'L’exécution du service : publier ce que vous choisissez de publier.',
     keep: 'Jusqu’à ce que vous les supprimiez, ou jusqu’à la suppression de votre compte, photos comprises.',
   },
+  {
+    what: 'Spots favoris',
+    data: 'La liste des spots que vous suivez, et la date d’ajout.',
+    why: 'Les retrouver en tête de votre compte, avec leur score du moment. Personne d’autre ne voit cette liste.',
+    basis: 'L’exécution du service : une liste que vous constituez pour vous.',
+    keep: 'Jusqu’à ce que vous retiriez le spot, ou jusqu’à la suppression de votre compte.',
+  },
+  {
+    what: 'Sorties programmées et alertes',
+    data: 'Le spot, la date et l’heure prévues, une note facultative, un seuil de score facultatif, et si vous avez demandé un courriel. La date d’envoi de ce courriel, quand il part.',
+    why: 'Vous envoyer, la veille, les conditions prévues à cette heure-là — et le danger s’il y en a un. Un seul courriel par sortie, uniquement si vous l’avez coché, jamais d’autre envoi.',
+    basis: 'L’exécution du service que vous demandez en programmant la sortie. Décocher la case ou supprimer la sortie arrête tout envoi.',
+    keep: 'Jusqu’à ce que vous supprimiez la sortie, ou jusqu’à la suppression de votre compte.',
+  },
 ] as const;
 
 export default function ConfidentialitePage() {

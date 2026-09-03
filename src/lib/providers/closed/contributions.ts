@@ -1,4 +1,4 @@
-import type { CatchInput, SpotReviewInput } from '@/data/schemas';
+import type { CatchInput, OutingInput, SpotReviewInput } from '@/data/schemas';
 import type {
   AccountExport,
   Author,
@@ -73,6 +73,40 @@ export class ClosedContributionsRepository implements ContributionsRepository {
   async deleteCatch(_catchId: string, _userId: string): Promise<ContributionResult<null>> {
     return closed();
   }
+
+  async listFavorites(_userId: string): Promise<[]> {
+    return [];
+  }
+
+  async isFavorite(_userId: string, _spotSlug: string): Promise<false> {
+    return false;
+  }
+
+  async addFavorite(_userId: string, _spotSlug: string): Promise<ContributionResult<null>> {
+    return closed();
+  }
+
+  async removeFavorite(_userId: string, _spotSlug: string): Promise<ContributionResult<null>> {
+    return closed();
+  }
+
+  async listOutings(_userId: string): Promise<[]> {
+    return [];
+  }
+
+  async addOuting(_userId: string, _input: OutingInput): Promise<ContributionResult<never>> {
+    return closed();
+  }
+
+  async deleteOuting(_outingId: string, _userId: string): Promise<ContributionResult<null>> {
+    return closed();
+  }
+
+  async pendingAlerts(_now: Date, _horizonMs: number): Promise<[]> {
+    return [];
+  }
+
+  async markNotified(_outingId: string, _userId: string, _at: Date): Promise<void> {}
 
   async exportAccount(_userId: string, _email: string | null): Promise<ContributionResult<AccountExport>> {
     return closed();

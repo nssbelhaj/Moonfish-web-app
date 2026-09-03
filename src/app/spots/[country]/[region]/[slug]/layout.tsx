@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 
+import { FavoriteButton } from '@/components/account/FavoriteButton';
 import { SafetyBanner } from '@/components/spot/SafetyBanner';
 import { BOTTOM_LABELS, EXPOSURE_LABELS, TECHNIQUE_LABELS } from '@/data/spots';
 import { shelteredNearby } from '@/lib/geo';
@@ -133,7 +134,15 @@ export default async function SpotLayout({
           repoussait la navigation sous la ligne de flottaison, et l'utilisateur
           ne pouvait pas voir qu'il y avait autre chose que la page courante.
         */}
-        <h1 className="mt-3 font-serif text-h1 font-semibold">{spot.name}</h1>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+          <h1 className="font-serif text-h1 font-semibold">{spot.name}</h1>
+          {/*
+            Le bouton lit la session côté client : la page reste pré-rendue.
+            Il n'apparaît qu'une fois l'état connu, pour ne pas changer de
+            forme sous le doigt.
+          */}
+          <FavoriteButton spotSlug={spot.slug} spotPath={spotPath(spot)} />
+        </div>
       </div>
 
       {children}

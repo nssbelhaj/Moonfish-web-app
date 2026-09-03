@@ -38,7 +38,8 @@ Puis :
 node scripts/migrer-mysql.mjs
 ```
 
-Le script applique les migrations non encore passées, dans l'ordre de leur nom,
+Le script applique les migrations non encore passées — aujourd'hui deux :
+comptes et contributions, puis favoris et sorties — dans l'ordre de leur nom,
 et garde la trace de chacune — nom et empreinte — dans `schema_migrations`. Le
 relancer ne rejoue rien.
 

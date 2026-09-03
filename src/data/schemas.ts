@@ -276,3 +276,42 @@ export const catchInputSchema = z.object({
 });
 
 export type CatchInput = z.infer<typeof catchInputSchema>;
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Favoris et sorties programmées.
+
+   Mêmes règles que les contributions : bornes identiques à celles de
+   `db/migrations/0002_favoris_et_sorties.sql`, et schémas d'entrée IDEMPOTENTS
+   parce qu'ils sont appliqués deux fois sur le trajet formulaire → dépôt.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+export const favoriteSchema = z.object({
+  spotSlug: z.string(),
+  createdAt: isoDateTime,
+});
+
+export type Favorite = z.infer<typeof favoriteSchema>;
+
+export const outingSchema = z.object({
+  id: z.string().uuid(),
+  userId: z.string().uuid(),
+  spotSlug: z.string(),
+  plannedAt: isoDateTime,
+  note: z.string().nullable(),
+  alert: z.boolean(),
+  minScore: z.number().int().min(1).max(10).nullable(),
+  notifiedAt: isoDateTime.nullable(),
+  createdAt: isoDateTime,
+});
+
+export type Outing = z.infer<typeof outingSchema>;
+
+export const outingInputSchema = z.object({
+  spotSlug: z.string().min(1),
+  plannedAt: isoDateTime,
+  note: optionalText(300, 'Note trop longue (300 caractères au maximum).'),
+  alert: z.boolean().default(true),
+  minScore: optionalMeasure(10, 'Le seuil va de 1 à 10.'),
+});
+
+export type OutingInput = z.infer<typeof outingInputSchema>;

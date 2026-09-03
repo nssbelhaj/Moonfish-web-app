@@ -56,7 +56,7 @@ Node 20 ou plus. Aucune variable d'environnement n'est requise pour démarrer.
 | `npm start` | Sert le build de production — `prestart` migre la base avant, tout seul |
 | `npm run typecheck` | `tsc --noEmit` en mode strict renforcé |
 | `npm run lint` | ESLint (config `next/core-web-vitals` + `next/typescript`) |
-| `npm test` | 470 tests (Vitest). 453 hermétiques — aucun accès réseau ; les 17 d'intégration de la couche de données sont ignorés sans `DATABASE_URL`, et exécutés en intégration continue contre un vrai MySQL |
+| `npm test` | 493 tests (Vitest). 465 hermétiques — aucun accès réseau ; les 28 d'intégration de la couche de données sont ignorés sans `DATABASE_URL`, et exécutés en intégration continue contre un vrai MySQL |
 | `npm run test:watch` | Tests en mode surveillance |
 
 ---
@@ -86,7 +86,7 @@ src/
 │   ├── api/auth/[...nextauth]/   Auth.js : lien de connexion, retour, sortie
 │   ├── api/compte/               Photo, état de session, export JSON
 │   ├── api/photos/[...chemin]/   Lecture des photos, hors répertoire d'app
-│   ├── api/entretien/            Purge quotidienne des sessions périmées
+│   ├── api/entretien/            Purge quotidienne + envoi des alertes de sortie
 │   ├── api/tuiles/[z]/[x]/[y]/   Relais des tuiles de carte — le navigateur ne joint aucun tiers
 │   ├── api/waitlist/route.ts     POST — Zod + limiteur de débit + écriture
 │   ├── sitemap.ts, robots.ts     Générés depuis les mêmes sources que les pages
@@ -104,8 +104,8 @@ src/
 │   │                             WaterValue, SlotTable, DayRuler, SpeciesCard,
 │   │                             SpotsMap, SeaStateCard
 │   ├── legal/                    LegalValue — une mention manquante s'affiche
-│   ├── account/                  Connexion, profil, effacement de compte
-│   ├── contributions/            Avis, prises, panneau de contribution
+│   ├── account/                  Connexion, profil, favori, effacement de compte
+│   ├── contributions/            Avis, prises, sorties, panneau de contribution
 │   ├── data/                     DataSourceTag, DemoDataNotice ← honnêteté des données
 │   ├── forms/                    EmailCaptureForm, SpotSearch, SpotFilters
 │   ├── layout/                   SiteHeader, SiteFooter, ThemeToggle
@@ -625,6 +625,48 @@ plutôt que noyée. Trois mécanismes la remplacent :
 C'est plus faible qu'une politique appliquée par le moteur : la garantie est
 devenue conventionnelle. En contrepartie, **tout est vérifiable en local** — ce
 que la version PostgreSQL ne permettait pas, faute de serveur joignable.
+
+### Ce qu'un compte permet
+
+| | Où | Visible par |
+| --- | --- | --- |
+| **Avis et prises** | onglet Espèces d'un spot | tout le monde, sous le nom affiché |
+| **Carnet de prises** | `/compte` | vous seul |
+| **Spots favoris** | bouton en haut de chaque spot, liste sur `/compte` avec le score du moment | vous seul |
+| **Sorties programmées** | onglet Espèces ; liste sur `/compte` avec le score prévu à l'heure dite | vous seul |
+| **Alerte de la veille** | case à cocher sur la sortie | courriel, à vous seul |
+
+Le carnet ne lit rien de nouveau : `src/lib/contributions/catch-log.ts`
+relit les prises déjà déclarées et en tire le recul qui manquait — par espèce
+avec la plus grande taille, par spot, part relâchée, douze derniers mois. Il
+est pur, testé sans base, et n'ajoute aucune interprétation : « votre meilleur
+mois » est un fait, « vous progressez » serait une flatterie qu'aucune donnée
+ne soutient.
+
+Les favoris et les sorties n'exigent PAS de nom affiché : ils ne sont vus de
+personne d'autre. Un compte fraîchement connecté peut suivre un spot avant
+même d'avoir choisi comment il signera un avis.
+
+#### L'alerte de la veille
+
+`/api/entretien` — la même tâche quotidienne qui purge les sessions — envoie
+les alertes des sorties prévues dans les **36 heures**. Pas 24 : la tâche tourne
+une fois par jour à une heure qu'on ne choisit pas finement, et avec 24 h une
+sortie à 8 h et un cron à 9 h la veille ne se verraient jamais.
+
+Le courriel a trois visages, dans un ordre qui n'est pas négociable : le
+**danger** passe avant tout, y compris avant un bon score. Puis « sous votre
+seuil », si un seuil a été fixé. Puis les conditions, simplement. Dans tous les
+cas : marée et coefficient, vent et rafales, houle et période, lumière — les
+mêmes faits que le tableau des créneaux.
+
+**Un seul courriel par sortie.** `notified_at` est posé dès l'envoi accepté, et
+la lecture ne rend que les lignes où il est vide : relancer la tâche dix fois
+n'envoie rien de plus. Vérifié en intégration, et en conditions réelles contre
+un serveur SMTP — second passage, zéro envoi.
+
+Ce que l'alerte ne promet pas : la réception. SPF, DKIM et la réputation du
+domaine sont hors de sa portée.
 
 ### Ce que les tests exercent réellement
 

@@ -1,13 +1,20 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { purgeExpired } from '@/lib/auth/mysql-adapter';
+import { sendOutingAlerts } from '@/lib/contributions/alerts';
+import { mailEnabled } from '@/lib/auth/config';
 import { databaseEnabled } from '@/lib/db/mysql';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /**
- * Entretien quotidien : purge des sessions et des liens de connexion périmés.
+ * Entretien quotidien : purge des sessions et des liens de connexion périmés,
+ * puis envoi des alertes de sortie de la veille.
+ *
+ * Les deux vivent dans la même route pour une raison pratique : chez un
+ * hébergeur mutualisé, chaque tâche cron se déclare à la main dans un panneau.
+ * Une seule URL à appeler, un seul secret à coller.
  *
  * Sans lui, deux tables grossissent indéfiniment. Auth.js ne supprime que ce
  * qu'il touche : une session expirée que personne ne rouvre, ou un lien de
@@ -40,7 +47,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   try {
     const purged = await purgeExpired();
-    return NextResponse.json({ ok: true, state: 'entretenu', ...purged });
+
+    // Sans courriel configuré, les alertes n'ont nulle part où partir : on
+    // le dit dans la réponse plutôt que de compter des échecs.
+    const alerts = mailEnabled() ? await sendOutingAlerts() : null;
+
+    return NextResponse.json({ ok: true, state: 'entretenu', ...purged, alerts });
   } catch (error) {
     console.error('[entretien] purge impossible', error);
     return NextResponse.json(

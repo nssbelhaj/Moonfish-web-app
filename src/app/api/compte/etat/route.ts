@@ -30,6 +30,12 @@ export async function GET(request: Request): Promise<NextResponse> {
   const profile = await contributions.getProfile(user.id);
 
   let ownReview: { rating: number; comment: string | null } | null = null;
+  let favorite = false;
+
+  if (spotSlug) {
+    // Le favori ne dépend pas du profil : il est disponible dès la connexion.
+    favorite = await contributions.isFavorite(user.id, spotSlug);
+  }
 
   if (spotSlug && profile) {
     const { reviews } = await contributions.listForUser(user.id);
@@ -38,7 +44,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   }
 
   return NextResponse.json(
-    { signedIn: true, userId: user.id, hasProfile: profile !== null, ownReview },
+    { signedIn: true, userId: user.id, hasProfile: profile !== null, ownReview, favorite },
     { headers: { 'cache-control': 'no-store, private' } },
   );
 }

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import { CatchForm } from '@/components/contributions/CatchForm';
+import { OutingForm } from '@/components/contributions/OutingForm';
 import { ReviewForm } from '@/components/contributions/ReviewForm';
 
 
@@ -100,7 +101,7 @@ export function ContributePanel({
   const own = session.ownReview;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div className="grid gap-6 lg:grid-cols-3">
       <div className="surface p-4">
         <h3 className="card-title">{own ? 'Votre avis sur ce spot' : 'Noter ce spot'}</h3>
         <p className="mt-1 text-meta text-fg-muted">
@@ -126,6 +127,16 @@ export function ContributePanel({
             spotPath={spotPath}
             speciesSuggestions={speciesSuggestions}
           />
+        </div>
+      </div>
+
+      <div className="surface p-4">
+        <h3 className="card-title">Programmer une sortie</h3>
+        <p className="mt-1 text-meta text-fg-muted">
+          Et recevoir la veille, par courriel, les conditions prévues à cette heure-là.
+        </p>
+        <div className="mt-4">
+          <OutingForm spotSlug={spotSlug} spotPath={spotPath} />
         </div>
       </div>
     </div>
