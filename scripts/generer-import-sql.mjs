@@ -33,7 +33,7 @@ const files = readdirSync(DIR)
 
 const parts = [
   `-- ═══════════════════════════════════════════════════════════════════════════
---  Moonfish — schéma complet, prêt à importer
+--  Luna Marea — schéma complet, prêt à importer
 -- ═══════════════════════════════════════════════════════════════════════════
 --
 --  FICHIER GÉNÉRÉ. Ne le modifiez pas : « node scripts/generer-import-sql.mjs ».

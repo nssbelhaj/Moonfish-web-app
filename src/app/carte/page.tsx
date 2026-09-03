@@ -22,7 +22,7 @@ export const revalidate = 3600;
 export const metadata: Metadata = {
   title: 'Carte des spots et scores du jour',
   description:
-    'Tous les spots Moonfish sur une carte, avec le score du créneau en cours. Chaque marqueur mène à la page du spot.',
+    'Tous les spots Luna Marea sur une carte, avec le score du créneau en cours. Chaque marqueur mène à la page du spot.',
   alternates: { canonical: absoluteUrl('/carte') },
 };
 

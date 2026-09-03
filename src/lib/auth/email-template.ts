@@ -20,7 +20,7 @@ const SONDE = '#1c4f5e';
 const MUET = '#4f656f';
 const BLANC = '#ffffff';
 
-export const SITE_NAME = 'Moonfish';
+export const SITE_NAME = 'Luna Marea';
 
 export function verificationEmail(url: string, host: string): { text: string; html: string } {
   const text = [

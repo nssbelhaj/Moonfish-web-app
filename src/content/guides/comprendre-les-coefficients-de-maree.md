@@ -23,7 +23,7 @@ Passé un seuil, le mécanisme s'inverse. Au-delà de 110, sur beaucoup de poste
 
 Dans le sens inverse, un coefficient inférieur à 45 pose le problème opposé. La masse d'eau bouge peu, l'eau reste claire, la nourriture ne circule pas. Les postes qui vivent du courant deviennent muets.
 
-La plage vraiment intéressante se situe entre 70 et 95. C'est ce que traduit le score Moonfish : ce créneau reçoit le facteur maximum, la zone 45-70 est notée « correcte », et les extrêmes des deux côtés sont pénalisés.
+La plage vraiment intéressante se situe entre 70 et 95. C'est ce que traduit le score Luna Marea : ce créneau reçoit le facteur maximum, la zone 45-70 est notée « correcte », et les extrêmes des deux côtés sont pénalisés.
 
 ## Ce qui compte davantage que le coefficient
 

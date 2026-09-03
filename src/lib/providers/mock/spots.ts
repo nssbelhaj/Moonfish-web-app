@@ -13,7 +13,7 @@ import type { SpotRepository } from '../types';
  */
 export class MockSpotRepository implements SpotRepository {
   readonly source = {
-    name: 'Catalogue Moonfish',
+    name: 'Catalogue Luna Marea',
     kind: 'measured' as const,
     precision: 'Coordonnées et caractéristiques relevées sur carte. Contenu éditorial, non simulé.',
   };

@@ -1,5 +1,5 @@
 /**
- * Types du moteur de score Moonfish.
+ * Types du moteur de score Luna Marea.
  * Aucun import : ce module doit rester utilisable hors Next.js (test, worker, CLI).
  */
 

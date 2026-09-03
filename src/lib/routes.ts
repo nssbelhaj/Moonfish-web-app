@@ -5,7 +5,7 @@ export function spotPath(spot: Pick<Spot, 'countrySlug' | 'regionSlug' | 'slug'>
   return `/spots/${spot.countrySlug}/${spot.regionSlug}/${spot.slug}`;
 }
 
-const FALLBACK_SITE_URL = 'https://moonfish.fish';
+const FALLBACK_SITE_URL = 'https://lunamarea.fr';
 
 /**
  * Normalise l'URL du site.
@@ -56,17 +56,28 @@ export const SITE_URL = normalizeSiteUrl(
 /**
  * Le repli a-t-il été utilisé faute de configuration ?
  *
- * ─── Pourquoi cet avertissement a dû exister ──────────────────────────────
+ * ─── Pourquoi cet avertissement existe ────────────────────────────────────
  *
- * C'est la panne la plus coûteuse de la liste, et la seule qui ne se voie pas
- * en visitant le site : sans `NEXT_PUBLIC_SITE_URL`, tout fonctionne, tout
- * s'affiche, et le sitemap, les URL canoniques et les aperçus de partage
- * désignent `moonfish.fish` — un domaine qui n'est pas le vôtre. Les moteurs
- * indexent l'autre adresse, les liens partagés pointent ailleurs, et rien
- * dans l'interface ne le laisse deviner.
+ * Sans `NEXT_PUBLIC_SITE_URL`, tout fonctionne et tout s'affiche, mais le
+ * sitemap, les URL canoniques et les aperçus de partage désignent le domaine
+ * de repli. Les moteurs indexent alors une adresse, les visiteurs en lisent
+ * une autre, et rien dans l'interface ne le laisse deviner.
  *
  * Constaté en conditions réelles sur le premier déploiement : site en HTTP
  * 200, sitemap entièrement faux.
+ *
+ * ─── Ce que le renommage a changé, et pourquoi l'avertissement reste ──────
+ *
+ * Le repli valait `moonfish.fish`, un domaine que personne ne possédait :
+ * l'utiliser était forcément une erreur. Il vaut maintenant `lunamarea.fr`,
+ * le domaine de production — donc un build sans variable produit des URL
+ * JUSTES en production, et l'avertissement pourrait sembler devenu inutile.
+ *
+ * Il ne l'est pas, parce qu'il reste faux PARTOUT AILLEURS : sur
+ * l'ancien sous-domaine, sur une préproduction, sur un aperçu. Le message ne
+ * dit donc plus « ce n'est pas votre domaine » — ce serait faux — mais
+ * demande de vérifier que l'adresse servie est bien celle-là. Un
+ * avertissement qui affirme plus qu'il ne sait cesse d'être lu.
  *
  * ─── Le piège dans le piège ───────────────────────────────────────────────
  *
@@ -87,9 +98,10 @@ export function siteUrlWarning(): string | null {
   if (normalizeSiteUrl(configured) === FALLBACK_SITE_URL && configured.length > 0) return null;
 
   return (
-    `NEXT_PUBLIC_SITE_URL n’est pas définie : le sitemap, les URL canoniques et ` +
-    `les aperçus de partage annoncent ${FALLBACK_SITE_URL}, qui n’est probablement ` +
-    'pas votre domaine. Le site fonctionne, mais il se désigne sous une autre adresse. ' +
+    `NEXT_PUBLIC_SITE_URL n’est pas définie : le sitemap, les URL canoniques et les ` +
+    `aperçus de partage annoncent ${FALLBACK_SITE_URL}. Juste si ce site est bien servi ` +
+    'à cette adresse ; faux partout ailleurs — ancien domaine, préproduction, aperçu — ' +
+    'et le site se désignerait alors sous une adresse qui n’est pas la sienne. ' +
     'Cette variable est insérée À LA COMPILATION : la définir ne suffit pas, il faut RECONSTRUIRE.'
   );
 }

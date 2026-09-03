@@ -3,7 +3,7 @@ import { missingPublisherFields } from '@/data/legal';
 /**
  * Une mention légale manquante s'affiche comme manquante.
  *
- * L'alternative habituelle — laisser le champ vide, ou écrire « Moonfish » à la
+ * L'alternative habituelle — laisser le champ vide, ou écrire « Luna Marea » à la
  * place d'une raison sociale — produit une page qui a l'air conforme et ne
  * l'est pas. Sur un site dont l'argument entier est de dire ce qu'il ne sait
  * pas, c'est le dernier endroit où faire semblant.

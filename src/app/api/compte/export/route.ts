@@ -32,7 +32,7 @@ export async function GET(): Promise<NextResponse> {
   return new NextResponse(JSON.stringify(result.data, null, 2), {
     headers: {
       'content-type': 'application/json; charset=utf-8',
-      'content-disposition': `attachment; filename="moonfish-donnees-${stamp}.json"`,
+      'content-disposition': `attachment; filename="luna-marea-donnees-${stamp}.json"`,
       // Un export personnel n'a rien à faire dans un cache, quel qu'il soit.
       'cache-control': 'no-store, private',
     },

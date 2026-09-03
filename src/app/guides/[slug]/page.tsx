@@ -55,8 +55,8 @@ export default async function GuidePage({ params }: { params: Promise<RouteParam
     articleSection: guide.category,
     wordCount: guide.wordCount,
     url: absoluteUrl(`/guides/${guide.slug}`),
-    author: { '@type': 'Organization', name: 'Moonfish' },
-    publisher: { '@type': 'Organization', name: 'Moonfish' },
+    author: { '@type': 'Organization', name: 'Luna Marea' },
+    publisher: { '@type': 'Organization', name: 'Luna Marea' },
     mainEntityOfPage: { '@type': 'WebPage', '@id': absoluteUrl(`/guides/${guide.slug}`) },
   };
 
@@ -109,7 +109,7 @@ export default async function GuidePage({ params }: { params: Promise<RouteParam
 
         <footer className="mt-12 border-t border-edge pt-8">
           <p className="text-body text-fg-muted">
-            Les scores affichés sur Moonfish traduisent ce qui est décrit ici en une note par
+            Les scores affichés sur Luna Marea traduisent ce qui est décrit ici en une note par
             créneau de deux heures.{' '}
             <Link href="/spots" className="underline decoration-dotted underline-offset-4">
               Voir les 12 spots suivis

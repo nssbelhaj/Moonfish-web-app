@@ -25,18 +25,18 @@ const spectral = Spectral({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: 'Moonfish — les meilleurs créneaux de pêche en mer, spot par spot',
-    template: '%s · Moonfish',
+    default: 'Luna Marea — les meilleurs créneaux de pêche en mer, spot par spot',
+    template: '%s · Luna Marea',
   },
   description:
     'Score de pêche du bord sur 7 jours, calculé à partir de la marée, du vent, de la houle et des périodes solunaires. Surfcasting, lancer-ramener, rockfishing : 12 spots en France et au Maroc.',
-  applicationName: 'Moonfish',
-  authors: [{ name: 'Moonfish' }],
+  applicationName: 'Luna Marea',
+  authors: [{ name: 'Luna Marea' }],
   robots: { index: true, follow: true },
   openGraph: {
     type: 'website',
     locale: 'fr_FR',
-    siteName: 'Moonfish',
+    siteName: 'Luna Marea',
   },
 };
 

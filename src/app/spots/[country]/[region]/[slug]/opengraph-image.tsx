@@ -44,7 +44,7 @@ export default async function OpengraphImage({ params }: { params: RouteParams }
             fontSize: 56,
           }}
         >
-          Moonfish
+          Luna Marea
         </div>
       ),
       size,
@@ -83,7 +83,7 @@ export default async function OpengraphImage({ params }: { params: RouteParams }
               color: COLORS.fgMuted,
             }}
           >
-            Moonfish · {spot.regionName}, {spot.countryName}
+            Luna Marea · {spot.regionName}, {spot.countryName}
           </div>
           <div style={{ display: 'flex', fontSize: 76, color: COLORS.fg, marginTop: 12, fontWeight: 700 }}>
             {spot.name}

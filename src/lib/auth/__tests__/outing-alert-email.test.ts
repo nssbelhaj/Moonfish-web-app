@@ -15,7 +15,7 @@ import { outingAlertEmail, type OutingAlertContent } from '../email-template';
 
 const base: OutingAlertContent = {
   spotName: 'Pen Hat',
-  spotUrl: 'https://moonfish.nssbelhaj.com/spots/france/bretagne/pen-hat/prevision',
+  spotUrl: 'https://lunamarea.fr/spots/france/bretagne/pen-hat/prevision',
   when: 'jeudi 4 septembre, 06:00',
   danger: false,
   dangerMessage: null,
@@ -28,8 +28,8 @@ const base: OutingAlertContent = {
     { label: 'Vent', value: '18 km/h NO' },
   ],
   note: null,
-  accountUrl: 'https://moonfish.nssbelhaj.com/compte',
-  host: 'moonfish.nssbelhaj.com',
+  accountUrl: 'https://lunamarea.fr/compte',
+  host: 'lunamarea.fr',
 };
 
 describe('outingAlertEmail', () => {

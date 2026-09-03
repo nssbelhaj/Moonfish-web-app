@@ -15,12 +15,12 @@ import { formatDateTime } from '@/lib/time';
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: 'Moonfish — les meilleurs créneaux de pêche en mer, spot par spot',
+  title: 'Luna Marea — les meilleurs créneaux de pêche en mer, spot par spot',
   description:
     'Un score sur 10 par créneau de 2 heures, sur 7 jours, pour 12 spots de pêche du bord en France et au Maroc. Surfcasting, lancer-ramener, rockfishing, shore-jigging. Marée, vent, houle et périodes solunaires, expliqués et pondérés.',
   alternates: { canonical: absoluteUrl('/') },
   openGraph: {
-    title: 'Moonfish — les meilleurs créneaux de pêche en mer, spot par spot',
+    title: 'Luna Marea — les meilleurs créneaux de pêche en mer, spot par spot',
     description:
       'Score de pêche du bord sur 7 jours : marée, vent, houle, lune. 12 spots en France et au Maroc.',
     url: absoluteUrl('/'),
@@ -54,7 +54,7 @@ const DATA_QUESTION = {
 
 const FAQ = [
   {
-    question: 'Comment le score Moonfish est-il calculé ?',
+    question: 'Comment le score Luna Marea est-il calculé ?',
     answer:
       'Cinq facteurs pondérés : la marée pour 35 %, le vent pour 25 %, la houle pour 20 %, les périodes solunaires et la lune pour 15 %, la lumière pour 5 %. Chaque sous-score et son poids sont affichés sur la page du spot, avec la phrase qui l’explique.',
   },

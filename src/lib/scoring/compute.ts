@@ -24,7 +24,7 @@ export function labelFor(value: number): ScoreLabel {
 const FACTORS: readonly ScoreFactor[] = ['tide', 'wind', 'swell', 'solunar', 'pressure', 'light'];
 
 /**
- * Le score Moonfish.
+ * Le score Luna Marea.
  *
  * Fonction pure : mêmes entrées, même sortie, aucun accès réseau, horloge ou
  * système de fichiers. Tout ce dont elle a besoin est dans `input`.

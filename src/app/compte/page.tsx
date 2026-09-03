@@ -20,7 +20,7 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'Votre compte',
   description:
-    'Se connecter à Moonfish : carnet de prises, spots favoris, sorties programmées, export et effacement de ses données.',
+    'Se connecter à Luna Marea : carnet de prises, spots favoris, sorties programmées, export et effacement de ses données.',
   alternates: { canonical: absoluteUrl('/compte') },
   // Une page de session n'a rien à faire dans un index : elle n'a pas de
   // contenu stable, et son URL indexée n'amènerait qu'une page vide.

@@ -1,4 +1,4 @@
-# Déployer Moonfish sur Hostinger (Web Apps)
+# Déployer Luna Marea sur Hostinger (Web Apps)
 
 ## Ce qui est manuel, ce qui ne l'est pas
 
@@ -32,7 +32,7 @@ la mécanique qui s'en sert. Le schéma se met à jour tout seul au démarrage
 
 | Réglage | Valeur |
 | --- | --- |
-| Source | dépôt GitHub `nssbelhaj/Moonfish-web-app` |
+| Source | dépôt GitHub `nssbelhaj/Luna Marea-web-app` |
 | Branche | `claude/moonfish-mvp-web-t1l7st` (ou `main` après fusion) |
 | Framework | Next.js — détecté automatiquement |
 | Commande de build | `npm run build` |
@@ -48,7 +48,7 @@ rien à adapter dans le dépôt. Vérifié.
 
 | Variable | Obligatoire ici | Pourquoi |
 | --- | --- | --- |
-| `NEXT_PUBLIC_SITE_URL` | **oui** | Sur Vercel, le domaine est injecté automatiquement. Ailleurs, non : sans cette variable, les URL canoniques, le sitemap et les aperçus de partage pointent vers le domaine de repli `moonfish.fish`. C'est l'oubli le plus coûteux de cette liste, et il ne casse rien de visible — constaté sur le premier déploiement, site en HTTP 200 et sitemap entièrement faux. **Elle est insérée à la COMPILATION : la définir ne suffit pas, il faut redéployer.** Le site l'annonce au démarrage. |
+| `NEXT_PUBLIC_SITE_URL` | **oui** | Sur Vercel, le domaine est injecté automatiquement. Ailleurs, non : sans cette variable, les URL canoniques, le sitemap et les aperçus de partage pointent vers le domaine de repli `lunamarea.fr`. C'est l'oubli le plus coûteux de cette liste, et il ne casse rien de visible — constaté sur le premier déploiement, site en HTTP 200 et sitemap entièrement faux. **Elle est insérée à la COMPILATION : la définir ne suffit pas, il faut redéployer.** Le site l'annonce au démarrage. |
 | `STORMGLASS_API_KEY` | non | Sans elle, les marées restent simulées et le site le dit. |
 | `TIDE_REAL_SPOTS` | non | Borne la dépense de quota. Voir le README. |
 | `DATABASE_URL` | non | Ouvre les comptes, avec l'envoi de courriel. Absente, le site fonctionne et annonce qu'ils sont fermés. |
@@ -130,7 +130,7 @@ l'inscription est en `insert ignore`.
 
 1. la page d'accueil répond ;
 2. `curl -s https://votre-domaine/sitemap.xml | head` — les URL doivent porter
-   VOTRE domaine. Si elles disent `moonfish.fish`, `NEXT_PUBLIC_SITE_URL`
+   VOTRE domaine. Si elles disent `lunamarea.fr`, `NEXT_PUBLIC_SITE_URL`
    manque ;
 3. une page de spot s'affiche avec ses marées, et la mention de fraîcheur en bas
    dit la vérité sur la source réellement utilisée ;
@@ -155,7 +155,7 @@ Les deux fonctionnent. Ce qui les sépare vraiment :
 | Rendu incrémental (ISR) | natif, cache distribué | fonctionne sur le disque de l'instance |
 | Effort de bascule | déjà en place | cinq minutes de configuration |
 
-Tant que Moonfish n'affiche ni publicité ni paiement — c'est le cas, et les dons
+Tant que Luna Marea n'affiche ni publicité ni paiement — c'est le cas, et les dons
 ne comptent pas — le plan Hobby est parfaitement régulier. Le jour où le site se
 monétise, il ne l'est plus, et Hostinger devient l'option évidente puisqu'elle
 est déjà réglée.

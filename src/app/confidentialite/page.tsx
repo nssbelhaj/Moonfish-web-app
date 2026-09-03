@@ -10,7 +10,7 @@ import { formatDateLong } from '@/lib/time';
 export const metadata: Metadata = {
   title: 'Politique de confidentialité',
   description:
-    'Ce que Moonfish collecte — une adresse e-mail si vous la donnez, rien d’autre —, pourquoi, pendant combien de temps, et comment exercer vos droits.',
+    'Ce que Luna Marea collecte — une adresse e-mail si vous la donnez, rien d’autre —, pourquoi, pendant combien de temps, et comment exercer vos droits.',
   alternates: { canonical: absoluteUrl('/confidentialite') },
 };
 
@@ -110,7 +110,7 @@ export default function ConfidentialitePage() {
             En une phrase
           </h2>
           <p className="mt-3 text-read text-fg-muted">
-            Moonfish ne collecte rien tant que vous ne saisissez rien. Il n’y a ni mesure
+            Luna Marea ne collecte rien tant que vous ne saisissez rien. Il n’y a ni mesure
             d’audience, ni publicité, ni traceur, ni géolocalisation à notre profit.{' '}
             {accounts
               ? 'Un compte est facultatif : il ne sert qu’à publier des avis et des prises, et se supprime en une minute, avec tout ce qu’il contient.'

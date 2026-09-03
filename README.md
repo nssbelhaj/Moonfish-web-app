@@ -1,4 +1,4 @@
-# Moonfish — MVP web
+# Luna Marea — MVP web
 
 Score de pêche du bord sur 7 jours, spot par spot. Marée, vent, houle, périodes
 solunaires et lumière, pondérés et expliqués.
@@ -9,7 +9,7 @@ solunaires et lumière, pondérés et expliqués.
 | --- | --- | --- |
 | Vent, houle, températures, pression | Open-Meteo (modèles Marine & Forecast) | **Prévision réelle** |
 | Marées et coefficients | Stormglass, *si `STORMGLASS_API_KEY` est définie* | **Prévision réelle** |
-| Marées, sans clé | Modèle de démonstration Moonfish | **Simulé** |
+| Marées, sans clé | Modèle de démonstration Luna Marea | **Simulé** |
 | Soleil, Lune, périodes solunaires | Calcul local (NOAA + Meeus ELP-2000 abrégée) | **Calculé** |
 
 Les avertissements de démonstration sont pilotés par la source réellement
@@ -31,7 +31,7 @@ Node 20 ou plus. Aucune variable d'environnement n'est requise pour démarrer.
 
 | Variable | Requise | Par défaut | Rôle |
 | --- | --- | --- | --- |
-| `NEXT_PUBLIC_SITE_URL` | non | `https://moonfish.fish` | Base des URL canoniques, du sitemap et des balises Open Graph. Absente, le site fonctionne mais se désigne sous le domaine de repli. **Insérée à la compilation : la définir sans reconstruire ne change rien.** Le démarrage l'annonce. |
+| `NEXT_PUBLIC_SITE_URL` | non | `https://lunamarea.fr` | Base des URL canoniques, du sitemap et des balises Open Graph. Absente, le site fonctionne mais se désigne sous le domaine de repli. **Insérée à la compilation : la définir sans reconstruire ne change rien.** Le démarrage l'annonce. |
 | `WEATHER_PROVIDER` | non | Open-Meteo | `mock` force les données simulées : build hors ligne, démonstration sans réseau, tests. |
 | `OPEN_METEO_MARINE_URL` | non | API publique | Redirige vers une instance Open-Meteo auto-hébergée ou le stub local. |
 | `OPEN_METEO_FORECAST_URL` | non | API publique | Idem pour le modèle atmosphérique. |
@@ -56,7 +56,7 @@ Node 20 ou plus. Aucune variable d'environnement n'est requise pour démarrer.
 | `npm start` | Sert le build de production — `prestart` migre la base avant, tout seul |
 | `npm run typecheck` | `tsc --noEmit` en mode strict renforcé |
 | `npm run lint` | ESLint (config `next/core-web-vitals` + `next/typescript`) |
-| `npm test` | 493 tests (Vitest). 465 hermétiques — aucun accès réseau ; les 28 d'intégration de la couche de données sont ignorés sans `DATABASE_URL`, et exécutés en intégration continue contre un vrai MySQL |
+| `npm test` | 498 tests (Vitest). 470 hermétiques — aucun accès réseau ; les 28 d'intégration de la couche de données sont ignorés sans `DATABASE_URL`, et exécutés en intégration continue contre un vrai MySQL |
 | `npm run test:watch` | Tests en mode surveillance |
 
 ---
@@ -979,7 +979,7 @@ L'article 6-III de la LCEN ne demande pas la même chose selon qui édite, et
 | `professionnel` | **publiée** | dès qu'il y a une recette : publicité, paiement, partenariat rémunéré. Les dons ne comptent pas. |
 | `non-professionnel` **← actif** | **dispensée** | un particulier peut ne publier que le nom de l'hébergeur, à condition que celui-ci détienne son identité — ce qu'un contrat d'hébergement suffit à établir. |
 
-Moonfish est sur le second : il n'affiche ni publicité ni paiement.
+Luna Marea est sur le second : il n'affiche ni publicité ni paiement.
 
 **Ce réglage se périme, et c'est son danger.** Il devient faux — et s'en
 prévaloir devient une infraction — le jour où le site encaisse quoi que ce
@@ -1045,7 +1045,7 @@ tâche planifiée, contrôles après mise en ligne — est dans
 **`docs/deploiement-hostinger.md`**, qui compare aussi les deux hébergements.
 
 Un point à connaître : le plan **Hobby de Vercel interdit l'usage commercial**.
-Publicité ou paiement imposent le plan Pro. Moonfish n'a ni l'un ni l'autre, et
+Publicité ou paiement imposent le plan Pro. Luna Marea n'a ni l'un ni l'autre, et
 les dons ne comptent pas, mais la question se posera le jour de la monétisation.
 
 Node 20.9 ou plus est exigé via `engines`. Un projet Vercel resté sur Node 18
@@ -1083,6 +1083,26 @@ Ensuite, plus rien à faire à la main :
    les migrations non encore appliquées passent, les autres non ;
 3. **les contrôles** tournent avant, dans `.github/workflows/verification.yml` :
    typage, lint, migrations **contre une vraie base MySQL**, tests, build.
+
+#### Une migration appliquée est un fichier IMMUABLE
+
+Le renommage du site en Luna Marea l'a rappelé de la façon la plus concrète :
+changer le simple commentaire d'en-tête de `0001_comptes_et_contributions.sql`
+suffit à faire échouer le déploiement suivant.
+
+```
+[migration] 0001_comptes_et_contributions.sql a CHANGÉ depuis son application.
+EXIT=1
+```
+
+L'ancien nom reste donc, définitivement, dans l'en-tête des deux migrations.
+`marque.test.ts` les exempte explicitement, avec la raison écrite à côté de
+l'exemption. Le prix est une incohérence dans deux fichiers que seul un
+développeur ouvre ; l'alternative était un déploiement cassé.
+
+`db/import-manuel.sql` est différent : il est GÉNÉRÉ, et son propre en-tête ne
+compte pas dans les empreintes — seules celles des migrations qu'il recopie
+comptent. Il a donc pu être renommé, et régénéré.
 
 #### Pourquoi les migrations ont un registre
 

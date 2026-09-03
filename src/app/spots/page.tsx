@@ -45,7 +45,7 @@ export async function generateMetadata({
 
   if (!description) {
     return {
-      title: 'Les 12 spots de pêche du bord suivis par Moonfish',
+      title: 'Les 12 spots de pêche du bord suivis par Luna Marea',
       description:
         'Bretagne, Normandie, Hauts-de-France, Nouvelle-Aquitaine, Occitanie et Souss-Massa : score du créneau en cours, prochaine bonne fenêtre, marée et vent. Filtrables par technique — surfcasting, lancer-ramener, rockfishing, shore-jigging, pêche à pied.',
       alternates: { canonical },
@@ -54,7 +54,7 @@ export async function generateMetadata({
 
   return {
     title: `Spots de pêche ${description}`,
-    description: `${matching.length} spot${matching.length > 1 ? 's' : ''} ${description} suivi${matching.length > 1 ? 's' : ''} par Moonfish : score du créneau en cours, prochaine fenêtre favorable, marée, vent et houle.`,
+    description: `${matching.length} spot${matching.length > 1 ? 's' : ''} ${description} suivi${matching.length > 1 ? 's' : ''} par Luna Marea : score du créneau en cours, prochaine fenêtre favorable, marée, vent et houle.`,
     alternates: { canonical },
   };
 }
@@ -113,7 +113,7 @@ export default async function SpotsPage({
     <>
       <div className="mx-auto w-full max-w-shell px-4 pt-8 md:px-8 md:pt-12">
         <h1 className="font-serif text-h1 font-semibold">
-          {description ? `Spots de pêche ${description}` : 'Les 12 spots suivis par Moonfish'}
+          {description ? `Spots de pêche ${description}` : 'Les 12 spots suivis par Luna Marea'}
         </h1>
         <p className="mt-3 max-w-prose text-body text-fg-muted">
           Le classement suit le score du créneau en cours. Filtrez par technique — surfcasting,

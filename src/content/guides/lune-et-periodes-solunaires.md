@@ -1,6 +1,6 @@
 ---
 title: "Lune et périodes solunaires : ce que ça vaut vraiment"
-description: Ce que dit la théorie solunaire, ce que la science confirme et ce qu'elle infirme, et pourquoi Moonfish ne lui accorde que 15 % du score.
+description: Ce que dit la théorie solunaire, ce que la science confirme et ce qu'elle infirme, et pourquoi Luna Marea ne lui accorde que 15 % du score.
 published: 2026-04-29
 category: Lune
 ---
@@ -34,7 +34,7 @@ Le problème méthodologique est réel : les périodes majeures coïncident souv
 
 > La théorie solunaire décrit correctement un cycle réel. Elle en attribue l'effet à la mauvaise cause. Sur un poste de bord, ce qui travaille, c'est presque toujours la marée.
 
-## Pourquoi Moonfish lui accorde 15 %
+## Pourquoi Luna Marea lui accorde 15 %
 
 Ce chiffre est un arbitrage, et il mérite d'être justifié plutôt que subi.
 

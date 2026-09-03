@@ -25,7 +25,7 @@ export const spotTypeSchema = z.enum(['plage', 'estran-rocheux', 'pointe', 'estu
 /**
  * Techniques praticables depuis le bord sur un spot.
  *
- * Moonfish ne parle pas que de surfcasting : un estran rocheux se pêche au
+ * Luna Marea ne parle pas que de surfcasting : un estran rocheux se pêche au
  * rockfishing ou au shore-jigging, un estran sableux découvrant se pêche aussi
  * à pied. La technique dépend du fond, de l'exposition et de l'accès — elle est
  * donc une propriété du spot, pas une préférence de l'utilisateur.

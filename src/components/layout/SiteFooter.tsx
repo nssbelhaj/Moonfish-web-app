@@ -91,7 +91,7 @@ export function SiteFooter() {
         </nav>
 
         <p className="mt-4 text-meta text-fg-faint nums">
-          Moonfish — les meilleurs créneaux de pêche en mer, spot par spot. Aucune promesse de prise :
+          Luna Marea — les meilleurs créneaux de pêche en mer, spot par spot. Aucune promesse de prise :
           la mer décide.
         </p>
       </div>

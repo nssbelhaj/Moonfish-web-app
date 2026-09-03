@@ -123,7 +123,7 @@ describe('le régime non professionnel ne survit pas à une monétisation', () =
     'tradedoubler',
     'affilae',
     'utm_medium=affiliate',
-    'tag=moonfish',
+    'tag=lunamarea',
   ];
 
   it('aucun lien d’affiliation ni bouton de don dans les sources', () => {

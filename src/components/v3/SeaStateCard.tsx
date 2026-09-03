@@ -74,7 +74,7 @@ export function SeaStateCard({ conditions }: { conditions: MarinePoint }) {
 
       <p className="card-source mt-3">
         Hauteurs la plus fréquente et maximale DÉDUITES de la significative par la loi de Rayleigh,
-        non mesurées. Le seuil de danger de Moonfish porte sur la significative : à{' '}
+        non mesurées. Le seuil de danger de Luna Marea porte sur la significative : à{' '}
         <span className="nums">2,50 m</span> annoncés, attendez-vous à des vagues de{' '}
         <span className="nums">5 m</span>.
       </p>

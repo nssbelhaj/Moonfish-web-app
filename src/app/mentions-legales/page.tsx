@@ -9,7 +9,7 @@ import { formatDateLong } from '@/lib/time';
 export const metadata: Metadata = {
   title: 'Mentions légales',
   description:
-    'Éditeur, directeur de la publication, hébergeur et conditions d’utilisation de Moonfish, avec ce que le site garantit et ce qu’il ne garantit pas.',
+    'Éditeur, directeur de la publication, hébergeur et conditions d’utilisation de Luna Marea, avec ce que le site garantit et ce qu’il ne garantit pas.',
   alternates: { canonical: absoluteUrl('/mentions-legales') },
 };
 
@@ -101,7 +101,7 @@ export default function MentionsLegalesPage() {
             Ce que fait ce site, et ce qu’il ne fait pas
           </h2>
           <p className="mt-3 text-read text-fg-muted">
-            Moonfish calcule une note de 0 à 10 par créneau de deux heures, à partir de la marée,
+            Luna Marea calcule une note de 0 à 10 par créneau de deux heures, à partir de la marée,
             du vent, de la houle, de la pression, de la lumière et des périodes solunaires. Cette
             note est une aide à la décision, rien de plus. Elle ne prédit aucune prise, et personne
             ne peut le faire : nous n’écrivons nulle part le contraire.

@@ -86,7 +86,7 @@ export function lireConfigBase(env: Environnement = process.env): ConfigVerdict 
       return {
         kind: 'illisible',
         raison: 'DATABASE_URL n’indique aucune base — rien après le port.',
-        remede: 'Chez Hostinger, le nom ressemble à « u0000000_moonfish ».',
+        remede: 'Chez Hostinger, le nom ressemble à « u0000000_lunamarea ».',
       };
     }
 

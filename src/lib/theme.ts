@@ -16,7 +16,7 @@
 export const BROWSER_THEME_COLOR = '#f7f4ed';
 
 /** Clé de mémorisation du thème, par appareil. */
-export const THEME_STORAGE_KEY = 'moonfish-theme';
+export const THEME_STORAGE_KEY = 'lunamarea-theme';
 
 export type Theme = 'clair' | 'nuit';
 

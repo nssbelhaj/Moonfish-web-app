@@ -25,7 +25,7 @@ const RUNS_SERVERLESS = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUN
 const STORAGE_FILE =
   process.env.WAITLIST_FILE ??
   (RUNS_SERVERLESS
-    ? path.join(os.tmpdir(), 'moonfish-waitlist.jsonl')
+    ? path.join(os.tmpdir(), 'luna-marea-waitlist.jsonl')
     : path.join(process.cwd(), 'var', 'waitlist.jsonl'));
 
 const STORAGE_DIR = path.dirname(STORAGE_FILE);

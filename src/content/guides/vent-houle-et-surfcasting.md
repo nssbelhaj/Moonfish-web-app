@@ -13,7 +13,7 @@ Un bulletin annonce « vent de secteur 270 à 20 nœuds ». Cette information, s
 
 Un vent d'ouest est un vent de mer à Lacanau, qui regarde plein ouest. Le même vent d'ouest est un vent de terre à Gatteville, qui regarde le nord-est. Deux spots, une seule direction de vent, deux situations opposées.
 
-C'est pourquoi Moonfish calcule et affiche « vent de mer », « vent de travers » ou « vent de terre » plutôt que de vous laisser faire la conversion. Notez au passage la convention : en mer, on nomme un vent par la direction **d'où il vient**, jamais par celle où il va. L'aiguille du compas pointe donc vers l'origine.
+C'est pourquoi Luna Marea calcule et affiche « vent de mer », « vent de travers » ou « vent de terre » plutôt que de vous laisser faire la conversion. Notez au passage la convention : en mer, on nomme un vent par la direction **d'où il vient**, jamais par celle où il va. L'aiguille du compas pointe donc vers l'origine.
 
 ## Ce que fait chaque secteur
 
@@ -36,7 +36,7 @@ La période de la houle module tout cela. À hauteur égale, une houle longue �
 
 ## La limite qui ne se négocie pas
 
-Au-delà de 2,5 m de houle ou de 50 km/h de vent, Moonfish affiche un bandeau rouge qui ne peut pas être fermé, quel que soit le score par ailleurs calculé. Ce n'est pas un excès de prudence juridique, c'est le retour d'expérience des sauveteurs.
+Au-delà de 2,5 m de houle ou de 50 km/h de vent, Luna Marea affiche un bandeau rouge qui ne peut pas être fermé, quel que soit le score par ailleurs calculé. Ce n'est pas un excès de prudence juridique, c'est le retour d'expérience des sauveteurs.
 
 Ce qui tue en pêche du bord n'est presque jamais la vague qu'on voit venir. C'est la série anormalement forte qui arrive après vingt minutes de calme apparent, sur un platier rocheux couvert d'algues où l'on ne peut pas courir. C'est aussi la marée montante qui a coupé le chemin du retour pendant que l'attention était sur la canne.
 

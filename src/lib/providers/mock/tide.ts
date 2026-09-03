@@ -15,7 +15,7 @@ import { generatedNow } from './generated-now';
  */
 export class MockTideProvider implements TideProvider {
   readonly source = {
-    name: 'Marées — modèle de démonstration Moonfish',
+    name: 'Marées — modèle de démonstration Luna Marea',
     kind: 'simulated' as const,
     precision:
       'Onde semi-diurne M2 pure, sans harmoniques locales. Les horaires peuvent s’écarter de plusieurs dizaines de minutes de la réalité.',

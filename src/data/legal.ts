@@ -52,7 +52,7 @@ export const PUBLISHER: PublisherIdentity = {
     À RENSEIGNER le jour où `PUBLICATION_REGIME` repasse à `professionnel`.
   */
   address: null,
-  email: 'contact@nssbelhaj.com',
+  email: 'contact@lunamarea.fr',
   phone: null,
   registration: null,
   vat: null,
@@ -112,7 +112,7 @@ export const HOST: { name: string; address: string | null; site: string; contact
 export type PublicationRegime = 'professionnel' | 'non-professionnel';
 
 /*
-  Choisi par l'éditeur le 2 septembre 2026 : Moonfish n'affiche ni publicité ni
+  Choisi par l'éditeur le 2 septembre 2026 : Luna Marea n'affiche ni publicité ni
   paiement, et les dons — qu'il n'accepte pas non plus aujourd'hui — ne
   suffiraient pas à faire basculer le régime.
 */
@@ -231,7 +231,7 @@ export interface ClientStorageEntry {
 
 export const CLIENT_STORAGE: readonly ClientStorageEntry[] = [
   {
-    key: 'moonfish-theme',
+    key: 'lunamarea-theme',
     kind: 'localStorage',
     purpose:
       'Retenir si vous avez choisi l’affichage clair ou l’affichage de nuit, pour ne pas vous éblouir au chargement suivant.',
@@ -279,7 +279,7 @@ export const CLIENT_STORAGE_WRITE_SITES: readonly StorageWriteSite[] = [
   {
     file: 'src/components/layout/ThemeToggle.tsx',
     writes: 1,
-    entry: 'moonfish-theme',
+    entry: 'lunamarea-theme',
     why: 'Mémorise le thème choisi.',
   },
 ];

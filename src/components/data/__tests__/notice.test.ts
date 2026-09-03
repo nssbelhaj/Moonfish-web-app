@@ -11,9 +11,9 @@ const source = (name: string, kind: SourceMeta['kind']): SourceMeta => ({
 describe('sources simulées', () => {
   it('ne retient que ce qui est réellement inventé', () => {
     const sources = [
-      source('Marées — modèle de démonstration Moonfish', 'simulated'),
+      source('Marées — modèle de démonstration Luna Marea', 'simulated'),
       source('Open-Meteo — modèles Marine & Forecast', 'forecast'),
-      source('Météo marine — modèle de démonstration Moonfish', 'simulated'),
+      source('Météo marine — modèle de démonstration Luna Marea', 'simulated'),
     ];
     expect(simulatedSources(sources)).toHaveLength(2);
   });
@@ -22,7 +22,7 @@ describe('sources simulées', () => {
     const sources = [
       source('Stormglass — modèle de marée', 'forecast'),
       source('Calcul astronomique local', 'computed'),
-      source('Catalogue Moonfish', 'measured'),
+      source('Catalogue Luna Marea', 'measured'),
     ];
     expect(simulatedSources(sources)).toHaveLength(0);
   });

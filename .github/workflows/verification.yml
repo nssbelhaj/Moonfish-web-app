@@ -25,7 +25,7 @@ jobs:
         image: mysql:8
         env:
           MYSQL_ROOT_PASSWORD: verification
-          MYSQL_DATABASE: moonfish_test
+          MYSQL_DATABASE: lunamarea_test
         ports: ['3306:3306']
         # Sans cette attente, les premières requêtes partent avant que le
         # serveur n'accepte les connexions, et l'échec ressemble à un bug du
@@ -37,7 +37,7 @@ jobs:
           --health-retries=20
 
     env:
-      DATABASE_URL: mysql://root:verification@127.0.0.1:3306/moonfish_test
+      DATABASE_URL: mysql://root:verification@127.0.0.1:3306/lunamarea_test
       # Les fournisseurs réels ne sont pas joignables en intégration continue,
       # et n'ont rien à y faire : on veut vérifier NOTRE code.
       WEATHER_PROVIDER: mock

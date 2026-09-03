@@ -195,7 +195,7 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
                   />
                 </div>
                 <p className="card-source mt-2">
-                  Score Moonfish · marée, vent, houle, solunaire, lumière · recalculé à l’heure.
+                  Score Luna Marea · marée, vent, houle, solunaire, lumière · recalculé à l’heure.
                   Conditions relevées au MILIEU du créneau, représentatives des deux heures.
                 </p>
               </div>

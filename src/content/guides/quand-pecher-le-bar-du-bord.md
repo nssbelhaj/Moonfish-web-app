@@ -15,7 +15,7 @@ Concrètement, les deux meilleures heures de la journée sont **la dernière heu
 
 La nuit fonctionne, et fonctionne bien, notamment sur les fonds de sable où le bar patrouille très près du bord — souvent dans moins d'un mètre d'eau. Beaucoup de pêcheurs lancent trop loin de nuit et passent au-dessus du poisson.
 
-Le plein jour n'est pas nul, mais il demande une compensation : de l'eau troublée par la houle, un ciel couvert, ou une marée qui remet du courant. Dans le score Moonfish, la lumière ne pèse que 5 % — parce que, seule, elle ne suffit pas. Croisée avec une bonne marée, elle devient déterminante.
+Le plein jour n'est pas nul, mais il demande une compensation : de l'eau troublée par la houle, un ciel couvert, ou une marée qui remet du courant. Dans le score Luna Marea, la lumière ne pèse que 5 % — parce que, seule, elle ne suffit pas. Croisée avec une bonne marée, elle devient déterminante.
 
 ## La marée, deuxième filtre
 

@@ -45,7 +45,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     ? [
         Nodemailer({
           server: smtpServer() ?? '',
-          from: process.env.EMAIL_FROM ?? 'moonfish@localhost',
+          from: process.env.EMAIL_FROM ?? 'lunamarea@localhost',
           // Une heure. Le défaut d'Auth.js est de 24 h : c'est long pour un lien
           // qui donne accès à un compte et qui traîne dans une boîte aux lettres.
           maxAge: 60 * 60,

@@ -18,7 +18,7 @@ import { generatedNow } from './generated-now';
  */
 export class MockWeatherProvider implements WeatherProvider {
   readonly source = {
-    name: 'Météo marine — modèle de démonstration Moonfish',
+    name: 'Météo marine — modèle de démonstration Luna Marea',
     kind: 'simulated' as const,
     precision:
       'Série continue générée à partir du slug du spot. Physiquement plausible, mais sans aucun rapport avec les conditions réelles.',

@@ -18,7 +18,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
  * qu'un oubli ferait sauter en silence.
  *
  * Lancement :
- *   DATABASE_URL=mysql://user:pass@127.0.0.1:3306/moonfish_test npm run test
+ *   DATABASE_URL=mysql://user:pass@127.0.0.1:3306/lunamarea_test npm run test
  *
  * Sans `DATABASE_URL`, la suite est ignorée plutôt que rouge : un clone du
  * dépôt doit pouvoir lancer les tests sans installer de serveur.
@@ -38,7 +38,7 @@ describeDb('contributions dans MySQL', () => {
   const BOB = { userId: '', displayName: 'Bob' };
 
   beforeAll(async () => {
-    uploads = await mkdtemp(path.join(os.tmpdir(), 'moonfish-photos-'));
+    uploads = await mkdtemp(path.join(os.tmpdir(), 'luna-marea-photos-'));
     process.env.UPLOADS_DIR = uploads;
 
     db = await import('@/lib/db/mysql');

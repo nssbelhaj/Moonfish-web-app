@@ -10,7 +10,7 @@ export const revalidate = 3600;
 export const metadata: Metadata = {
   title: 'D’où viennent les données',
   description:
-    'Les sources de Moonfish, ce que chacune sait faire, ce qu’elle ne sait pas faire, et ce que veulent dire les mentions « à jour », « ancien », « interrompu » et « en attente ».',
+    'Les sources de Luna Marea, ce que chacune sait faire, ce qu’elle ne sait pas faire, et ce que veulent dire les mentions « à jour », « ancien », « interrompu » et « en attente ».',
   alternates: { canonical: absoluteUrl('/donnees') },
 };
 
@@ -71,7 +71,7 @@ export default function DonneesPage() {
       <h1 className="font-serif text-h1 font-semibold">D’où viennent les données</h1>
 
       <p className="mt-4 max-w-prose text-body text-fg-muted">
-        Moonfish calcule un score à partir de sources extérieures. Aucune n’est parfaite, et une
+        Luna Marea calcule un score à partir de sources extérieures. Aucune n’est parfaite, et une
         page qui prétendrait le contraire vous serait moins utile qu’une page qui dit ce qu’elle ne
         sait pas. Cette page dit, bloc par bloc, d’où vient ce que vous lisez et jusqu’à quand nous
         le considérons valable.
@@ -144,7 +144,7 @@ export default function DonneesPage() {
 
       <section aria-labelledby="limites" className="mt-10">
         <h2 id="limites" className="font-serif text-h2 font-semibold">
-          Ce que Moonfish ne sait pas faire
+          Ce que Luna Marea ne sait pas faire
         </h2>
         <ul className="mt-4 max-w-prose space-y-2 text-body text-fg-muted">
           <li>

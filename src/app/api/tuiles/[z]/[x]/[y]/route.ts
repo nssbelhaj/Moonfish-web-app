@@ -73,7 +73,7 @@ function AMONT(z: number, x: number, y: number): string {
     .replace('{y}', String(y));
 }
 
-const AGENT = 'Moonfish/1.0 (carte de spots de pêche du bord; contact@nssbelhaj.com)';
+const AGENT = 'LunaMarea/1.0 (carte de spots de pêche du bord; contact@lunamarea.fr)';
 
 /**
  * Tuile neutre servie quand l'amont ne répond pas.
@@ -97,7 +97,7 @@ function vide(): NextResponse {
       // Cache COURT : une panne d'amont est passagère, et la figer un mois
       // laisserait la carte grise longtemps après le rétablissement.
       'cache-control': 'public, max-age=60',
-      'x-moonfish-tuile': 'indisponible',
+      'x-luna-marea-tuile': 'indisponible',
     },
   });
 }

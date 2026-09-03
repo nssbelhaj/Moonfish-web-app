@@ -4,7 +4,7 @@ Ce que couvre ce document : passer d'un dépôt qui compile à des comptes qui
 fonctionnent, sur un hébergement Hostinger.
 
 Rien de tout cela n'est nécessaire pour que le site tourne. Sans base ni
-courriel, Moonfish fonctionne entièrement et annonce que les comptes ne sont
+courriel, Luna Marea fonctionne entièrement et annonce que les comptes ne sont
 pas ouverts — sans formulaire qui échouerait, sans avis d'exemple pour meubler.
 
 ---
