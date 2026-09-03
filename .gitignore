@@ -16,3 +16,8 @@ coverage/
 # `npx skills install` les restaure à l'identique depuis skills-lock.json.
 .agents/
 .claude/skills/
+
+# Captures d’écran de vérification : elles se prennent dans le répertoire
+# temporaire de session, jamais dans le dépôt.
+*.png
+!public/**/*.png
