@@ -36,6 +36,16 @@ afterEach(() => {
   Object.assign(process.env, SAUVEGARDE);
 });
 
+/**
+ * Vue élargie de `process.env`.
+ *
+ * `@types/node` déclare `NODE_ENV` en lecture seule — utile en code applicatif,
+ * gênant ici : ces tests doivent précisément simuler la production. Passer par
+ * cette vue évite un `any` ou un `@ts-ignore`, tous deux interdits dans ce
+ * dépôt, et garde l'intention lisible.
+ */
+const env = process.env as Record<string, string | undefined>;
+
 /** Charge `authHostWarning` APRÈS que l'environnement soit posé. */
 async function avertissement(): Promise<string | null> {
   vi.resetModules();
@@ -45,7 +55,7 @@ async function avertissement(): Promise<string | null> {
 
 /** Un déploiement où les comptes sont censés marcher : base ET courriel. */
 function comptesOuvertsEnProduction(): void {
-  process.env['NODE_ENV'] = 'production';
+  env['NODE_ENV'] = 'production';
   process.env['DATABASE_URL'] = 'mysql://u:p@localhost:3306/base';
   process.env['EMAIL_SERVER'] = 'smtp://boite@exemple.fr:motdepasse@smtp.exemple.fr:587';
   process.env['EMAIL_FROM'] = 'contact@exemple.fr';
@@ -71,7 +81,7 @@ describe('l’avertissement d’hôte de confiance', () => {
     'se tait dès que %s est défini — les quatre échappatoires de la bibliothèque',
     async (cle) => {
       comptesOuvertsEnProduction();
-      process.env[cle] = cle === 'AUTH_URL' ? 'https://lunamarea.fr' : '1';
+      env[cle] = cle === 'AUTH_URL' ? 'https://lunamarea.fr' : '1';
 
       expect(await avertissement()).toBeNull();
     },
@@ -79,7 +89,7 @@ describe('l’avertissement d’hôte de confiance', () => {
 
   it('se tait hors production : le défaut de la bibliothèque suffit', async () => {
     comptesOuvertsEnProduction();
-    process.env['NODE_ENV'] = 'development';
+    env['NODE_ENV'] = 'development';
 
     expect(await avertissement()).toBeNull();
   });
