@@ -56,7 +56,7 @@ Node 20 ou plus. Aucune variable d'environnement n'est requise pour démarrer.
 | `npm start` | Sert le build de production — `prestart` migre la base avant, tout seul |
 | `npm run typecheck` | `tsc --noEmit` en mode strict renforcé |
 | `npm run lint` | ESLint (config `next/core-web-vitals` + `next/typescript`) |
-| `npm test` | 505 tests (Vitest). 477 hermétiques — aucun accès réseau ; les 28 d'intégration de la couche de données sont ignorés sans `DATABASE_URL`, et exécutés en intégration continue contre un vrai MySQL |
+| `npm test` | 528 tests (Vitest). 493 hermétiques — aucun accès réseau ; les 35 d'intégration de la couche de données sont ignorés sans `DATABASE_URL`, et exécutés en intégration continue contre un vrai MySQL |
 | `npm run test:watch` | Tests en mode surveillance |
 
 ---
@@ -145,7 +145,7 @@ src/
     ├── map/                      Projection équirectangulaire des spots
     ├── providers/                ← LE POINT DE BASCULE (voir plus bas)
     ├── guides.ts, markdown.ts    Chargement et rendu des articles
-    ├── time.ts, geo.ts, routes.ts, random.ts, rate-limit.ts,
+    ├── time.ts, geo.ts, routes.ts, random.ts, rate-limit.ts, limites.ts,
     └── score-display.ts, spot-filters.ts
 ```
 
@@ -335,11 +335,25 @@ test échoue si un `select` y apparaît :
 - `count()` rend `null` : ne pas avoir de chemin de lecture n'est pas la même
   chose que compter zéro.
 
-**Reste à faire, et ce n'est pas cosmétique :** le limiteur de débit de
-`src/lib/rate-limit.ts` est en mémoire de processus. Il ne protège rien dès
-qu'il y a plusieurs instances ou du serverless — chaque instance a son propre
-compteur. Le remplacer par un compteur partagé — une table MySQL avec une
-fenêtre glissante suffirait, maintenant qu'une base est là.
+**Les budgets d'appel sont maintenant en base** (`rate_limits`, migration
+`0003`). Ils survivent aux redéploiements et valent pour toutes les instances.
+`src/lib/rate-limit.ts` — la version en mémoire — reste en service comme repli
+sur un déploiement sans base : il n'y a alors ni comptes ni courriels, donc
+presque rien à protéger.
+
+Les budgets sont déclarés au même endroit, `src/lib/limites.ts`. Le formulaire
+de connexion en consomme trois, et les trois sont nécessaires : par adresse
+(noyer une boîte précise), par IP (arroser mille adresses depuis un script), et
+un plafond global. Ce dernier a l'air excessif ; il ne l'est pas. Un hébergeur
+mutualisé plafonne les envois SMTP à l'heure et SUSPEND le compte au-delà. Or
+il n'y a pas de mot de passe de secours ici : sans courriel, plus personne ne
+se connecte, et le rétablissement passe par un humain chez l'hébergeur. Une
+limite atteinte, elle, se relâche seule en une heure.
+
+`src/lib/__tests__/limites.test.ts` refuse qu'une action nouvellement écrite
+oublie son budget : toute action rendant un `ActionState` doit en consommer un,
+ou figurer dans la liste d'exemptions du test avec sa raison. On peut décider
+qu'une action n'en a pas besoin ; on ne peut plus l'oublier.
 
 ### 5. Les avertissements de démonstration se retirent seuls
 

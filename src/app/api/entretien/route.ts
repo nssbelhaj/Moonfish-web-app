@@ -4,6 +4,8 @@ import { purgeExpired } from '@/lib/auth/mysql-adapter';
 import { sendOutingAlerts } from '@/lib/contributions/alerts';
 import { mailEnabled } from '@/lib/auth/config';
 import { databaseEnabled } from '@/lib/db/mysql';
+import { RETENTION_MS } from '@/lib/limites';
+import { purgeRateLimits } from '@/lib/providers/mysql/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -48,11 +50,16 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const purged = await purgeExpired();
 
+    // Les compteurs d'appel sortis de la plus longue fenêtre ne servent plus
+    // à rien. Les garder ne fausserait aucun calcul — chaque requête borne
+    // déjà sur `hit_at` — mais la table grossirait sans fin.
+    const limites = await purgeRateLimits(RETENTION_MS);
+
     // Sans courriel configuré, les alertes n'ont nulle part où partir : on
     // le dit dans la réponse plutôt que de compter des échecs.
     const alerts = mailEnabled() ? await sendOutingAlerts() : null;
 
-    return NextResponse.json({ ok: true, state: 'entretenu', ...purged, alerts });
+    return NextResponse.json({ ok: true, state: 'entretenu', ...purged, limites, alerts });
   } catch (error) {
     console.error('[entretien] purge impossible', error);
     return NextResponse.json(

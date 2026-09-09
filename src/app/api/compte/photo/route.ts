@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { currentUser } from '@/lib/auth/session';
+import { BUDGETS, consommer, delaiLisible } from '@/lib/limites';
 import { MAX_STORED_BYTES, savePhoto } from '@/lib/photo/storage';
 
 export const runtime = 'nodejs';
@@ -24,6 +25,22 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json(
       { ok: false, message: 'Connectez-vous pour envoyer une photo.' },
       { status: 401 },
+    );
+  }
+
+  /*
+    Budget avant lecture du corps. Une session suffisait jusqu'ici à ouvrir le
+    dépôt : elle empêche l'anonyme, pas la boucle. Chaque photo acceptée
+    occupe du disque de façon durable, sur un hébergement où il est compté.
+  */
+  const budget = await consommer(BUDGETS.photo, user.id);
+  if (!budget.allowed) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: `Trop de photos envoyées d’affilée. Réessayez dans ${delaiLisible(budget.resetAt)}.`,
+      },
+      { status: 429 },
     );
   }
 

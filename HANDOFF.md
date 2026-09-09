@@ -170,7 +170,11 @@ envoi, traçabilité du consentement avec sa version.
 - **Intégration continue** — typage, lint, migrations, migrations rejouées,
   cohérence du fichier d'import, tests **contre un vrai MySQL 8**, build
 - **`npm audit` à zéro** sans quitter Next 15
-- **505 tests** (46 fichiers), dont 28 d'intégration
+- **Budgets d'appel en base** (table `rate_limits`) : durables, partagés entre
+  instances, purgés par la tâche d'entretien. Le formulaire de connexion en
+  consomme trois — par adresse, par IP, et un plafond global qui protège le
+  quota d'envoi du serveur de courriel
+- **528 tests** (48 fichiers), dont 35 d'intégration
 
 ### Ce qui n'a jamais pu être vérifié
 
@@ -224,17 +228,13 @@ tuiles, ni les fournisseurs météo. Tout ce qui est décrit comme « vérifié 
    trois spots, ça tient dans le palier gratuit (~8 requêtes par build, 4 par
    jour). **C'est le premier changement qu'un pêcheur remarquerait** : les
    marées sont aujourd'hui simulées et le site le dit sur chaque page.
-7. **Remplacer le limiteur de débit.** `src/lib/rate-limit.ts` est en mémoire
-   de processus : il ne protège plus rien dès qu'il y a plusieurs instances.
-   Une table MySQL à fenêtre glissante suffirait — la base est là. **Faiblesse
-   connue et documentée**, pas un oubli.
-8. **Passer les spots en base**, mais seulement le jour où une interface
+7. **Passer les spots en base**, mais seulement le jour où une interface
    d'édition existe. Aujourd'hui c'est du contenu éditorial écrit à la main ;
    le mettre en base sans interface n'apporterait rien.
 
 ### Bloc C — si monétisation
 
-9. **Un lien d'affiliation ou un bouton de don rend le site commercial.** Trois
+8. **Un lien d'affiliation ou un bouton de don rend le site commercial.** Trois
    choses changent en même temps, et `regime-publication.test.ts` échoue tant
    qu'elles ne sont pas faites :
    - `PUBLICATION_REGIME` passe à `professionnel` et **l'adresse postale
@@ -306,6 +306,7 @@ build — mais c'est à savoir.
 | **React réinitialise un formulaire** après une action serveur, **même en échec**. `ActionForm` mémorise et restaure la saisie. |
 | **Suppression et pages pré-rendues** | Les données partaient de la base mais restaient **affichées** jusqu'à une heure. Relever les spots concernés **avant** la suppression, revalider après. |
 | **Durée annoncée ≠ durée calculée** | Le site annonçait des créneaux de trois heures alors que `SLOT_HOURS` vaut 2 — jusque dans la balise de description. `duree-creneau.test.ts` lit la constante. |
+| **Une protection qui existe n'est pas une protection qui s'applique** | Le limiteur de débit était écrit, documenté, testé — et branché sur **un seul** point d'entrée. Le formulaire de connexion, écrit plus tard, faisait partir un courriel vers une adresse fournie par l'appelant, sans compteur. Rien ne le signalait. `limites.test.ts` refuse désormais qu'une action oublie son budget. |
 
 ### La leçon générale
 
@@ -331,13 +332,13 @@ npm run dev            # http://localhost:3000 — aucune variable requise
 ```bash
 npx tsc --noEmit                          # typage strict
 npx next lint                             # ESLint
-npx vitest run                            # 477 tests hermétiques
+npx vitest run                            # 493 tests hermétiques
 npm run build                             # 77 pages
 npm audit                                 # doit rester à 0
 node scripts/generer-import-sql.mjs --verifier
 ```
 
-### Avec une vraie base — les 28 tests d'intégration
+### Avec une vraie base — les 35 tests d'intégration
 
 Ils sont **ignorés** sans `DATABASE_URL` (un clone doit pouvoir lancer les
 tests sans installer de serveur), et exécutés en intégration continue.
@@ -352,7 +353,7 @@ sudo mysql -e "create database if not exists lunamarea_test;
 export DATABASE_URL='mysql://luna:luna@127.0.0.1:3306/lunamarea_test'
 npm run migrate                           # applique 0001 puis 0002
 npm run migrate                           # doit dire « schéma déjà à jour »
-npx vitest run                            # 505 tests
+npx vitest run                            # 528 tests
 ```
 
 ### Le site complet en local, comptes compris
@@ -460,7 +461,7 @@ s'en écarte.
 | Base de production | `u969082232_moonfish` — **le nom ne change pas** : Hostinger le fixe à la création |
 | Hébergement | Hostinger Web Apps, déploiement GitHub automatique, Node ≥ 20.9 |
 | Régime légal | Non professionnel (art. 6-III-2 LCEN) — adresse dispensée tant qu'aucune recette |
-| Volume | 205 fichiers TS/TSX · ~25 000 lignes · 18 composants client · 505 tests · 77 pages |
+| Volume | 209 fichiers TS/TSX · ~25 600 lignes · 18 composants client · 528 tests · 77 pages |
 
 ### Documents voisins
 

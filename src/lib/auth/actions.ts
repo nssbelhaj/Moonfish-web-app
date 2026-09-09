@@ -9,6 +9,7 @@ import { accountsEnabled } from '@/lib/auth/config';
 import { catchInputSchema, outingInputSchema, spotReviewInputSchema } from '@/data/schemas';
 import { localDateTimeToIso } from '@/lib/auth/local-time';
 import { currentUser } from '@/lib/auth/session';
+import { BUDGETS, consommer, delaiLisible, ipAppelante } from '@/lib/limites';
 import { contributions, spots } from '@/lib/providers';
 import { spotPath } from '@/lib/routes';
 
@@ -26,6 +27,25 @@ const NOT_SIGNED_IN: ActionState = {
   ok: false,
   message: 'Session expirée. Reconnectez-vous et recommencez : votre saisie n’a pas été perdue.',
 };
+
+/**
+ * Budget d'écriture d'un compte connecté.
+ *
+ * Rend `null` quand la place est libre, un refus prêt à renvoyer sinon.
+ *
+ * Les suppressions ne le consomment pas : elles exigent de posséder la ligne
+ * visée, ce qui borne déjà le dégât à ses propres données. Ce budget vise les
+ * écritures qui CRÉENT — un script qui remplirait la base d'avis.
+ */
+async function budgetEcriture(userId: string): Promise<ActionState | null> {
+  const decision = await consommer(BUDGETS.contribution, userId);
+  if (decision.allowed) return null;
+
+  return {
+    ok: false,
+    message: `Trop d’enregistrements d’affilée. Réessayez dans ${delaiLisible(decision.resetAt)}.`,
+  };
+}
 
 /**
  * Demande d'un lien de connexion.
@@ -50,6 +70,45 @@ export async function requestSignInLink(
     return {
       ok: false,
       message: 'Il faut accepter la politique de confidentialité pour créer un compte.',
+    };
+  }
+
+  /*
+    ── Les trois budgets, dans cet ordre ────────────────────────────────────
+
+    C'est le seul formulaire du site qui, SANS authentification, fait partir
+    un courriel vers une adresse fournie par l'appelant. Il n'avait aucune
+    limite.
+
+    L'ordre n'est pas indifférent : on ne consomme le budget global qu'après
+    avoir écarté les deux abus locaux, sinon un seul script épuiserait pour
+    tout le monde un compteur qu'il n'aurait jamais dû atteindre.
+
+    Le message ne dit jamais si l'adresse est connue : la réponse doit rester
+    la même que le compte existe ou non, y compris quand elle refuse.
+  */
+  const parAdresse = await consommer(BUDGETS.connexionAdresse, email);
+  if (!parAdresse.allowed) {
+    return {
+      ok: false,
+      message: `Un lien a déjà été demandé pour cette adresse. Vérifiez vos indésirables, puis réessayez dans ${delaiLisible(parAdresse.resetAt)}.`,
+    };
+  }
+
+  const parIp = await consommer(BUDGETS.connexionIp, await ipAppelante());
+  if (!parIp.allowed) {
+    return {
+      ok: false,
+      message: `Trop de demandes de connexion depuis cet accès. Réessayez dans ${delaiLisible(parIp.resetAt)}.`,
+    };
+  }
+
+  const global = await consommer(BUDGETS.connexionGlobal, 'site');
+  if (!global.allowed) {
+    console.warn('[auth] plafond horaire d’envoi atteint pour tout le site');
+    return {
+      ok: false,
+      message: `Le service de connexion a atteint sa limite d’envoi pour l’heure. Ce n’est pas votre adresse : réessayez dans ${delaiLisible(global.resetAt)}.`,
     };
   }
 
@@ -104,6 +163,9 @@ export async function createProfile(
   const user = await currentUser();
   if (!user) return NOT_SIGNED_IN;
 
+  const trop = await budgetEcriture(user.id);
+  if (trop) return trop;
+
   const result = await contributions.createProfile(
     user.id,
     String(formData.get('display_name') ?? ''),
@@ -124,6 +186,9 @@ export async function renameProfile(
 ): Promise<ActionState> {
   const user = await currentUser();
   if (!user) return NOT_SIGNED_IN;
+
+  const trop = await budgetEcriture(user.id);
+  if (trop) return trop;
 
   const result = await contributions.renameProfile(
     user.id,
@@ -168,6 +233,9 @@ export async function saveReview(
 ): Promise<ActionState> {
   const user = await currentUser();
   if (!user) return NOT_SIGNED_IN;
+
+  const trop = await budgetEcriture(user.id);
+  if (trop) return trop;
 
   const profile = await contributions.getProfile(user.id);
   if (!profile) {
@@ -219,6 +287,9 @@ export async function addCatch(
 ): Promise<ActionState> {
   const user = await currentUser();
   if (!user) return NOT_SIGNED_IN;
+
+  const trop = await budgetEcriture(user.id);
+  if (trop) return trop;
 
   const profile = await contributions.getProfile(user.id);
   if (!profile) {
@@ -338,6 +409,14 @@ export async function deleteAccount(
    est donc accessible dès la connexion, avant même le choix du profil.
    ──────────────────────────────────────────────────────────────────────────── */
 
+/**
+ * Les favoris ne consomment aucun budget, et ce n'est pas un oubli.
+ *
+ * La clé primaire composée (personne, spot) borne la table à une ligne par
+ * spot et par personne — une douzaine au total aujourd'hui. Marteler ce
+ * bouton ne fait donc grossir aucune table : un limiteur n'y protégerait
+ * rien, et gênerait quelqu'un qui trie ses spots.
+ */
 export async function toggleFavorite(
   _previous: ActionState | null,
   formData: FormData,
@@ -371,6 +450,9 @@ export async function addOuting(
 ): Promise<ActionState> {
   const user = await currentUser();
   if (!user) return NOT_SIGNED_IN;
+
+  const trop = await budgetEcriture(user.id);
+  if (trop) return trop;
 
   // Même lecture d'heure locale que pour une prise : le navigateur transmet
   // son décalage, et l'instant est stocké en UTC.
