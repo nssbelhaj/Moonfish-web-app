@@ -5,7 +5,7 @@ import { EmailCaptureForm } from '@/components/forms/EmailCaptureForm';
 import { SpotTabs } from '@/components/spot/SpotTabs';
 import { SpeciesCard } from '@/components/v3/SpeciesCard';
 import { SpotContributionsSection } from '@/components/contributions/SpotContributions';
-import { SPECIES, SPECIES_BY_NAME, seaOf } from '@/data/species';
+import { SPECIES, SPECIES_BY_NAME } from '@/data/species';
 import { sourceList } from '@/lib/forecast';
 import { contributions } from '@/lib/providers';
 import { absoluteUrl, spotPath } from '@/lib/routes';
@@ -32,7 +32,7 @@ export async function generateMetadata({
 
 export default async function SpotSpeciesPage({ params }: { params: Promise<RouteParams> }) {
   const { spot, forecast } = await resolveSpot(params);
-  const sea = seaOf(spot.regionSlug);
+  const sea = spot.sea;
 
   /*
     Les contributions sont lues SANS session, ce qui laisse la page pré-rendue
@@ -93,6 +93,7 @@ export default async function SpotSpeciesPage({ params }: { params: Promise<Rout
               <SpeciesCard
                 key={species.slug}
                 species={species}
+                countrySlug={spot.countrySlug}
                 sea={sea}
                 spotBottom={spot.bottom}
               />

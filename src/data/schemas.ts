@@ -23,6 +23,18 @@ export const spotBottomSchema = z.enum(['sable', 'sable-roche', 'roche', 'galets
 export const spotTypeSchema = z.enum(['plage', 'estran-rocheux', 'pointe', 'estuaire', 'digue']);
 
 /**
+ * Façade maritime, qui décide de la maille applicable.
+ *
+ * Elle est déclarée SPOT PAR SPOT, et pas déduite de la région, parce que
+ * plusieurs régions administratives touchent les deux mers : Tanger et
+ * Al Hoceïma sont dans la même région marocaine, l'une sur l'Atlantique,
+ * l'autre sur la Méditerranée ; l'Andalousie va de Huelva à Almería. Une
+ * déduction par région se serait trompée en silence, et la maille du bar
+ * serait passée de 30 à 42 cm sans que rien ne le signale.
+ */
+export const seaSchema = z.enum(['atlantique', 'mediterranee']);
+
+/**
  * Techniques praticables depuis le bord sur un spot.
  *
  * Luna Marea ne parle pas que de surfcasting : un estran rocheux se pêche au
@@ -54,6 +66,7 @@ export const spotSchema = z.object({
   timezone: z.string().min(3),
   /** Cap de la plage vers le large, en degrés. */
   facingDeg: z.number().min(0).max(359),
+  sea: seaSchema,
   exposure: spotExposureSchema,
   bottom: spotBottomSchema,
   type: spotTypeSchema,
@@ -68,6 +81,7 @@ export const spotSchema = z.object({
 });
 
 export type Spot = z.infer<typeof spotSchema>;
+export type Sea = z.infer<typeof seaSchema>;
 export type SpotExposure = z.infer<typeof spotExposureSchema>;
 export type SpotBottom = z.infer<typeof spotBottomSchema>;
 export type SpotType = z.infer<typeof spotTypeSchema>;

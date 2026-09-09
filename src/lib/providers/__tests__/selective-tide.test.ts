@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { SPOTS } from '@/data/spots';
 import { MockTideProvider } from '../mock/tide';
-import { SelectiveTideProvider, parseAllowedSpots } from '../selective-tide';
+import {
+  BUDGET_SANS_LIMITE_MAX_SPOTS,
+  SelectiveTideProvider,
+  parseAllowedSpots,
+  tideBudgetWarning,
+} from '../selective-tide';
 import type { DateRange, SourceMeta, Sourced, TideProvider } from '../types';
 import type { Spot, TideEvent } from '@/data/schemas';
 
@@ -70,5 +75,41 @@ describe('SelectiveTideProvider', () => {
     const real = new CountingProvider();
     const provider = new SelectiveTideProvider(real, new MockTideProvider(), []);
     expect(provider.source).toBe(real.source);
+  });
+});
+
+describe('l’avertissement de quota Stormglass', () => {
+  const CLE = { STORMGLASS_API_KEY: 'une-cle' };
+
+  it('prévient quand la clé est posée sans TIDE_REAL_SPOTS et que le catalogue est grand', () => {
+    const message = tideBudgetWarning(CLE, 42);
+
+    expect(message).not.toBeNull();
+    // Le message doit nommer la variable ET donner un exemple utilisable :
+    // sans cela il envoie soupçonner la clé, qui n'y est pour rien.
+    expect(message).toContain('TIDE_REAL_SPOTS');
+    expect(message).toContain('SIMULÉES');
+  });
+
+  it('se tait dès que la dépense est bornée', () => {
+    expect(tideBudgetWarning({ ...CLE, TIDE_REAL_SPOTS: 'pen-hat' }, 42)).toBeNull();
+  });
+
+  it('se tait sans clé : il n’y a alors aucun quota à dépasser', () => {
+    expect(tideBudgetWarning({}, 42)).toBeNull();
+  });
+
+  it('se tait sur un petit catalogue, qui tient dans le palier gratuit', () => {
+    expect(tideBudgetWarning(CLE, BUDGET_SANS_LIMITE_MAX_SPOTS)).toBeNull();
+  });
+
+  it('se tait quand le fournisseur est forcé en simulé', () => {
+    expect(tideBudgetWarning({ ...CLE, TIDE_PROVIDER: 'mock' }, 42)).toBeNull();
+  });
+
+  it('le catalogue réel dépasse le seuil : l’avertissement sert vraiment', () => {
+    // Si ce test échoue un jour parce que le catalogue a rétréci, l'avertissement
+    // devient du code mort et il faut le retirer plutôt que le garder « au cas où ».
+    expect(SPOTS.length).toBeGreaterThan(BUDGET_SANS_LIMITE_MAX_SPOTS);
   });
 });

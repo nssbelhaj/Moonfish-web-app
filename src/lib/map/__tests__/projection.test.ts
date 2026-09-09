@@ -97,9 +97,19 @@ describe('lisibilité de la carte', () => {
     for (let i = 0; i < spread.length; i++) {
       for (let j = i + 1; j < spread.length; j++) {
         const d = Math.hypot(spread[i]!.x - spread[j]!.x, spread[i]!.y - spread[j]!.y);
-        // Tolérance : le rabattement dans le cadre peut rapprocher deux voisins
-        // d'un cheveu. Ce qui compte est qu'aucune pastille n'en cache une autre.
-        expect(d).toBeGreaterThan(24);
+        /*
+          Le seuil EST le diamètre d'une pastille (2 × R = 32 px) : en dessous,
+          une pastille en recouvre une autre, et celle du dessous devient
+          incliquable sans que rien ne le montre à l'écran.
+
+          Il était à 24 px, ce qui laissait passer un recouvrement partiel. À
+          quarante-deux spots, la mesure réelle tombait à 19,9 px — le
+          rabattement dans le cadre se faisait une seule fois, après la
+          relaxation, et replaçait des points les uns sur les autres. Le
+          rabattement fait maintenant partie de la boucle, et la distance
+          atteinte est exactement la distance demandée.
+        */
+        expect(d).toBeGreaterThanOrEqual(32);
       }
     }
   });

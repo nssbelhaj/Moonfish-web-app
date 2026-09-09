@@ -113,10 +113,18 @@ export interface Point2D {
  * douzaine de points, et le résultat est déterministe — deux rendus du même
  * jeu donnent la même image.
  */
+export interface Bounds {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+}
+
 export function separatePoints<T extends Point2D>(
   points: readonly T[],
   minDistance: number,
   passes = 24,
+  bounds?: Bounds,
 ): T[] {
   const out = points.map((p) => ({ ...p }));
 
@@ -144,6 +152,30 @@ export function separatePoints<T extends Point2D>(
         moved = true;
       }
     }
+
+    /*
+      ── Le rabattement doit se faire À CHAQUE passe, pas à la fin ──────────
+
+      La version précédente séparait jusqu'à convergence, PUIS rabattait une
+      seule fois dans le cadre. Un point poussé dehors revenait alors se
+      plaquer sur le bord, parfois exactement sur un voisin — et plus rien ne
+      les reséparait, puisque la boucle était finie.
+
+      Avec douze spots, cela n'arrivait jamais : il y avait de la place. Avec
+      quarante-deux, la carte a produit deux pastilles à vingt pixels l'une de
+      l'autre. Le test l'a vu ; à l'œil, la seconde aurait simplement été
+      incliquable, comme Taghazout sous Agadir.
+
+      En rabattant dans la boucle, la contrainte de cadre participe à la
+      relaxation au lieu de la défaire après coup.
+    */
+    if (bounds) {
+      for (const p of out) {
+        p.x = Math.min(Math.max(p.x, bounds.minX), bounds.maxX);
+        p.y = Math.min(Math.max(p.y, bounds.minY), bounds.maxY);
+      }
+    }
+
     if (!moved) break;
   }
 
@@ -154,15 +186,22 @@ export function spreadMarkers(
   points: readonly Projected[],
   minDistance: number,
   view: Viewport,
-  passes = 24,
+  passes = 80,
 ): Projected[] {
+  /*
+    Plus de passes qu'auparavant (80 contre 24) : sous contrainte de cadre, la
+    relaxation avance plus lentement — chaque rabattement annule une partie du
+    déplacement de la passe. Le coût est nul en pratique, ce calcul tourne une
+    fois au rendu d'une page pré-rendue.
+  */
   const min = view.padding;
 
-  return separatePoints(points, minDistance, passes).map((p) => ({
-    ...p,
-    x: Math.min(Math.max(p.x, min), view.width - min),
-    y: Math.min(Math.max(p.y, min), view.height - min),
-  }));
+  return separatePoints(points, minDistance, passes, {
+    minX: min,
+    maxX: view.width - min,
+    minY: min,
+    maxY: view.height - min,
+  });
 }
 
 /** Forme du marqueur par type de spot (D8) : trois canaux avec le chiffre et la couleur. */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SPECIES, SPECIES_BY_NAME, seaOf } from '@/data/species';
+import { SPECIES, SPECIES_BY_NAME, mailleFor, mailleReferenceOf } from '@/data/species';
 import { SPOTS } from '@/data/spots';
 
 describe('catalogue d’espèces', () => {
@@ -49,10 +49,29 @@ describe('catalogue d’espèces', () => {
     expect(bar.maille.mediterranee).toBe(30);
   });
 
-  it('rattache chaque région à sa façade', () => {
-    expect(seaOf('occitanie')).toBe('mediterranee');
-    expect(seaOf('bretagne')).toBe('atlantique');
-    expect(seaOf('souss-massa')).toBe('atlantique');
+  it('n’affiche AUCUNE maille hors de France, où nos chiffres ne valent pas', () => {
+    /*
+      Les mailles de ce catalogue viennent toutes de l'arrêté français du
+      26 octobre 2012. Le site les affichait sur les spots marocains, avec le
+      nom de l'arrêté en source. Un chiffre faux assorti d'une source fausse a
+      l'air vérifié : c'est pire qu'une absence.
+    */
+    const bar = SPECIES_BY_NAME.get('bar')!;
+
+    expect(mailleFor(bar, 'france', 'atlantique')).toBe(42);
+    expect(mailleFor(bar, 'france', 'mediterranee')).toBe(30);
+    expect(mailleFor(bar, 'maroc', 'atlantique')).toBeNull();
+    expect(mailleFor(bar, 'espagne', 'mediterranee')).toBeNull();
+    // Un pays qu'on ajouterait sans y penser tombe du bon côté.
+    expect(mailleFor(bar, 'portugal', 'atlantique')).toBeNull();
+  });
+
+  it('renvoie toujours vers une autorité NOMMÉE, jamais vers un lien nu', () => {
+    for (const pays of ['france', 'espagne', 'maroc', 'inconnu']) {
+      const reference = mailleReferenceOf(pays);
+      expect(reference.authority.length, pays).toBeGreaterThan(10);
+      expect(reference.url.startsWith('http'), pays).toBe(true);
+    }
   });
 
   it('porte toujours un montage, un nom scientifique et un fond', () => {

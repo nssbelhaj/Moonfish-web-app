@@ -1,4 +1,4 @@
-import { MAILLE_REFERENCE, MAILLE_SOURCE_URL, type SpeciesInfo, type Sea } from '@/data/species';
+import { mailleFor, mailleReferenceOf, type SpeciesInfo, type Sea } from '@/data/species';
 import { BOTTOM_LABELS } from '@/data/spots';
 import type { SpotBottom } from '@/data/schemas';
 
@@ -22,14 +22,18 @@ import type { SpotBottom } from '@/data/schemas';
  */
 export function SpeciesCard({
   species,
+  countrySlug,
   sea,
   spotBottom,
 }: {
   species: SpeciesInfo;
+  /** Le pays décide du texte applicable — nos chiffres ne couvrent que la France. */
+  countrySlug: string;
   sea: Sea;
   spotBottom: SpotBottom;
 }) {
-  const maille = species.maille[sea];
+  const reference = mailleReferenceOf(countrySlug);
+  const maille = mailleFor(species, countrySlug, sea);
   const onThisBottom = species.bottoms.includes(spotBottom);
 
   return (
@@ -57,21 +61,21 @@ export function SpeciesCard({
       <p className="card-source">
         {maille === null ? (
           <>
-            Maille non vérifiée dans nos données pour cette façade — consultez{' '}
+            Maille non vérifiée dans nos données ici — consultez{' '}
             <a
-              href={MAILLE_SOURCE_URL}
+              href={reference.url}
               className="underline decoration-dotted underline-offset-4"
               rel="noopener noreferrer"
               target="_blank"
             >
-              l’arrêté en vigueur
+              {reference.authority}
             </a>{' '}
             avant de garder une prise.
           </>
         ) : (
           <>
             Maille <span className="nums">{maille} cm</span>
-            {species.dailyLimit ? ` · ${species.dailyLimit}` : ''} · {MAILLE_REFERENCE}
+            {species.dailyLimit ? ` · ${species.dailyLimit}` : ''} · {reference.label}
           </>
         )}
       </p>

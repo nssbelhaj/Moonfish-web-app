@@ -1,7 +1,6 @@
-import type { SpotBottom } from './schemas';
+import type { Sea, SpotBottom } from './schemas';
 
-/** Façade maritime, qui décide de la maille applicable. */
-export type Sea = 'atlantique' | 'mediterranee';
+export type { Sea };
 
 export interface SpeciesInfo {
   slug: string;
@@ -31,11 +30,76 @@ export interface SpeciesInfo {
 }
 
 /**
- * Référence réglementaire des mailles renseignées.
- * Elle est affichée telle quelle : une maille sans sa source ne vaut rien.
+ * ═══════════════════════════════════════════════════════════════════════════
+ *  Le cadre réglementaire dépend du PAYS, pas seulement de la façade
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * Les mailles de ce catalogue viennent toutes de l'arrêté français du
+ * 26 octobre 2012. Tant que le site ne couvrait que la France, les afficher
+ * partout était sans conséquence. Ça a cessé de l'être : le site affichait
+ * « Maille 42 cm · arrêté du 26 octobre 2012 » sur les spots marocains, où ce
+ * texte n'a aucune valeur et où les tailles marchandes sont fixées par le
+ * département de la Pêche maritime.
+ *
+ * Un chiffre faux assorti d'une source fausse est pire qu'une absence : il a
+ * l'air vérifié. Un pêcheur qui garde une prise sur cette base est en
+ * infraction dans son pays, en croyant suivre la règle.
+ *
+ * Nos données ne couvrent que la France. Pour les autres pays, `label` vaut
+ * `null` : l'interface n'affiche AUCUN chiffre et renvoie à l'autorité
+ * compétente, nommée pour que le lien ne soit pas aveugle.
  */
-export const MAILLE_REFERENCE = 'arrêté du 26 octobre 2012, à jour des révisions 2025';
-export const MAILLE_SOURCE_URL = 'https://www.mer.gouv.fr/peche-de-loisir-en-mer';
+export interface MailleReference {
+  /** Texte de référence. `null` = nos données ne couvrent pas ce pays. */
+  label: string | null;
+  /** Autorité à consulter, nommée dans la phrase. */
+  authority: string;
+  url: string;
+}
+
+export const MAILLE_REFERENCES: Readonly<Record<string, MailleReference>> = {
+  france: {
+    label: 'arrêté du 26 octobre 2012, à jour des révisions 2025',
+    authority: 'ministère de la Mer',
+    url: 'https://www.mer.gouv.fr/peche-de-loisir-en-mer',
+  },
+  espagne: {
+    label: null,
+    authority: 'ministère espagnol de l’Agriculture et de la Pêche (MAPA)',
+    url: 'https://www.mapa.gob.es/es/pesca/temas/control-inspeccion-lucha-pesca-ilegal/informacion-sobre-actividad-pesquera/detalle/buscador_especies',
+  },
+  maroc: {
+    label: null,
+    authority: 'département de la Pêche maritime du Maroc',
+    url: 'http://www.mpm.gov.ma/',
+  },
+};
+
+/** Repli pour un pays non répertorié : aucun chiffre, et on le dit. */
+const REFERENCE_INCONNUE: MailleReference = {
+  label: null,
+  authority: 'l’autorité de pêche compétente localement',
+  url: 'https://www.mer.gouv.fr/peche-de-loisir-en-mer',
+};
+
+export function mailleReferenceOf(countrySlug: string): MailleReference {
+  return MAILLE_REFERENCES[countrySlug] ?? REFERENCE_INCONNUE;
+}
+
+/**
+ * Maille applicable, ou `null` si nos données ne la couvrent pas ICI.
+ *
+ * Deux raisons de rendre `null`, et l'interface les traite pareil parce
+ * qu'elles disent la même chose : « nous ne l'avons pas vérifiée ».
+ */
+export function mailleFor(
+  species: SpeciesInfo,
+  countrySlug: string,
+  sea: Sea,
+): number | null {
+  if (mailleReferenceOf(countrySlug).label === null) return null;
+  return species.maille[sea];
+}
 
 /**
  * Catalogue des espèces du bord.
@@ -200,7 +264,3 @@ export const SPECIES: readonly SpeciesInfo[] = [
 
 export const SPECIES_BY_NAME = new Map(SPECIES.map((s) => [s.name.toLowerCase(), s]));
 
-/** Façade d'un spot, d'après sa région. */
-export function seaOf(regionSlug: string): Sea {
-  return regionSlug === 'occitanie' ? 'mediterranee' : 'atlantique';
-}

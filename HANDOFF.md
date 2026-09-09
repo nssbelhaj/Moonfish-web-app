@@ -14,7 +14,7 @@
 **Luna Marea dit quand aller pêcher du bord, spot par spot, et explique
 pourquoi.**
 
-Un score sur 10 par créneau de deux heures, sur sept jours, pour douze spots de
+Un score sur 10 par créneau de deux heures, sur sept jours, pour quarante-deux spots de
 pêche du bord en France et au Maroc. Le score agrège marée, vent, houle,
 périodes solunaires, pression et lumière — chaque facteur étant affiché avec
 son poids, de sorte que la note ne soit jamais un verdict à croire sur parole.
@@ -134,8 +134,8 @@ navigateur sur un chargement complet : **un seul hôte joint, le nôtre**.
 
 ### Le site public
 
-- **12 spots** (Bretagne, Normandie, Hauts-de-France, Nouvelle-Aquitaine,
-  Occitanie, Souss-Massa), 4 onglets chacun : Live, Prévision, Analyse, Espèces
+- **42 spots** en France, en Espagne et au Maroc, sur les deux façades,
+  4 onglets chacun : Live, Prévision, Analyse, Espèces
 - **Score** avec 4 canaux redondants (chiffre, couleur, forme, texte) et
   détail du calcul facteur par facteur
 - **Tableau des créneaux** : chaque ligne porte ses facteurs — note, marée avec
@@ -174,7 +174,7 @@ envoi, traçabilité du consentement avec sa version.
   instances, purgés par la tâche d'entretien. Le formulaire de connexion en
   consomme trois — par adresse, par IP, et un plafond global qui protège le
   quota d'envoi du serveur de courriel
-- **528 tests** (48 fichiers), dont 35 d'intégration
+- **624 tests** (49 fichiers), dont 35 d'intégration
 
 ### Ce qui n'a jamais pu être vérifié
 
@@ -224,10 +224,11 @@ tuiles, ni les fournisseurs météo. Tout ce qui est décrit comme « vérifié 
 
 ### Bloc B — produit (par valeur décroissante)
 
-6. **Clé Stormglass** pour des marées réelles. Avec `TIDE_REAL_SPOTS` limitée à
-   trois spots, ça tient dans le palier gratuit (~8 requêtes par build, 4 par
-   jour). **C'est le premier changement qu'un pêcheur remarquerait** : les
-   marées sont aujourd'hui simulées et le site le dit sur chaque page.
+6. **Clé Stormglass** pour des marées réelles. `TIDE_REAL_SPOTS` est
+   OBLIGATOIRE : le catalogue compte 42 spots, soit 43 appels par construction
+   contre 10 par jour au palier gratuit. Trois spots = 4 appels par jour.
+   **C'est le premier changement qu'un pêcheur remarquerait** : ailleurs les
+   marées restent simulées et le site le dit sur chaque page.
 7. **Passer les spots en base**, mais seulement le jour où une interface
    d'édition existe. Aujourd'hui c'est du contenu éditorial écrit à la main ;
    le mettre en base sans interface n'apporterait rien.
@@ -251,7 +252,7 @@ tuiles, ni les fournisseurs météo. Tout ce qui est décrit comme « vérifié 
 
 ## 5. Pièges rencontrés
 
-### Les cinq pannes silencieuses
+### Les six pannes silencieuses
 
 Aucune ne levait d'erreur. Chacune se présentait sous un déguisement — c'est ce
 qui les rendait coûteuses. **Toutes ont maintenant un avertissement au
@@ -332,7 +333,7 @@ npm run dev            # http://localhost:3000 — aucune variable requise
 ```bash
 npx tsc --noEmit                          # typage strict
 npx next lint                             # ESLint
-npx vitest run                            # 493 tests hermétiques
+npx vitest run                            # 589 tests hermétiques
 npm run build                             # 77 pages
 npm audit                                 # doit rester à 0
 node scripts/generer-import-sql.mjs --verifier
@@ -353,7 +354,7 @@ sudo mysql -e "create database if not exists lunamarea_test;
 export DATABASE_URL='mysql://luna:luna@127.0.0.1:3306/lunamarea_test'
 npm run migrate                           # applique 0001 puis 0002
 npm run migrate                           # doit dire « schéma déjà à jour »
-npx vitest run                            # 528 tests
+npx vitest run                            # 624 tests
 ```
 
 ### Le site complet en local, comptes compris
@@ -461,7 +462,7 @@ s'en écarte.
 | Base de production | `u969082232_moonfish` — **le nom ne change pas** : Hostinger le fixe à la création |
 | Hébergement | Hostinger Web Apps, déploiement GitHub automatique, Node ≥ 20.9 |
 | Régime légal | Non professionnel (art. 6-III-2 LCEN) — adresse dispensée tant qu'aucune recette |
-| Volume | 209 fichiers TS/TSX · ~25 600 lignes · 18 composants client · 528 tests · 77 pages |
+| Volume | 210 fichiers TS/TSX · ~26 600 lignes · 18 composants client · 624 tests · 154 URL au sitemap |
 
 ### Documents voisins
 

@@ -56,7 +56,7 @@ Node 20 ou plus. Aucune variable d'environnement n'est requise pour démarrer.
 | `npm start` | Sert le build de production — `prestart` migre la base avant, tout seul |
 | `npm run typecheck` | `tsc --noEmit` en mode strict renforcé |
 | `npm run lint` | ESLint (config `next/core-web-vitals` + `next/typescript`) |
-| `npm test` | 528 tests (Vitest). 493 hermétiques — aucun accès réseau ; les 35 d'intégration de la couche de données sont ignorés sans `DATABASE_URL`, et exécutés en intégration continue contre un vrai MySQL |
+| `npm test` | 624 tests (Vitest). 589 hermétiques — aucun accès réseau ; les 35 d'intégration de la couche de données sont ignorés sans `DATABASE_URL`, et exécutés en intégration continue contre un vrai MySQL |
 | `npm run test:watch` | Tests en mode surveillance |
 
 ---
@@ -115,7 +115,7 @@ src/
 │
 ├── data/
 │   ├── schemas.ts                Schémas Zod — la FRONTIÈRE avec les futures API
-│   ├── spots.ts                  Les 12 spots (contenu éditorial réel)
+│   ├── spots.ts                  Les 42 spots (contenu éditorial réel)
 │   ├── species.ts                Catalogue d'espèces : mailles, fonds, montages
 │   ├── legal.ts                  Éditeur, régime LCEN, sous-traitants, stockages
 │   └── generators/               Marée (onde M2) et conditions marines simulées
@@ -183,25 +183,35 @@ coefficient = 100 × marnage_Brest / (2 × 3,05 m)
 
 Le calculer sur le marnage local donnerait un nombre qui ne correspondrait à
 aucune table de marée française — l'erreur qu'on trouve dans beaucoup
-d'applications. L'appel Brest est identique pour les douze spots, donc mutualisé
-par le cache : il coûte **un appel par jour au total**, pas douze.
+d'applications. L'appel Brest est identique pour tous les spots, donc mutualisé
+par le cache : il coûte **un appel par jour au total**, pas quarante-deux.
 
 Le coefficient ne dépend que d'une *différence* de hauteurs : il est donc
 insensible au zéro de référence, ce qui le rend fiable même avec une source
 étrangère. C'est vérifié par un test.
 
 **Le quota, en clair.** L'offre gratuite de Stormglass est de 10 appels par
-jour. Avec 12 spots + Brest, il faut 13 appels par cycle de cache :
+jour. Le catalogue compte 42 spots : servis tous en réel, c'est **43 appels par
+cycle de cache**, soit quatre fois le quota dès la première construction.
 
-| `TIDE_CACHE_SECONDS` | Appels/jour | Offre gratuite |
+`TIDE_REAL_SPOTS` n'est donc plus une optimisation, c'est la configuration
+normale :
+
+| Configuration | Appels/jour | Offre gratuite |
 | --- | --- | --- |
-| 86400 (24 h, défaut) | 13 | dépassée de 3 |
-| 172800 (48 h) | 6,5 | tient |
+| 42 spots + Brest | 43 | dépassée de 33 |
+| 3 spots + Brest, cache 24 h | 4 | tient largement |
+| 3 spots + Brest, cache 48 h | 2 | tient, marge pour redéployer |
 
 Les prévisions de marée sont de l'astronomie : elles ne se réactualisent pas
-d'heure en heure. Un cache de 48 h n'est pas un compromis, c'est une durée
-juste — et c'est ce qui rend l'offre gratuite utilisable. Au-delà de 12 spots,
-il faut passer à une offre payante ou à une autre source.
+d'heure en heure. Un cache long n'est pas un compromis, c'est une durée juste.
+
+**Sans `TIDE_REAL_SPOTS`, la panne est SILENCIEUSE** : les premiers appels
+passent, les suivants sont refusés pour dépassement, et le repli — qui existe
+pour qu'une coupure réseau ne casse pas le build — les rattrape tous. On voit
+alors une clé correctement posée, un déploiement réussi, et « marées simulées »
+presque partout. Le serveur avertit désormais au démarrage
+(`tideBudgetWarning`), parce que rien d'autre ne le signalait.
 
 **Limites annoncées dans l'interface :** hauteurs rapportées au MLLW, proche du
 zéro des cartes françaises sans lui être identique (écart possible de quelques
@@ -234,8 +244,8 @@ STORMGLASS_API_KEY=stub STORMGLASS_URL=http://127.0.0.1:4000/v2/tide/extremes/po
 
 | Configuration | URL distinctes | Requêtes HTTP / build | Régime établi / jour |
 | --- | --- | --- | --- |
-| 12 spots | 13 | ~24 | 13 |
-| 3 spots (`TIDE_REAL_SPOTS`) | 4 | 8 | 4 |
+| 42 spots (aucun bornage) | 43 | 45 | 43 |
+| 3 spots (`TIDE_REAL_SPOTS`) | 4 | 4 | 4 |
 
 Deux choses expliquent ces nombres :
 
@@ -246,7 +256,7 @@ Deux choses expliquent ces nombres :
   LOCAL du spot : l'URL change à minuit, donc le cache de 24 h expire une fois
   par jour quoi qu'on mette dans `TIDE_CACHE_SECONDS`. Allonger ce cache au-delà
   de 24 h ne change rien tant que la fenêtre n'est pas quantifiée sur plusieurs
-  jours — c'est le levier à activer pour servir les 12 spots sur un petit quota.
+  jours — c'est le levier à activer pour servir plus de spots sur un petit quota.
 
 **Sur le palier gratuit (10 appels/jour), utilisez `TIDE_REAL_SPOTS`** avec trois
 spots. Les neuf autres restent en démonstration et l'annoncent : ils gardent leur
@@ -254,7 +264,7 @@ cadre pointillé et leur mention *Simulé*, sans allumer le voyant *Interrompu*,
 réservé aux vraies coupures.
 
 L'appel Brest est **mutualisé** : sa fenêtre est alignée sur la journée UTC
-(`canonicalRange`) et non sur le jour local du spot, si bien que les douze spots
+(`canonicalRange`) et non sur le jour local du spot, si bien que tous les spots
 et les deux fuseaux du catalogue partagent une seule URL. Auparavant, France et
 Maroc en produisaient deux — deux appels facturés pour un chiffre qui, par
 définition, ne dépend que de l'instant.
@@ -877,7 +887,7 @@ biais systématique, ce qui est exactement l'erreur propre de cette série-là.
 ### Ce que ça coûte
 
 Chercher un lever demande une centaine d'évaluations des séries. Sur un build
-complet — douze spots, sept jours, cinq pages par spot — c'est environ
+complet — quarante-deux spots, sept jours, cinq pages par spot — c'est environ
 **1,7 seconde**, après trois optimisations qui ont divisé le surcoût par trois :
 une seule évaluation des séries par échantillon au lieu de trois, la phase
 calculée une fois par créneau au lieu de deux, et une mémoïsation par journée

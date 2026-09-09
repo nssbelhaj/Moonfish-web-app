@@ -46,3 +46,40 @@ export function parseAllowedSpots(raw: string | undefined): string[] {
     .map((slug) => slug.trim())
     .filter((slug) => slug.length > 0);
 }
+
+/**
+ * Sixième panne silencieuse : la clé Stormglass sans garde-fou de quota.
+ *
+ * Le palier gratuit de Stormglass accorde une dizaine de requêtes par jour.
+ * Le catalogue compte aujourd'hui plusieurs dizaines de spots, et chaque
+ * construction du site en interroge un par spot. Sans `TIDE_REAL_SPOTS`, les
+ * premières requêtes passent, les suivantes sont refusées pour dépassement —
+ * et le repli, qui existe pour qu'une panne réseau ne casse pas le build, les
+ * rattrape TOUTES en silence.
+ *
+ * Ce qu'on voit alors : une clé correctement posée, un déploiement réussi, et
+ * « marées simulées » sur presque toutes les pages. Rien n'indique le quota.
+ * On soupçonne la clé, on la régénère, on recommence.
+ *
+ * Le seuil est volontairement bas : au-delà d'une poignée de spots, un palier
+ * gratuit ne suit plus, quel que soit le fournisseur.
+ */
+export const BUDGET_SANS_LIMITE_MAX_SPOTS = 8;
+
+export function tideBudgetWarning(
+  env: Readonly<Record<string, string | undefined>> = process.env,
+  spotCount = 0,
+): string | null {
+  if (!env['STORMGLASS_API_KEY']?.trim()) return null;
+  if (env['TIDE_PROVIDER'] === 'mock') return null;
+  if (parseAllowedSpots(env['TIDE_REAL_SPOTS']).length > 0) return null;
+  if (spotCount <= BUDGET_SANS_LIMITE_MAX_SPOTS) return null;
+
+  return (
+    `STORMGLASS_API_KEY est définie et TIDE_REAL_SPOTS ne l’est pas : les ${spotCount} spots ` +
+    'passeront tous par Stormglass à chaque construction. Le palier gratuit accorde une ' +
+    'dizaine de requêtes par jour — au-delà, le repli rend des marées SIMULÉES sans que ' +
+    'rien ne le signale, et la clé paraîtra fautive. Définissez par exemple ' +
+    'TIDE_REAL_SPOTS=pen-hat,la-torche,etretat, puis reconstruisez.'
+  );
+}
