@@ -174,7 +174,7 @@ envoi, traçabilité du consentement avec sa version.
   instances, purgés par la tâche d'entretien. Le formulaire de connexion en
   consomme trois — par adresse, par IP, et un plafond global qui protège le
   quota d'envoi du serveur de courriel
-- **624 tests** (49 fichiers), dont 35 d'intégration
+- **627 tests** (50 fichiers), dont 35 d'intégration
 
 ### Ce qui n'a jamais pu être vérifié
 
@@ -307,6 +307,8 @@ build — mais c'est à savoir.
 | **React réinitialise un formulaire** après une action serveur, **même en échec**. `ActionForm` mémorise et restaure la saisie. |
 | **Suppression et pages pré-rendues** | Les données partaient de la base mais restaient **affichées** jusqu'à une heure. Relever les spots concernés **avant** la suppression, revalider après. |
 | **Durée annoncée ≠ durée calculée** | Le site annonçait des créneaux de trois heures alors que `SLOT_HOURS` vaut 2 — jusque dans la balise de description. `duree-creneau.test.ts` lit la constante. |
+| **Un base64 ne se relit pas à l'œil** | La tuile de repli, commentée « PNG transparent d'un pixel », décodait en `(0, 255, 0, 127)` — vert vif à moitié opaque. Chaque tuile manquante peignait un carré vert sur la carte. Invisible en développement, où les tuiles répondent. `tuile-vide.test.ts` décode le PNG et lit ses quatre composantes. |
+| **Un marqueur écarté hors du cadre reste cliquable et invisible** | `separatePoints` n'avait pas de bornes dans Leaflet non plus : six marqueurs sur quarante-deux sortaient du conteneur sur un écran de 390 px. Le cadre fait maintenant partie de la relaxation, ici comme sur la carte statique. |
 | **Une protection qui existe n'est pas une protection qui s'applique** | Le limiteur de débit était écrit, documenté, testé — et branché sur **un seul** point d'entrée. Le formulaire de connexion, écrit plus tard, faisait partir un courriel vers une adresse fournie par l'appelant, sans compteur. Rien ne le signalait. `limites.test.ts` refuse désormais qu'une action oublie son budget. |
 
 ### La leçon générale
@@ -333,7 +335,7 @@ npm run dev            # http://localhost:3000 — aucune variable requise
 ```bash
 npx tsc --noEmit                          # typage strict
 npx next lint                             # ESLint
-npx vitest run                            # 589 tests hermétiques
+npx vitest run                            # 592 tests hermétiques
 npm run build                             # 77 pages
 npm audit                                 # doit rester à 0
 node scripts/generer-import-sql.mjs --verifier
@@ -354,7 +356,7 @@ sudo mysql -e "create database if not exists lunamarea_test;
 export DATABASE_URL='mysql://luna:luna@127.0.0.1:3306/lunamarea_test'
 npm run migrate                           # applique 0001 puis 0002
 npm run migrate                           # doit dire « schéma déjà à jour »
-npx vitest run                            # 624 tests
+npx vitest run                            # 627 tests
 ```
 
 ### Le site complet en local, comptes compris
@@ -462,7 +464,7 @@ s'en écarte.
 | Base de production | `u969082232_moonfish` — **le nom ne change pas** : Hostinger le fixe à la création |
 | Hébergement | Hostinger Web Apps, déploiement GitHub automatique, Node ≥ 20.9 |
 | Régime légal | Non professionnel (art. 6-III-2 LCEN) — adresse dispensée tant qu'aucune recette |
-| Volume | 210 fichiers TS/TSX · ~26 600 lignes · 18 composants client · 624 tests · 154 URL au sitemap |
+| Volume | 210 fichiers TS/TSX · ~26 600 lignes · 18 composants client · 627 tests · 154 URL au sitemap |
 
 ### Documents voisins
 

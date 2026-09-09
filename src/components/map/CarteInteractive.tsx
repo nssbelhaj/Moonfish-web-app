@@ -192,7 +192,26 @@ export function CarteInteractive({ points }: { points: PointCarte[] }) {
           return { x: p.x, y: p.y };
         });
 
-        const ecartes = separatePoints(bruts, 38);
+        /*
+          ── L'écartement doit rester DANS le cadre ──────────────────────────
+
+          Sans cette contrainte, un marqueur poussé vers le bord finit hors du
+          conteneur : il reste cliquable pour le code et invisible pour l'œil.
+          Mesuré à quarante-deux spots sur un écran de 390 px : six marqueurs
+          sortaient du cadre, dont Dakhla, seul tout en bas.
+
+          La marge vaut le demi-marqueur plus deux pixels de liseré, pour
+          qu'une pastille rabattue reste entièrement visible plutôt que
+          tronquée par le bord arrondi.
+        */
+        const taille = vue.getSize();
+        const marge = 19;
+        const ecartes = separatePoints(bruts, 38, 80, {
+          minX: marge,
+          maxX: Math.max(marge, taille.x - marge),
+          minY: marge,
+          maxY: Math.max(marge, taille.y - marge),
+        });
 
         marqueurs.forEach((marqueur, index) => {
           const depart = bruts[index];

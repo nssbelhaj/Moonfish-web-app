@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+import { TUILE_VIDE as PIXEL } from '@/lib/map/tuile-vide';
+
 export const runtime = 'nodejs';
 
 /**
@@ -75,19 +77,6 @@ function AMONT(z: number, x: number, y: number): string {
 
 const AGENT = 'LunaMarea/1.0 (carte de spots de pêche du bord; contact@lunamarea.fr)';
 
-/**
- * Tuile neutre servie quand l'amont ne répond pas.
- *
- * Un PNG transparent d'un pixel. Renvoyer une erreur ferait afficher à Leaflet
- * une mosaïque de cases cassées, ce qui ressemble à un site en panne ; une
- * tuile vide laisse les marqueurs lisibles sur un fond uni. La carte perd son
- * décor, pas son information — et les positions des spots, elles, ne viennent
- * pas de l'amont.
- */
-const PIXEL = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
-  'base64',
-);
 
 function vide(): NextResponse {
   return new NextResponse(PIXEL, {
