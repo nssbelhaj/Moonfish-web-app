@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 import { SPOTS } from '@/data/spots';
 import { diagnostiquer, verdictGlobal } from '@/lib/diagnostic/etat';
+import { etatMigrations } from '@/lib/diagnostic/migrations';
 import { essaiSmtp } from '@/lib/diagnostic/smtp';
 import { uploadsDir } from '@/lib/photo/storage';
 
@@ -38,6 +39,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     uploadsDir: uploadsDir(),
     appDir: process.cwd(),
   });
+
+  // L'état des migrations demande une requête, pas une variable : il ne peut
+  // pas vivre dans le diagnostic purement synchrone.
+  points.push(await etatMigrations());
 
   /*
     L'essai SMTP ouvre une vraie connexion. On ne le fait que sur demande

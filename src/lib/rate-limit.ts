@@ -9,6 +9,16 @@
  */
 export interface RateLimitDecision {
   allowed: boolean;
+  /**
+   * Le refus vient-il d'une PANNE du compteur, et non d'un vrai dépassement ?
+   *
+   * On refuse dans les deux cas — un compteur injoignable ne doit pas rouvrir
+   * le robinet. Mais les deux refus ne se disent pas pareil : « trop de
+   * demandes, réessayez dans 15 minutes » envoie attendre pour rien quand la
+   * cause est une table absente, et fait passer une panne de déploiement pour
+   * un comportement normal.
+   */
+  panne?: boolean;
   /** Nombre de requêtes restantes dans la fenêtre. */
   remaining: number;
   /** Instant, en ms epoch, où la fenêtre se libère. */

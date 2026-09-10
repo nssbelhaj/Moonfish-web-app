@@ -109,7 +109,7 @@ export async function consommer(budget: Budget, cle: string): Promise<RateLimitD
     return await checkMysqlLimit(budget.bucket, empreinte(cle), budget.limit, budget.windowMs);
   } catch (error) {
     console.error(`[limites] compteur « ${budget.bucket} » injoignable`, error);
-    return { allowed: false, remaining: 0, resetAt: Date.now() + budget.windowMs };
+    return { allowed: false, remaining: 0, resetAt: Date.now() + budget.windowMs, panne: true };
   }
 }
 

@@ -23,6 +23,20 @@ const NOT_OPEN: ActionState = {
   message: 'Les comptes ne sont pas ouverts sur ce déploiement.',
 };
 
+/**
+ * Un compteur injoignable ne se dit pas comme un dépassement.
+ *
+ * Les deux refusent. Mais annoncer « réessayez dans 15 minutes » quand la
+ * table des compteurs n'existe pas envoie attendre pour rien, indéfiniment :
+ * au retour, le même refus, le même délai. La cause est un déploiement
+ * incomplet, pas un abus, et elle doit se nommer.
+ */
+const COMPTEUR_EN_PANNE: ActionState = {
+  ok: false,
+  message:
+    'Le compteur de sécurité ne répond pas — la base est joignable mais incomplète. Ce n’est ni votre adresse ni un excès de demandes : les migrations n’ont probablement pas été appliquées au déploiement.',
+};
+
 const NOT_SIGNED_IN: ActionState = {
   ok: false,
   message: 'Session expirée. Reconnectez-vous et recommencez : votre saisie n’a pas été perdue.',
@@ -40,6 +54,7 @@ const NOT_SIGNED_IN: ActionState = {
 async function budgetEcriture(userId: string): Promise<ActionState | null> {
   const decision = await consommer(BUDGETS.contribution, userId);
   if (decision.allowed) return null;
+  if (decision.panne) return COMPTEUR_EN_PANNE;
 
   return {
     ok: false,
@@ -88,6 +103,7 @@ export async function requestSignInLink(
     la même que le compte existe ou non, y compris quand elle refuse.
   */
   const parAdresse = await consommer(BUDGETS.connexionAdresse, email);
+  if (parAdresse.panne) return COMPTEUR_EN_PANNE;
   if (!parAdresse.allowed) {
     /*
       Le message ne dit PAS « un lien a déjà été envoyé ».
@@ -107,6 +123,7 @@ export async function requestSignInLink(
 
   const ip = await ipAppelante();
   const parIp = await consommer(BUDGETS.connexionIp, ip);
+  if (parIp.panne) return COMPTEUR_EN_PANNE;
   if (!parIp.allowed) {
     return {
       ok: false,
@@ -115,6 +132,7 @@ export async function requestSignInLink(
   }
 
   const global = await consommer(BUDGETS.connexionGlobal, 'site');
+  if (global.panne) return COMPTEUR_EN_PANNE;
   if (!global.allowed) {
     console.warn('[auth] plafond horaire d’envoi atteint pour tout le site');
     return {

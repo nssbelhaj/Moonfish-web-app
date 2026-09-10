@@ -186,3 +186,37 @@ describe('l’action de connexion rembourse quand l’envoi échoue', () => {
     expect(texte).toContain('Trop de demandes pour cette adresse');
   });
 });
+
+describe('un compteur en panne ne se dit pas comme un dépassement', () => {
+  /*
+    Les deux refusent — un compteur injoignable ne doit pas rouvrir le
+    robinet. Mais « réessayez dans 15 minutes » envoie attendre pour rien
+    quand la cause est une table absente : au retour, même refus, même délai,
+    et rien ne mentionne jamais les migrations.
+
+    Ce cas est arrivé en production sans qu'on puisse le distinguer d'une
+    limite atteinte, parce que les deux affichaient la même phrase.
+  */
+  const texte = SOURCE.slice(
+    SOURCE.indexOf('export async function requestSignInLink('),
+    SOURCE.indexOf('\nexport async function signOut('),
+  );
+
+  it('les trois budgets de connexion distinguent la panne', () => {
+    for (const budget of ['parAdresse', 'parIp', 'global']) {
+      expect(texte, `« ${budget} » ne distingue pas une panne de compteur`).toContain(
+        `if (${budget}.panne) return COMPTEUR_EN_PANNE;`,
+      );
+    }
+  });
+
+  it('le budget d’écriture aussi', () => {
+    expect(SOURCE).toContain('if (decision.panne) return COMPTEUR_EN_PANNE;');
+  });
+
+  it('le message nomme les migrations, pas un délai d’attente', () => {
+    const message = SOURCE.slice(SOURCE.indexOf('const COMPTEUR_EN_PANNE'), SOURCE.indexOf('const NOT_SIGNED_IN'));
+    expect(message).toContain('migrations');
+    expect(message).not.toMatch(/réessayez dans/i);
+  });
+});
