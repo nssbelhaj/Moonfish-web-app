@@ -1,0 +1,61 @@
+import { NextResponse, type NextRequest } from 'next/server';
+
+import { SPOTS } from '@/data/spots';
+import { diagnostiquer, verdictGlobal } from '@/lib/diagnostic/etat';
+import { uploadsDir } from '@/lib/photo/storage';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+/**
+ * L'état de la configuration, lisible avec un `curl`.
+ *
+ * Les avertissements de `src/instrumentation.ts` partent dans les journaux du
+ * serveur. Encore faut-il savoir où un hébergement mutualisé les range — la
+ * question est restée sans réponse simple, et un diagnostic qu'on ne peut pas
+ * lire ne diagnostique rien.
+ *
+ * Cette route sert le même constat en JSON. Elle ne divulgue AUCUNE valeur de
+ * secret : « définie » ou « absente », et pour une URL l'hôte seul.
+ *
+ * ── Fermée dès que possible ─────────────────────────────────────────────
+ *
+ * Le même secret que l'entretien la protège. Sans CRON_SECRET elle reste
+ * ouverte — c'est le seul moment où elle est vraiment utile, puisque c'est
+ * l'état où l'on cherche encore ce qui manque — et elle le dit dans sa propre
+ * sortie plutôt que de le taire.
+ */
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  const secret = process.env.CRON_SECRET?.trim();
+  if (secret && request.headers.get('authorization') !== `Bearer ${secret}`) {
+    return NextResponse.json({ ok: false, message: 'Non autorisé.' }, { status: 401 });
+  }
+
+  const points = diagnostiquer({
+    env: process.env,
+    spotCount: SPOTS.length,
+    uploadsDir: uploadsDir(),
+    appDir: process.cwd(),
+  });
+
+  const verdict = verdictGlobal(points);
+
+  return NextResponse.json(
+    {
+      ok: verdict !== 'absent',
+      verdict,
+      resume: {
+        ok: points.filter((p) => p.etat === 'ok').length,
+        attention: points.filter((p) => p.etat === 'attention').length,
+        absent: points.filter((p) => p.etat === 'absent').length,
+      },
+      // Les points en défaut d'abord : c'est ce qu'on vient chercher.
+      points: [...points].sort((a, b) => rang(a.etat) - rang(b.etat)),
+    },
+    { headers: { 'cache-control': 'no-store' } },
+  );
+}
+
+function rang(etat: 'ok' | 'attention' | 'absent'): number {
+  return etat === 'absent' ? 0 : etat === 'attention' ? 1 : 2;
+}
