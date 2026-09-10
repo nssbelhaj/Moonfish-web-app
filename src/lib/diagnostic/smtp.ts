@@ -111,9 +111,20 @@ function remedePour(message: string): string {
   const m = message.toLowerCase();
 
   if (m.includes('invalid login') || m.includes('authentication') || m.includes('535')) {
+    /*
+      Ne PAS envoyer encoder le « @ » de l'identifiant.
+
+      C'est le conseil qu'on donne partout, et il est faux : mesuré,
+      `new URL()` lit `contact@lunamarea.fr:mdp@smtp.hôte` et
+      `contact%40lunamarea.fr:mdp@smtp.hôte` exactement pareil — même hôte,
+      même utilisateur, même mot de passe. Envoyer quelqu'un corriger cela
+      lui fait perdre du temps sur un non-problème pendant que la vraie
+      cause — presque toujours la boîte ou le mot de passe — reste entière.
+    */
     return (
-      'Identifiants refusés. Vérifiez que la boîte existe vraiment chez l’hébergeur, que le mot de passe est le bon, ' +
-      'et que l’identifiant est l’adresse complète encodée : contact%40lunamarea.fr — le « @ » de l’identifiant doit devenir %40.'
+      'Identifiants refusés par le serveur. Dans l’ordre de probabilité : la boîte n’existe pas ' +
+      'encore chez l’hébergeur ; le mot de passe n’est pas celui de la BOÎTE (différent de celui du ' +
+      'panneau d’administration) ; l’identifiant n’est pas l’adresse complète.'
     );
   }
   if (m.includes('econnrefused') || m.includes('etimedout') || m.includes('timeout')) {
@@ -125,5 +136,8 @@ function remedePour(message: string): string {
   if (m.includes('enotfound') || m.includes('getaddrinfo')) {
     return 'Le nom du serveur est introuvable. Un « / », « ? », « # » ou « % » dans le MOT DE PASSE coupe l’URL et détourne la connexion : encodez-les (%2F %3F %23 %25) ou changez le mot de passe.';
   }
-  return 'Relisez EMAIL_SERVER : smtp://UTILISATEUR:MOTDEPASSE@smtp.hostinger.com:587, avec le « @ » de l’identifiant encodé en %40.';
+  return (
+    'Relisez EMAIL_SERVER : smtp://ADRESSE_COMPLETE:MOTDEPASSE@smtp.hostinger.com:587. ' +
+    'Le « @ » de l’identifiant n’a pas besoin d’être encodé ; ceux du MOT DE PASSE, si.'
+  );
 }

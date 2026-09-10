@@ -1,4 +1,5 @@
 import { lireConfigBase } from '@/lib/db/config';
+import { smtpWarning } from '@/lib/auth/config';
 import { parseAllowedSpots } from '@/lib/providers/selective-tide';
 
 /**
@@ -121,6 +122,24 @@ export function diagnostiquer({ env, spotCount, uploadsDir, appDir }: Contexte):
   const smtp = env['EMAIL_SERVER'];
   const smtpHote = hote(smtp);
   const emailFrom = presence(env, 'EMAIL_FROM');
+
+  /*
+    Le contrôle de l'URL passe AVANT l'état du courriel : un mot de passe
+    contenant « / », « ? », « # » ou « % » ne rend pas EMAIL_SERVER absente,
+    il la rend trompeuse — la connexion part vers un autre hôte, ou l'URL
+    devient illisible. Le dire après « les courriels partent par … » serait
+    contradictoire.
+  */
+  const urlSuspecte = smtpWarning(smtp);
+  if (urlSuspecte !== null) {
+    points.push({
+      sujet: 'Forme de l’URL d’envoi',
+      etat: 'absent',
+      constat: urlSuspecte,
+      remede:
+        'Changez le mot de passe de la boîte pour un mot de passe sans « / », « ? », « # » ni « % », ou encodez-les (%2F %3F %23 %25).',
+    });
+  }
 
   points.push(
     !smtp

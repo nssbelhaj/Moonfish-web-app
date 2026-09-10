@@ -147,3 +147,39 @@ describe('les pannes silencieuses connues sont toutes couvertes', () => {
     expect(p?.remede).toContain('RECONSTRUIS');
   });
 });
+
+describe('la forme de l’URL d’envoi', () => {
+  const sujets = (env: Environnement) =>
+    diagnostiquer({ ...CONTEXTE, env }).filter((p) => p.etat !== 'ok').map((p) => p.sujet);
+
+  it.each([
+    ['un « / » dans le mot de passe', 'smtp://contact%40lunamarea.fr:Mot/Passe@smtp.hostinger.com:587'],
+    ['un « ? »', 'smtp://contact%40lunamarea.fr:Mot?Passe@smtp.hostinger.com:587'],
+    ['un « # »', 'smtp://contact%40lunamarea.fr:Mot#Passe@smtp.hostinger.com:587'],
+  ])('signale %s', (_cas, url) => {
+    /*
+      Ces caractères ne rendent pas EMAIL_SERVER absente : ils la rendent
+      TROMPEUSE. La connexion part vers un autre hôte, avec un mot de passe
+      vide. Sans ce point, le diagnostic dirait « les courriels partent par
+      … » en nommant le mauvais serveur.
+    */
+    expect(sujets({ ...COMPLET, EMAIL_SERVER: url })).toContain('Forme de l’URL d’envoi');
+  });
+
+  it('ne signale RIEN pour un « @ » d’identifiant non encodé', () => {
+    /*
+      Mesuré : `new URL()` lit `contact@lunamarea.fr:mdp@smtp.hôte` et
+      `contact%40lunamarea.fr:mdp@smtp.hôte` exactement pareil. Signaler cette
+      forme enverrait corriger un non-problème pendant que la vraie cause
+      reste entière — c'est l'erreur que ce projet a déjà commise une fois.
+      */
+    const sansEncodage = 'smtp://contact@lunamarea.fr:MotDePasse@smtp.hostinger.com:587';
+
+    expect(sujets({ ...COMPLET, EMAIL_SERVER: sansEncodage })).not.toContain('Forme de l’URL d’envoi');
+
+    const analysee = new URL(sansEncodage);
+    expect(analysee.host).toBe('smtp.hostinger.com:587');
+    expect(decodeURIComponent(analysee.username)).toBe('contact@lunamarea.fr');
+    expect(decodeURIComponent(analysee.password)).toBe('MotDePasse');
+  });
+});
