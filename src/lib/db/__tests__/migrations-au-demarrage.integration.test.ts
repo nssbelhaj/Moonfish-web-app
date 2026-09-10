@@ -36,7 +36,7 @@ describeDb('les migrations au démarrage', () => {
 
   /** Recharge le module contre une base neuve : sa configuration est lue au chargement. */
   async function surBaseNeuve(): Promise<{
-    module: typeof import('../migrations-au-demarrage');
+    migrations: typeof import('../migrations-au-demarrage');
     mysql: typeof import('@/lib/db/mysql');
   }> {
     const { vi } = await import('vitest');
@@ -45,15 +45,15 @@ describeDb('les migrations au démarrage', () => {
     const precedent = process.env['DATABASE_URL'];
     process.env['DATABASE_URL'] = precedent!.replace(/\/[^/]*$/, `/${base}`);
 
-    const module = await import('../migrations-au-demarrage');
+    const migrations = await import('../migrations-au-demarrage');
     const mysql = await import('@/lib/db/mysql');
 
-    return { module, mysql };
+    return { migrations, mysql };
   }
 
   it('applique TOUT sur une base vide', async () => {
-    const { module, mysql } = await surBaseNeuve();
-    const bilan = await module.appliquerMigrationsAuDemarrage();
+    const { migrations, mysql } = await surBaseNeuve();
+    const bilan = await migrations.appliquerMigrationsAuDemarrage();
 
     expect(bilan.erreur).toBeNull();
     expect(bilan.appliquees.length).toBeGreaterThanOrEqual(4);
@@ -69,8 +69,8 @@ describeDb('les migrations au démarrage', () => {
   });
 
   it('ne rejoue rien au second démarrage', async () => {
-    const { module, mysql } = await surBaseNeuve();
-    const bilan = await module.appliquerMigrationsAuDemarrage();
+    const { migrations, mysql } = await surBaseNeuve();
+    const bilan = await migrations.appliquerMigrationsAuDemarrage();
 
     expect(bilan.erreur).toBeNull();
     expect(bilan.appliquees).toStrictEqual([]);
@@ -79,12 +79,12 @@ describeDb('les migrations au démarrage', () => {
   });
 
   it('retient son bilan pour le diagnostic', async () => {
-    const { module, mysql } = await surBaseNeuve();
-    await module.appliquerMigrationsAuDemarrage();
+    const { migrations, mysql } = await surBaseNeuve();
+    await migrations.appliquerMigrationsAuDemarrage();
 
     // C'est ce bilan que `/api/diagnostic` rend : sans lui, l'échec ne serait
     // lisible que dans des journaux qu'on ne sait pas atteindre.
-    expect(module.bilanDesMigrations().tente).toBe(true);
+    expect(migrations.bilanDesMigrations().tente).toBe(true);
     await mysql.closePool();
   });
 
@@ -102,12 +102,12 @@ describeDb('les migrations au démarrage', () => {
     vi.resetModules();
     process.env['DATABASE_URL'] = DATABASE_URL!.replace(/\/[^/]*$/, `/${autre}`);
 
-    const module = await import('../migrations-au-demarrage');
+    const migrations = await import('../migrations-au-demarrage');
     const mysql = await import('@/lib/db/mysql');
 
     const [a, b] = await Promise.all([
-      module.appliquerMigrationsAuDemarrage(),
-      module.appliquerMigrationsAuDemarrage(),
+      migrations.appliquerMigrationsAuDemarrage(),
+      migrations.appliquerMigrationsAuDemarrage(),
     ]);
 
     // Aucune des deux ne casse, et le schéma est complet.
