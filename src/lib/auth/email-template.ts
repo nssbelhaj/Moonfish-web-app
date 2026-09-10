@@ -15,10 +15,27 @@
  * bouton pour que la personne puisse le lire avant de cliquer.
  */
 
-const ENCRE = '#1c2b31';
-const SONDE = '#1c4f5e';
-const MUET = '#4f656f';
-const BLANC = '#ffffff';
+/**
+ * Palette des courriels, EXPORTÉE.
+ *
+ * Un client de messagerie n'applique pas les variables CSS : ces valeurs sont
+ * écrites en clair faute d'alternative, et ce fichier est le seul exempté du
+ * contrôle des couleurs littérales. Tout gabarit de courriel doit donc les
+ * importer d'ici plutôt que de les recopier — sinon l'exemption s'étend
+ * fichier par fichier, et deux courriels du même site finissent de couleurs
+ * différentes.
+ */
+export const COURRIEL = {
+  encre: '#1c2b31',
+  sonde: '#1c4f5e',
+  muet: '#4f656f',
+  blanc: '#ffffff',
+} as const;
+
+const ENCRE = COURRIEL.encre;
+const SONDE = COURRIEL.sonde;
+const MUET = COURRIEL.muet;
+const BLANC = COURRIEL.blanc;
 
 export const SITE_NAME = 'Luna Marea';
 

@@ -445,3 +445,47 @@
   outline-offset: 2px;
 }
 
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Onglets « se connecter » / « créer un compte »
+
+   En CSS pure, par `:target`. Aucun état React, donc aucun JavaScript requis
+   pour basculer — et surtout, la DÉGRADATION est utilisable : sans `:has()`
+   ou sans JavaScript, les deux panneaux restent empilés et fonctionnels. Un
+   onglet qui cache un formulaire quand le script ne charge pas serait pire
+   qu'une page longue.
+
+   La règle ne s'applique donc QUE si le navigateur comprend `:has()`.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.onglet-compte {
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 15px;
+  color: var(--fg-muted);
+  text-decoration: none;
+}
+
+.onglet-compte:hover {
+  border-color: var(--edge-strong);
+  color: var(--fg);
+}
+
+@supports selector(:has(*)) {
+  /* Un seul panneau à la fois dès qu'un onglet est actif. */
+  .onglets-compte:has(#connexion-panneau:target) #inscription-panneau,
+  .onglets-compte:has(#inscription-panneau:target) #connexion-panneau {
+    display: none;
+  }
+
+  /* L'onglet actif se distingue, et le dit aux technologies d'assistance
+     par sa seule apparence — l'ancre reste un lien ordinaire. */
+  .onglets-compte:has(#connexion-panneau:target) .onglet-compte[href='#connexion-panneau'],
+  .onglets-compte:has(#inscription-panneau:target) .onglet-compte[href='#inscription-panneau'] {
+    background: var(--surface-2);
+    border-color: var(--edge-strong);
+    color: var(--fg);
+    font-weight: 600;
+  }
+}

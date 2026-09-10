@@ -3,6 +3,7 @@ import Link from 'next/link';
 
 import { DeleteAccountForm } from '@/components/account/DeleteAccountForm';
 import { ProfileForm } from '@/components/account/ProfileForm';
+import { ConnexionForm, InscriptionForm } from '@/components/account/AuthForms';
 import { SignInForm } from '@/components/account/SignInForm';
 import { Button } from '@/components/ui/Button';
 import { formatMonth, summarizeCatches } from '@/lib/contributions/catch-log';
@@ -11,6 +12,7 @@ import { contributions, spots as spotRepository } from '@/lib/providers';
 import { deleteCatch, deleteOuting, deleteReview, signOut } from '@/lib/auth/actions';
 import { absoluteUrl, spotPath } from '@/lib/routes';
 import { currentUser } from '@/lib/auth/session';
+import { magicLinkEnabled } from '@/lib/auth/config';
 import { formatScore, tierForOrNull } from '@/lib/score-display';
 import { formatDateTime } from '@/lib/time';
 
@@ -137,20 +139,72 @@ export default async function ComptePage({
         ) : user === null ? (
           <section aria-labelledby="connexion" className="mt-6 max-w-prose">
             <h2 id="connexion" className="font-serif text-h2 font-semibold">
-              Se connecter
+              Se connecter ou créer un compte
             </h2>
             <p className="mt-2 text-read text-fg-muted">
               Un compte sert à tenir un carnet de prises, suivre des spots, programmer des sorties
               et recevoir leurs conditions la veille. Il n’est jamais nécessaire pour consulter le
               site : tout ce qui est public le reste sans se connecter.
             </p>
-            <p className="mt-2 text-read text-fg-muted">
-              Il n’y a pas de mot de passe. Vous recevez un lien, vous cliquez, vous êtes connecté.
-              Nous ne détenons donc aucun secret vous concernant.
-            </p>
 
-            <div className="surface mt-6 p-4">
-              <SignInForm />
+            {/*
+              Deux onglets en CSS pure, par `:target`. Sans JavaScript, les
+              deux formulaires restent empilés et utilisables : c'est la même
+              dégradation que le reste du site.
+            */}
+            <div className="onglets-compte mt-6">
+              <nav className="flex gap-2" aria-label="Connexion ou inscription">
+                <a href="#connexion-panneau" className="onglet-compte">
+                  J’ai déjà un compte
+                </a>
+                <a href="#inscription-panneau" className="onglet-compte">
+                  Créer un compte
+                </a>
+              </nav>
+
+              <section id="connexion-panneau" className="surface mt-4 p-4" aria-label="Se connecter">
+                <h3 className="font-serif text-[19px] font-semibold">Se connecter</h3>
+                <div className="mt-3">
+                  <ConnexionForm />
+                </div>
+              </section>
+
+              <section
+                id="inscription-panneau"
+                className="surface mt-4 p-4"
+                aria-label="Créer un compte"
+              >
+                <h3 className="font-serif text-[19px] font-semibold">Créer un compte</h3>
+                <p className="mt-2 text-body text-fg-muted">
+                  Vos nom, prénom et date de naissance restent privés : seul votre prénom apparaît
+                  sous vos contributions, et vous pouvez le changer.
+                </p>
+                <div className="mt-3">
+                  <InscriptionForm />
+                </div>
+              </section>
+
+              {magicLinkEnabled() ? (
+                <section className="surface mt-4 p-4" aria-label="Connexion par lien">
+                  <h3 className="font-serif text-[19px] font-semibold">
+                    Ou recevoir un lien par courriel
+                  </h3>
+                  <p className="mt-2 text-body text-fg-muted">
+                    Sans mot de passe à retenir. Le lien vaut une heure et ne sert qu’une fois.
+                  </p>
+                  <div className="mt-3">
+                    <SignInForm />
+                  </div>
+                </section>
+              ) : (
+                <p className="demo-frame mt-4 p-4 text-body text-fg-muted">
+                  <strong className="font-600 text-fg">
+                    L’envoi de courriel n’est pas configuré sur ce site.
+                  </strong>{' '}
+                  La connexion par lien et la récupération d’un mot de passe oublié sont donc
+                  indisponibles. Choisissez un mot de passe que vous saurez retrouver.
+                </p>
+              )}
             </div>
           </section>
         ) : (

@@ -1,5 +1,4 @@
-import { readFile, readdir } from 'node:fs/promises';
-import path from 'node:path';
+import { preparerSchema } from '@/lib/db/__tests__/schema-de-test';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 /**
@@ -32,19 +31,7 @@ describeDb('le limiteur de débit dans MySQL', () => {
   beforeAll(async () => {
     db = await import('@/lib/db/mysql');
     limiteur = await import('../rate-limit');
-
-    const dir = path.join(process.cwd(), 'db/migrations');
-    for (const file of (await readdir(dir)).filter((n) => n.endsWith('.sql')).sort()) {
-      const sql = await readFile(path.join(dir, file), 'utf8');
-      const statements = sql
-        .split('\n')
-        .filter((line) => !line.trim().startsWith('--'))
-        .join('\n')
-        .split(';')
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0);
-      for (const statement of statements) await db.execute(statement);
-    }
+    await preparerSchema(db);
   });
 
   afterAll(async () => {

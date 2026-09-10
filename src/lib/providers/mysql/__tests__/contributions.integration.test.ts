@@ -1,8 +1,9 @@
 import { randomUUID } from 'node:crypto';
-import { mkdtemp, readFile, readdir } from 'node:fs/promises';
+import { mkdtemp } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { preparerSchema } from '@/lib/db/__tests__/schema-de-test';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 /**
@@ -48,25 +49,7 @@ describeDb('contributions dans MySQL', () => {
 
     // TOUTES les migrations, dans l'ordre : un test qui n'en appliquerait
     // qu'une verrait un schéma que la production n'a jamais eu.
-    const dir = path.join(process.cwd(), 'db/migrations');
-    const files = (await readdir(dir)).filter((name) => name.endsWith('.sql')).sort();
-
-    for (const file of files) {
-      const migration = await readFile(path.join(dir, file), 'utf8');
-
-      // Le pilote n'exécute qu'une instruction par appel : on découpe. Les
-      // commentaires sont retirés d'abord, sinon un « ; » dans une phrase
-      // française couperait au mauvais endroit.
-      const statements = migration
-        .split('\n')
-        .filter((line) => !line.trim().startsWith('--'))
-        .join('\n')
-        .split(';')
-        .map((statement) => statement.trim())
-        .filter((statement) => statement.length > 0);
-
-      for (const statement of statements) await db.execute(statement);
-    }
+    await preparerSchema(db);
   });
 
   afterAll(async () => {

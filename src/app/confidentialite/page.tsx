@@ -43,10 +43,24 @@ const ALWAYS_TREATMENTS = [
 const ACCOUNT_TREATMENTS = [
   {
     what: 'Compte',
-    data: 'Votre adresse e-mail, le nom affiché que vous choisissez, la date du consentement et sa version.',
-    why: 'Vous reconnaître d’une visite à l’autre et signer vos contributions. Il n’y a pas de mot de passe : nous ne détenons donc aucun secret vous concernant.',
-    basis: 'L’exécution du service que vous demandez en créant le compte, et votre consentement pour la conservation de l’adresse.',
+    data: 'Votre adresse e-mail, vos nom et prénom, votre date de naissance, le nom affiché que vous choisissez, la date du consentement et sa version.',
+    why: 'Vous reconnaître d’une visite à l’autre et signer vos contributions. Seul le nom affiché est public : ni votre nom de famille ni votre date de naissance n’apparaissent nulle part sur le site.',
+    basis: 'L’exécution du service que vous demandez en créant le compte, et votre consentement pour la conservation de ces informations.',
     keep: 'Tant que le compte existe. Sa suppression est immédiate et sans copie de sauvegarde.',
+  },
+  {
+    what: 'Date de naissance',
+    data: 'Le jour, le mois et l’année que vous indiquez à l’inscription.',
+    why: 'Vérifier l’âge minimum de 15 ans, seuil du consentement numérique en France. Elle ne sert qu’à cela : aucune personnalisation, aucun ciblage, aucun affichage.',
+    basis: 'Le respect d’une obligation légale (RGPD art. 8) — sans elle, nous ne pourrions pas vérifier cet âge.',
+    keep: 'Tant que le compte existe.',
+  },
+  {
+    what: 'Mot de passe',
+    data: 'JAMAIS le mot de passe lui-même. Uniquement une empreinte scrypt, calculée avec un sel tiré au hasard pour votre compte.',
+    why: 'Vous permettre de vous reconnecter. Une empreinte ne se retourne pas : nous ne pouvons pas retrouver votre mot de passe, et une fuite de notre base ne le révélerait pas.',
+    basis: 'L’exécution du service : sans elle, aucune connexion n’est possible.',
+    keep: 'Tant que le compte existe. Elle est remplacée à chaque changement de mot de passe, et toutes les sessions tombent alors.',
   },
   {
     what: 'Avis et notes',

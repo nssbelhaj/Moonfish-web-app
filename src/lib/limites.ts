@@ -46,6 +46,22 @@ export const BUDGETS = {
   /** Dix par IP et par heure : large pour un foyer ou un bureau partagé, étroit pour un script. */
   connexionIp: { bucket: 'connexion-ip', limit: 10, windowMs: HEURE },
 
+  /*
+    Connexion par mot de passe : plus permissif que le lien par courriel, et
+    c'est voulu. Se tromper de mot de passe est ordinaire — se tromper trois
+    fois l'est aussi. Ce budget arrête un script ; c'est le verrou de COMPTE
+    (`ECHECS_AVANT_VERROU`) qui protège une cible précise, quelle que soit
+    l'adresse d'où viennent les tentatives.
+  */
+  connexionMotDePasseIp: { bucket: 'connexion-mdp-ip', limit: 20, windowMs: 15 * MINUTE },
+
+  /*
+    Création de compte : chaque inscription écrit trois lignes en base et
+    n'exige aucune vérification préalable. Cinq par heure et par accès laisse
+    passer une famille, pas une ferme à comptes.
+  */
+  inscriptionIp: { bucket: 'inscription-ip', limit: 5, windowMs: HEURE },
+
   /** Plafond de tout le site. Volontairement sous le plafond de l'hébergeur. */
   connexionGlobal: { bucket: 'connexion-global', limit: 60, windowMs: HEURE },
 

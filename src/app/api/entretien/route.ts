@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { purgeExpired } from '@/lib/auth/mysql-adapter';
+import { purgerReinitialisations } from '@/lib/providers/mysql/comptes';
 import { sendOutingAlerts } from '@/lib/contributions/alerts';
 import { mailEnabled } from '@/lib/auth/config';
 import { databaseEnabled } from '@/lib/db/mysql';
@@ -56,11 +57,15 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // déjà sur `hit_at` — mais la table grossirait sans fin.
     const limites = await purgeRateLimits(RETENTION_MS);
 
+    // Les demandes de réinitialisation expirées ne servent plus à rien, et
+    // une empreinte de jeton n'a pas à traîner au-delà de sa validité.
+    const reinitialisations = await purgerReinitialisations();
+
     // Sans courriel configuré, les alertes n'ont nulle part où partir : on
     // le dit dans la réponse plutôt que de compter des échecs.
     const alerts = mailEnabled() ? await sendOutingAlerts() : null;
 
-    return NextResponse.json({ ok: true, state: 'entretenu', ...purged, limites, alerts });
+    return NextResponse.json({ ok: true, state: 'entretenu', ...purged, limites, reinitialisations, alerts });
   } catch (error) {
     console.error('[entretien] purge impossible', error);
     return NextResponse.json(

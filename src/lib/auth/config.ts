@@ -111,14 +111,29 @@ export function mailEnabled(): boolean {
 }
 
 /**
- * Les comptes sont ouverts quand la base ET l'envoi de courriel sont
- * configurés.
+ * Les comptes sont ouverts dès qu'une base est configurée.
  *
- * Les deux, pas l'un ou l'autre : une base sans courriel donnerait un
- * formulaire de connexion qui n'envoie jamais rien, et un courriel sans base
- * n'aurait nulle part où écrire la session.
+ * Il fallait aussi un serveur d'envoi, du temps où le lien par courriel était
+ * le seul chemin : sans lui, le formulaire n'envoyait jamais rien. Avec
+ * l'inscription par mot de passe, la base suffit — et c'est ce qui permet
+ * d'ouvrir les comptes sans attendre que le courriel fonctionne.
  */
 export function accountsEnabled(): boolean {
+  return databaseEnabled();
+}
+
+/**
+ * Le lien de connexion par courriel est-il proposé ?
+ *
+ * C'était le SEUL chemin, d'où l'exigence d'un serveur d'envoi pour ouvrir
+ * les comptes. Depuis qu'on peut s'inscrire avec un mot de passe, une base
+ * suffit — et un déploiement sans courriel a des comptes qui marchent.
+ *
+ * Ce que le courriel reste seul à permettre : retrouver un mot de passe
+ * oublié. La page de connexion le dit quand il manque, plutôt que d'afficher
+ * un lien « mot de passe oublié » qui ne mènerait nulle part.
+ */
+export function magicLinkEnabled(): boolean {
   return databaseEnabled() && mailEnabled();
 }
 
@@ -165,12 +180,17 @@ export function authHostWarning(): string | null {
 
   if (confiance) return null;
 
+  /*
+    Deux conséquences, pas une. La première existait déjà ; la seconde est
+    apparue avec les comptes par mot de passe, qui n'empruntent pas les
+    routes d'Auth.js mais posent le même cookie.
+  */
   return (
-    'AUTH_URL n’est pas définie : Auth.js refusera CHAQUE requête de connexion ' +
-    '(UntrustedHost), et aucun courriel de connexion ne partira. La page ' +
-    'affichera « le service de connexion ne répond pas », ce qui laissera croire ' +
-    'à une panne passagère. Définissez AUTH_URL sur l’adresse publique du site, ' +
-    'par exemple AUTH_URL=https://lunamarea.fr'
+    'AUTH_URL n’est pas définie. Deux conséquences : Auth.js refusera chaque ' +
+    'requête de LIEN de connexion (UntrustedHost) sans qu’aucun courriel ne ' +
+    'parte ; et le cookie de session sera posé sans le préfixe « __Secure- », ' +
+    'donc sans exiger HTTPS. Définissez AUTH_URL sur l’adresse publique du ' +
+    'site, par exemple AUTH_URL=https://lunamarea.fr'
   );
 }
 

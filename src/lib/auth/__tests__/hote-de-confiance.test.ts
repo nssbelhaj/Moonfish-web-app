@@ -94,9 +94,24 @@ describe('l’avertissement d’hôte de confiance', () => {
     expect(await avertissement()).toBeNull();
   });
 
-  it('se tait quand les comptes ne sont pas ouverts : rien à casser', async () => {
+  it('parle même sans serveur d’envoi : le cookie de session est aussi en jeu', async () => {
+    /*
+      L'avertissement ne concernait que le lien par courriel, du temps où
+      c'était le seul chemin de connexion. Depuis l'inscription par mot de
+      passe, AUTH_URL décide AUSSI du préfixe « __Secure- » du cookie de
+      session — un déploiement sans courriel reste donc concerné.
+    */
     comptesOuvertsEnProduction();
     delete process.env['EMAIL_SERVER'];
+
+    const message = await avertissement();
+    expect(message).not.toBeNull();
+    expect(message).toContain('__Secure-');
+  });
+
+  it('se tait quand les comptes ne sont pas ouverts : rien à casser', async () => {
+    comptesOuvertsEnProduction();
+    delete process.env['DATABASE_URL'];
 
     expect(await avertissement()).toBeNull();
   });
