@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 import { SPOTS } from '@/data/spots';
 import { diagnostiquer, verdictGlobal } from '@/lib/diagnostic/etat';
+import { essaiSmtp } from '@/lib/diagnostic/smtp';
 import { uploadsDir } from '@/lib/photo/storage';
 
 export const runtime = 'nodejs';
@@ -37,6 +38,16 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     uploadsDir: uploadsDir(),
     appDir: process.cwd(),
   });
+
+  /*
+    L'essai SMTP ouvre une vraie connexion. On ne le fait que sur demande
+    explicite (`?smtp=1`) : le diagnostic ordinaire doit rester instantané et
+    sans effet de bord, et une route qu'on peut faire se connecter en boucle
+    à un tiers est un levier gratuit.
+  */
+  if (request.nextUrl.searchParams.get('smtp') === '1') {
+    points.push(await essaiSmtp(process.env.EMAIL_SERVER, process.env.EMAIL_FROM));
+  }
 
   const verdict = verdictGlobal(points);
 

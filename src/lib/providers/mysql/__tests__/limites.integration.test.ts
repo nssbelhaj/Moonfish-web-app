@@ -130,6 +130,31 @@ describeDb('le limiteur de débit dans MySQL', () => {
     expect((await limiteur.checkMysqlLimit('essai', 'alice', 10, FENETRE, T0 + 11)).allowed).toBe(false);
   });
 
+  it('le remboursement rend l’unité : un envoi qui échoue ne doit rien coûter', async () => {
+    /*
+      Le défaut observé en production. Le budget se prend AVANT l'envoi —
+      sinon deux requêtes simultanées passeraient toutes les deux. Mais quand
+      l'envoi échoue, la personne n'a rien reçu : sans remboursement, trois
+      pannes d'affilée la bloquent un quart d'heure, et le message de blocage
+      masque alors la vraie panne.
+    */
+    for (let i = 1; i <= 3; i += 1) {
+      await limiteur.checkMysqlLimit('essai', 'alice', 3, FENETRE, T0 + i);
+    }
+    expect((await limiteur.checkMysqlLimit('essai', 'alice', 3, FENETRE, T0 + 4)).allowed).toBe(false);
+
+    // Les trois envois avaient échoué : on rend les trois unités.
+    for (let i = 0; i < 3; i += 1) await limiteur.refundMysqlLimit('essai', 'alice');
+
+    expect(await lignes()).toBe(0);
+    expect((await limiteur.checkMysqlLimit('essai', 'alice', 3, FENETRE, T0 + 5)).allowed).toBe(true);
+  });
+
+  it('rembourser un compteur vide ne casse rien', async () => {
+    await expect(limiteur.refundMysqlLimit('essai', 'inconnu')).resolves.toBeUndefined();
+    expect(await lignes()).toBe(0);
+  });
+
   it('le ménage retire les tentatives sorties de la fenêtre, et elles seules', async () => {
     await limiteur.checkMysqlLimit('essai', 'alice', 5, FENETRE, T0);
     await limiteur.checkMysqlLimit('essai', 'alice', 5, FENETRE, T0 + FENETRE);

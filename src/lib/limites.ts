@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { headers } from 'next/headers';
 
 import { databaseEnabled } from '@/lib/db/mysql';
-import { checkMysqlLimit } from '@/lib/providers/mysql/rate-limit';
+import { checkMysqlLimit, refundMysqlLimit } from '@/lib/providers/mysql/rate-limit';
 import { SlidingWindowRateLimiter, type RateLimitDecision } from '@/lib/rate-limit';
 
 /**
@@ -110,6 +110,40 @@ export async function consommer(budget: Budget, cle: string): Promise<RateLimitD
   } catch (error) {
     console.error(`[limites] compteur « ${budget.bucket} » injoignable`, error);
     return { allowed: false, remaining: 0, resetAt: Date.now() + budget.windowMs };
+  }
+}
+
+/**
+ * Rend une unité consommée, quand l'action protégée a échoué.
+ *
+ * ── Pourquoi ça n'est pas un détail ──────────────────────────────────────
+ *
+ * Le budget se prend AVANT l'action : autrement, deux requêtes simultanées
+ * liraient le même compteur et passeraient toutes les deux. Mais si l'action
+ * échoue, la personne n'a rien obtenu — et sans remboursement, elle paie
+ * quand même.
+ *
+ * Ce défaut a été observé en production, et il ne se contentait pas de
+ * pénaliser : au quatrième essai, le formulaire de connexion répondait « un
+ * lien a déjà été demandé, vérifiez vos indésirables » alors qu'aucun des
+ * trois envois précédents n'avait abouti. Le site envoyait chercher un
+ * courriel qui n'était jamais parti, et masquait la vraie panne pendant un
+ * quart d'heure.
+ *
+ * Un échec ne se rembourse jamais silencieusement en cas de panne du
+ * compteur : on préfère laisser l'unité consommée plutôt que de rouvrir le
+ * robinet quand la base ne répond plus.
+ */
+export async function rembourser(budget: Budget, cle: string): Promise<void> {
+  if (!databaseEnabled()) {
+    limiteurLocal(budget).refund(empreinte(cle));
+    return;
+  }
+
+  try {
+    await refundMysqlLimit(budget.bucket, empreinte(cle));
+  } catch (error) {
+    console.error(`[limites] remboursement « ${budget.bucket} » impossible`, error);
   }
 }
 

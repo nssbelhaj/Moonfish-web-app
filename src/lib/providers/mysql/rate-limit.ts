@@ -91,6 +91,20 @@ export async function checkMysqlLimit(
 }
 
 /**
+ * Rend la dernière tentative inscrite pour ce couple.
+ *
+ * Même `delete` que sur le chemin du refus : `order by id desc limit 1` vise
+ * la ligne la plus récente. Sous concurrence elle peut appartenir à une autre
+ * requête, ce qui revient au même — un compteur, pas un registre nominatif.
+ */
+export async function refundMysqlLimit(bucket: string, subject: string): Promise<void> {
+  await execute('delete from rate_limits where bucket = ? and subject = ? order by id desc limit 1', [
+    bucket,
+    subject,
+  ]);
+}
+
+/**
  * Ménage : supprime les tentatives sorties de la plus longue fenêtre.
  *
  * Appelé par `/api/entretien`. Sans lui la table grossit indéfiniment — ce

@@ -9,7 +9,7 @@ import { accountsEnabled } from '@/lib/auth/config';
 import { catchInputSchema, outingInputSchema, spotReviewInputSchema } from '@/data/schemas';
 import { localDateTimeToIso } from '@/lib/auth/local-time';
 import { currentUser } from '@/lib/auth/session';
-import { BUDGETS, consommer, delaiLisible, ipAppelante } from '@/lib/limites';
+import { BUDGETS, consommer, delaiLisible, ipAppelante, rembourser } from '@/lib/limites';
 import { contributions, spots } from '@/lib/providers';
 import { spotPath } from '@/lib/routes';
 
@@ -89,13 +89,24 @@ export async function requestSignInLink(
   */
   const parAdresse = await consommer(BUDGETS.connexionAdresse, email);
   if (!parAdresse.allowed) {
+    /*
+      Le message ne dit PAS « un lien a déjà été envoyé ».
+
+      Il le disait, et c'était faux dans le cas qui compte : quand l'envoi
+      échoue, les tentatives sont refusées après trois essais, et la personne
+      partait fouiller ses indésirables à la recherche d'un courriel jamais
+      parti. Le budget est maintenant remboursé quand l'envoi échoue, mais le
+      message reste prudent — il constate des demandes, il ne promet pas un
+      envoi.
+    */
     return {
       ok: false,
-      message: `Un lien a déjà été demandé pour cette adresse. Vérifiez vos indésirables, puis réessayez dans ${delaiLisible(parAdresse.resetAt)}.`,
+      message: `Trop de demandes pour cette adresse. Réessayez dans ${delaiLisible(parAdresse.resetAt)}. Si rien n’arrive, ce n’est pas votre adresse : signalez-le.`,
     };
   }
 
-  const parIp = await consommer(BUDGETS.connexionIp, await ipAppelante());
+  const ip = await ipAppelante();
+  const parIp = await consommer(BUDGETS.connexionIp, ip);
   if (!parIp.allowed) {
     return {
       ok: false,
@@ -133,6 +144,17 @@ export async function requestSignInLink(
       fausse qui durera jusqu'à correction. Promettre « réessayez dans un
       instant » dans le second cas ferait douter la personne de son adresse.
     */
+    /*
+      L'envoi a échoué : la personne n'a rien reçu, elle ne doit rien avoir
+      payé. Sans ce remboursement, trois pannes d'affilée la bloquent un quart
+      d'heure — et le message de blocage masque alors la vraie panne.
+    */
+    await Promise.all([
+      rembourser(BUDGETS.connexionAdresse, email),
+      rembourser(BUDGETS.connexionIp, ip),
+      rembourser(BUDGETS.connexionGlobal, 'site'),
+    ]);
+
     return {
       ok: false,
       message: 'Le service de connexion ne répond pas. Ce n’est pas votre adresse : réessayez plus tard.',

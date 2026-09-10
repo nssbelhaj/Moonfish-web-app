@@ -146,3 +146,43 @@ describe('le délai annoncé', () => {
     expect(delaiLisible(now + 2 * 3_600_000, now)).toBe('2 heures');
   });
 });
+
+describe('l’action de connexion rembourse quand l’envoi échoue', () => {
+  /*
+    Défaut observé en production, sur la vraie machine.
+
+    Les budgets se prennent AVANT `signIn`. Quand l'envoi échouait, ils
+    restaient débités : au quatrième essai le formulaire répondait « un lien a
+    déjà été demandé, vérifiez vos indésirables » alors qu'aucun des trois
+    envois n'avait abouti. Le site envoyait chercher un courriel jamais parti,
+    et masquait la panne réelle pendant quinze minutes.
+
+    Ce test est structurel comme les autres de ce fichier : il lit la source.
+    Exercer le vrai chemin demanderait un serveur d'envoi en panne, une base,
+    et une session — trois dépendances pour vérifier trois lignes.
+  */
+  const texte = SOURCE.slice(
+    SOURCE.indexOf('export async function requestSignInLink('),
+    SOURCE.indexOf('\nexport async function signOut('),
+  );
+
+  it('le bloc `catch` de l’envoi rembourse les TROIS budgets', () => {
+    const attrape = texte.slice(texte.indexOf('} catch (error) {'));
+
+    for (const budget of ['connexionAdresse', 'connexionIp', 'connexionGlobal'] as const) {
+      expect(attrape, `« ${budget} » n’est pas remboursé après un échec d’envoi`).toContain(
+        `rembourser(BUDGETS.${budget}`,
+      );
+    }
+  });
+
+  it('le message de refus ne promet PAS qu’un lien est parti', () => {
+    /*
+      « Vérifiez vos indésirables » est une affirmation : elle dit qu'un
+      courriel existe. Quand l'envoi a échoué, elle est fausse — et c'est
+      précisément le moment où elle s'affiche.
+    */
+    expect(texte).not.toContain('Un lien a déjà été demandé');
+    expect(texte).toContain('Trop de demandes pour cette adresse');
+  });
+});

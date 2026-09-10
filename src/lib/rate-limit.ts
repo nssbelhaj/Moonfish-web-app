@@ -46,6 +46,22 @@ export class SlidingWindowRateLimiter {
     };
   }
 
+  /**
+   * Rend la dernière unité consommée.
+   *
+   * Un budget se consomme AVANT l'action qu'il protège — sinon deux requêtes
+   * simultanées passeraient toutes les deux. Mais si l'action échoue, la
+   * personne n'a rien obtenu et ne doit rien avoir payé.
+   */
+  refund(key: string): void {
+    const recent = this.hits.get(key);
+    if (recent === undefined || recent.length === 0) return;
+
+    recent.pop();
+    if (recent.length === 0) this.hits.delete(key);
+    else this.hits.set(key, recent);
+  }
+
   private evictExpired(cutoff: number): void {
     for (const [key, timestamps] of this.hits) {
       const kept = timestamps.filter((timestamp) => timestamp > cutoff);
