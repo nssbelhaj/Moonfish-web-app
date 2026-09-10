@@ -78,3 +78,39 @@ describe('variables CSS', () => {
     expect(unused, 'tokens déclarés mais employés nulle part').toStrictEqual([]);
   });
 });
+
+describe('le contrôle segmenté du compte', () => {
+  const CSS = readFileSync('src/app/globals.css', 'utf8');
+
+  it('replie « créer un compte » PAR DÉFAUT, pas seulement après un clic', () => {
+    /*
+      Une première version n'affichait un panneau seul qu'APRÈS un clic : au
+      chargement, les deux formulaires se suivaient sur toute la largeur, et
+      on ne savait pas lequel remplir.
+    */
+    expect(CSS).toMatch(/\.onglets-compte #inscription-panneau \{\s*display: none;/);
+  });
+
+  it('enferme TOUTE la bascule dans `@supports selector(:has(*))`', () => {
+    /*
+      Sans cette garde, un navigateur sans `:has()` masquerait l'inscription
+      définitivement — sans jamais pouvoir la ramener. Une page longue vaut
+      mieux qu'un formulaire inatteignable.
+    */
+    // On vise la RÈGLE, pas le commentaire qui la cite : sans l'accolade,
+    // `indexOf` tombait sur l'explication écrite plus haut.
+    const bloc = CSS.slice(CSS.indexOf('@supports selector(:has(*)) {'));
+    const fin = bloc.indexOf('\n}\n', bloc.lastIndexOf('.onglets-compte'));
+
+    expect(bloc).toContain('#inscription-panneau');
+    // La règle de masquage par défaut est DANS le bloc `@supports`.
+    expect(bloc.slice(0, fin)).toMatch(/\.onglets-compte #inscription-panneau \{\s*display: none;/);
+  });
+
+  it('n’écrit aucune ombre littérale : elle vient d’un jeton', () => {
+    const bloc = CSS.slice(CSS.indexOf('.segments-compte'));
+
+    expect(bloc).toContain('var(--ombre-controle)');
+    expect(bloc).not.toMatch(/box-shadow:[^;]*rgb\(/);
+  });
+});

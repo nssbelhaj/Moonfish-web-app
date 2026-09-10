@@ -109,6 +109,14 @@
   */
   --ombre-marqueur: 0 1px 4px rgb(0 0 0 / 0.35);
   --ombre-flottante: 0 6px 18px rgb(0 0 0 / 0.18);
+
+  /*
+    Ombre d'un contrôle POSÉ sur un fond : l'onglet actif d'un contrôle
+    segmenté. Beaucoup plus légère que celle d'un marqueur de carte — il ne
+    s'agit pas de détacher l'élément du plan, seulement de dire lequel des
+    deux est choisi.
+  */
+  --ombre-controle: 0 1px 2px rgb(0 0 0 / 0.12);
 }
 
 /**
@@ -137,6 +145,7 @@
   --focus: var(--lagon-300n);
   --ombre-marqueur: 0 1px 5px rgb(0 0 0 / 0.6);
   --ombre-flottante: 0 8px 22px rgb(0 0 0 / 0.5);
+  --ombre-controle: 0 1px 2px rgb(0 0 0 / 0.45);
   --fg-on-accent: var(--abysse-on-accent);
   --warn: var(--score-2-n);
 

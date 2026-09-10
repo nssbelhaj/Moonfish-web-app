@@ -137,72 +137,71 @@ export default async function ComptePage({
             </p>
           </section>
         ) : user === null ? (
-          <section aria-labelledby="connexion" className="mt-6 max-w-prose">
+          <section aria-labelledby="connexion" className="mt-6">
             <h2 id="connexion" className="font-serif text-h2 font-semibold">
               Se connecter ou créer un compte
             </h2>
-            <p className="mt-2 text-read text-fg-muted">
+            <p className="mt-2 max-w-prose text-read text-fg-muted">
               Un compte sert à tenir un carnet de prises, suivre des spots, programmer des sorties
               et recevoir leurs conditions la veille. Il n’est jamais nécessaire pour consulter le
               site : tout ce qui est public le reste sans se connecter.
             </p>
 
             {/*
-              Deux onglets en CSS pure, par `:target`. Sans JavaScript, les
-              deux formulaires restent empilés et utilisables : c'est la même
-              dégradation que le reste du site.
+              Le formulaire est CONTRAINT en largeur, pas étiré sur la colonne.
+              Un champ d'adresse e-mail large de sept cents pixels n'aide
+              personne à le remplir, et la page devient un mur de rectangles.
+              Vingt-huit rem cadrent la ligne de saisie sans la serrer.
             */}
-            <div className="onglets-compte mt-6">
-              <nav className="flex gap-2" aria-label="Connexion ou inscription">
+            <div className="onglets-compte mt-6 w-full max-w-[28rem]">
+              <nav className="segments-compte" aria-label="Connexion ou inscription">
                 <a href="#connexion-panneau" className="onglet-compte">
-                  J’ai déjà un compte
+                  J’ai un compte
                 </a>
                 <a href="#inscription-panneau" className="onglet-compte">
                   Créer un compte
                 </a>
               </nav>
 
-              <section id="connexion-panneau" className="surface mt-4 p-4" aria-label="Se connecter">
-                <h3 className="font-serif text-[19px] font-semibold">Se connecter</h3>
-                <div className="mt-3">
-                  <ConnexionForm />
-                </div>
+              <section
+                id="connexion-panneau"
+                className="surface mt-4 p-5"
+                aria-label="Se connecter"
+              >
+                <ConnexionForm />
               </section>
 
               <section
                 id="inscription-panneau"
-                className="surface mt-4 p-4"
+                className="surface mt-4 p-5"
                 aria-label="Créer un compte"
               >
-                <h3 className="font-serif text-[19px] font-semibold">Créer un compte</h3>
-                <p className="mt-2 text-body text-fg-muted">
-                  Vos nom, prénom et date de naissance restent privés : seul votre prénom apparaît
-                  sous vos contributions, et vous pouvez le changer.
+                <p className="mb-4 text-body text-fg-muted">
+                  Vos nom et date de naissance restent privés. Seul votre prénom apparaît sous vos
+                  contributions, et vous pouvez le changer.
                 </p>
-                <div className="mt-3">
-                  <InscriptionForm />
-                </div>
+                <InscriptionForm />
               </section>
 
               {magicLinkEnabled() ? (
-                <section className="surface mt-4 p-4" aria-label="Connexion par lien">
-                  <h3 className="font-serif text-[19px] font-semibold">
-                    Ou recevoir un lien par courriel
-                  </h3>
-                  <p className="mt-2 text-body text-fg-muted">
+                <details className="surface mt-4 p-5">
+                  <summary className="cursor-pointer text-body text-fg">
+                    Recevoir plutôt un lien par courriel
+                  </summary>
+                  <p className="mt-3 text-body text-fg-muted">
                     Sans mot de passe à retenir. Le lien vaut une heure et ne sert qu’une fois.
                   </p>
                   <div className="mt-3">
                     <SignInForm />
                   </div>
-                </section>
+                </details>
               ) : (
                 <p className="demo-frame mt-4 p-4 text-body text-fg-muted">
                   <strong className="font-600 text-fg">
                     L’envoi de courriel n’est pas configuré sur ce site.
                   </strong>{' '}
-                  La connexion par lien et la récupération d’un mot de passe oublié sont donc
-                  indisponibles. Choisissez un mot de passe que vous saurez retrouver.
+                  La récupération d’un mot de passe oublié est donc indisponible. Choisissez un mot
+                  de passe que vous saurez retrouver.
                 </p>
               )}
             </div>

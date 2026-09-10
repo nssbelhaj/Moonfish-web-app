@@ -60,7 +60,12 @@ export function ConnexionForm() {
 export function InscriptionForm() {
   return (
     <ActionForm action={inscrire} submitLabel="Créer mon compte" pendingLabel="Création…">
-      <div className="grid gap-4 sm:grid-cols-2">
+      {/*
+        Prénom et nom sur une ligne dès qu'il y a la place : ce sont deux
+        champs courts, et les empiler allongeait le formulaire sans raison.
+        `min-w-0` empêche la grille de déborder quand le libellé est long.
+      */}
+      <div className="grid gap-3 sm:grid-cols-2 [&>label]:mt-0 [&>label]:min-w-0">
         <Field label="Prénom">
           <input
             type="text"
@@ -86,12 +91,12 @@ export function InscriptionForm() {
 
       <Field
         label="Date de naissance"
-        hint={`Elle sert à vérifier que vous avez ${AGE_MINIMUM} ans, et à rien d’autre. Elle n’est jamais affichée.`}
+        hint={`Pour vérifier les ${AGE_MINIMUM} ans. Jamais affichée.`}
       >
         <input type="date" name="birth_date" autoComplete="bday" required className={INPUT_CLASS} />
       </Field>
 
-      <Field label="Adresse e-mail" hint="Elle sert à vous reconnaître et à retrouver votre mot de passe.">
+      <Field label="Adresse e-mail">
         <input
           type="email"
           name="email"
@@ -113,7 +118,7 @@ export function InscriptionForm() {
         />
       </Field>
 
-      <Field label="Confirmez le mot de passe">
+      <Field label="Confirmation">
         <input
           type="password"
           name="password_confirm"
