@@ -200,14 +200,28 @@ export function diagnostiquer({ env, spotCount, uploadsDir, appDir }: Contexte):
         },
   );
 
-  const comptesOuverts = verdict.kind === 'ok' && Boolean(smtp) && emailFrom;
+  /*
+    Les comptes s'ouvrent avec une base SEULE depuis l'inscription par mot de
+    passe. Ce point affirmait encore « il faut la base ET le courriel » : il
+    annonçait des comptes fermés sur un déploiement où l'on venait d'en créer
+    un. Un diagnostic qui se trompe sur l'état du site est pire qu'aucun.
+  */
+  const comptesOuverts = verdict.kind === 'ok';
+  const recuperationPossible = Boolean(smtp) && emailFrom;
+
   points.push({
     sujet: 'Comptes',
-    etat: comptesOuverts ? 'ok' : 'absent',
-    constat: comptesOuverts
-      ? 'Les comptes sont ouverts : inscription, carnet de prises, favoris, sorties programmées.'
-      : 'Les comptes sont FERMÉS. Il faut la base ET le courriel — les deux, pas l’un ou l’autre.',
-    remede: comptesOuverts ? null : 'Complétez DATABASE_URL, EMAIL_SERVER et EMAIL_FROM ci-dessus.',
+    etat: comptesOuverts ? (recuperationPossible ? 'ok' : 'attention') : 'absent',
+    constat: !comptesOuverts
+      ? 'Les comptes sont FERMÉS : sans base, il n’y a rien à quoi se connecter.'
+      : recuperationPossible
+        ? 'Les comptes sont ouverts : inscription par mot de passe, lien par courriel, carnet de prises, favoris, sorties programmées.'
+        : 'Les comptes sont ouverts par mot de passe. En revanche, faute de serveur d’envoi, un mot de passe OUBLIÉ ne peut pas être récupéré : le compte serait perdu.',
+    remede: !comptesOuverts
+      ? 'Définissez DATABASE_URL, puis redéployez.'
+      : recuperationPossible
+        ? null
+        : 'Configurez EMAIL_SERVER et EMAIL_FROM pour rendre la récupération possible.',
   });
 
   // ── 4. Les marées : la question qui revient ─────────────────────────────

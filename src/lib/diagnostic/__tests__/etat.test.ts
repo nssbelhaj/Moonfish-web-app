@@ -183,3 +183,38 @@ describe('la forme de l’URL d’envoi', () => {
     expect(decodeURIComponent(analysee.password)).toBe('MotDePasse');
   });
 });
+
+describe('l’état des comptes suit la règle réelle, pas l’ancienne', () => {
+  const compte = (env: Environnement) =>
+    diagnostiquer({ ...CONTEXTE, env }).find((p) => p.sujet === 'Comptes')!;
+
+  it('une base SEULE ouvre les comptes', () => {
+    /*
+      Ce point affirmait « il faut la base ET le courriel ». C'était vrai du
+      temps où le lien par courriel était le seul chemin. Depuis
+      l'inscription par mot de passe, il annonçait des comptes FERMÉS sur un
+      déploiement où l'on venait d'en créer un — observé en production.
+    */
+    const sansCourriel = { ...COMPLET, EMAIL_SERVER: undefined, EMAIL_FROM: undefined };
+    const p = compte(sansCourriel);
+
+    expect(p.etat).not.toBe('absent');
+    expect(p.constat).toContain('ouverts');
+  });
+
+  it('mais signale que le mot de passe oublié est alors sans recours', () => {
+    const p = compte({ ...COMPLET, EMAIL_SERVER: undefined, EMAIL_FROM: undefined });
+
+    expect(p.etat).toBe('attention');
+    expect(p.constat).toContain('OUBLIÉ');
+    expect(p.remede).toContain('EMAIL_SERVER');
+  });
+
+  it('sans base, les comptes sont bien fermés', () => {
+    expect(compte({ ...COMPLET, DATABASE_URL: undefined }).etat).toBe('absent');
+  });
+
+  it('base et courriel : rien à signaler', () => {
+    expect(compte(COMPLET).etat).toBe('ok');
+  });
+});

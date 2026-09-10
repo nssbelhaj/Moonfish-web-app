@@ -2,6 +2,7 @@ import { readdirSync } from 'node:fs';
 import path from 'node:path';
 
 import { databaseEnabled, query } from '@/lib/db/mysql';
+import { bilanDesMigrations } from '@/lib/db/migrations-au-demarrage';
 import type { Point } from './etat';
 
 /**
@@ -60,7 +61,7 @@ export async function etatMigrations(): Promise<Point> {
       constat:
         'La table de suivi `schema_migrations` n’existe pas : AUCUNE migration n’a été appliquée. La base répond, mais elle est vide — comptes, contributions et compteurs d’appels échoueront tous, chacun sous un autre déguisement.',
       remede:
-        'Le démarrage doit passer par `npm start` (qui déclenche `prestart` → migrations), pas par `next start` directement. Vérifiez la commande de démarrage de l’application, puis redéployez.',
+        'Redéployez : le serveur applique désormais les migrations lui-même au démarrage, quelle que soit la commande de lancement. Si elles manquent encore après un redéploiement, ce diagnostic portera le message d’erreur de MySQL.',
     };
   }
 
@@ -74,12 +75,33 @@ export async function etatMigrations(): Promise<Point> {
   }
 
   const manquantes = attendues.filter((nom) => !appliquees.includes(nom));
+  const bilan = bilanDesMigrations();
+
+  /*
+    L'échec du démarrage prime sur le décompte : il porte le message du
+    serveur MySQL, qui nomme la cause réelle — un droit manquant, une
+    contrainte refusée — là où « il manque deux migrations » ne dit que le
+    symptôme.
+  */
+  if (bilan.erreur !== null) {
+    return {
+      sujet: 'Migrations de la base',
+      etat: 'absent',
+      constat: `L’application des migrations a ÉCHOUÉ au démarrage. MySQL répond : « ${bilan.erreur} »`,
+      remede:
+        'Le message ci-dessus vient du serveur de base. S’il parle de droits, l’utilisateur MySQL n’a pas le droit de créer des tables ; s’il parle de syntaxe, la version du serveur est plus ancienne qu’attendu.',
+    };
+  }
 
   return manquantes.length === 0
     ? {
         sujet: 'Migrations de la base',
         etat: 'ok',
-        constat: `Les ${attendues.length} migrations sont appliquées (jusqu’à ${attendues.at(-1)}).`,
+        constat:
+          `Les ${attendues.length} migrations sont appliquées (jusqu’à ${attendues.at(-1)}).` +
+          (bilan.appliquees.length > 0
+            ? ` ${bilan.appliquees.length} l’ont été au dernier démarrage : ${bilan.appliquees.join(', ')}.`
+            : ''),
         remede: null,
       }
     : {
@@ -87,6 +109,6 @@ export async function etatMigrations(): Promise<Point> {
         etat: 'absent',
         constat: `${manquantes.length} migration(s) non appliquée(s) : ${manquantes.join(', ')}. Les fonctions qui en dépendent échoueront sans nommer la cause.`,
         remede:
-          'Redéployez en vous assurant que le démarrage passe par `npm start`. En dernier recours, `npm run migrate` depuis un terminal SSH.',
+          'Le serveur les applique normalement de lui-même au démarrage. Si elles manquent encore, redéployez et relisez ce diagnostic : le point ci-dessus portera alors le message d’erreur de MySQL.',
       };
 }

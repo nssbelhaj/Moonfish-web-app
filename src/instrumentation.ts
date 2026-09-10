@@ -31,6 +31,25 @@ export async function register(): Promise<void> {
   // à ces modules, et y importer `node:path` casserait la compilation.
   if (process.env.NEXT_RUNTIME !== 'nodejs') return;
 
+  /*
+    Les migrations d'abord, et AVANT les avertissements : plusieurs d'entre
+    eux se prononcent sur un état de la base qui n'existe pas encore si le
+    schéma vient seulement d'être créé.
+  */
+  const { appliquerMigrationsAuDemarrage } = await import('@/lib/db/migrations-au-demarrage');
+  const bilan = await appliquerMigrationsAuDemarrage();
+
+  if (bilan.erreur !== null) {
+    console.error(`[migration] ÉCHEC au démarrage : ${bilan.erreur}`);
+    console.error(
+      '[migration] Le site démarre quand même. Les comptes et les contributions ' +
+        'échoueront en nommant cette cause ; le reste fonctionne. ' +
+        'Détail : /api/diagnostic',
+    );
+  } else if (bilan.appliquees.length > 0) {
+    console.info(`[migration] ${bilan.appliquees.length} appliquée(s) : ${bilan.appliquees.join(', ')}`);
+  }
+
   const [
     { authHostWarning, smtpWarning },
     { storageWarning },
