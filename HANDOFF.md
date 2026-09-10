@@ -176,7 +176,7 @@ envoi, traçabilité du consentement avec sa version.
   quota d'envoi du serveur de courriel
 - **Diagnostic en ligne** — `/api/diagnostic` rend l'état de chaque variable
   d'environnement en français, avec le remède, sans jamais recopier un secret
-- **664 tests** (54 fichiers), dont 40 d'intégration
+- **666 tests** (54 fichiers), dont 40 d'intégration
 
 ### Ce qui n'a jamais pu être vérifié
 
@@ -344,7 +344,7 @@ npm run dev            # http://localhost:3000 — aucune variable requise
 ```bash
 npx tsc --noEmit                          # typage strict
 npx next lint                             # ESLint
-npx vitest run                            # 624 tests hermétiques
+npx vitest run                            # 626 tests hermétiques
 npm run build                             # 77 pages
 npm audit                                 # doit rester à 0
 node scripts/generer-import-sql.mjs --verifier
@@ -365,7 +365,7 @@ sudo mysql -e "create database if not exists lunamarea_test;
 export DATABASE_URL='mysql://luna:luna@127.0.0.1:3306/lunamarea_test'
 npm run migrate                           # applique 0001 puis 0002
 npm run migrate                           # doit dire « schéma déjà à jour »
-npx vitest run                            # 664 tests
+npx vitest run                            # 666 tests
 ```
 
 ### Le site complet en local, comptes compris
@@ -473,7 +473,7 @@ s'en écarte.
 | Base de production | `u969082232_moonfish` — **le nom ne change pas** : Hostinger le fixe à la création |
 | Hébergement | Hostinger Web Apps, déploiement GitHub automatique, Node ≥ 20.9 |
 | Régime légal | Non professionnel (art. 6-III-2 LCEN) — adresse dispensée tant qu'aucune recette |
-| Volume | 210 fichiers TS/TSX · ~26 600 lignes · 18 composants client · 664 tests · 154 URL au sitemap |
+| Volume | 210 fichiers TS/TSX · ~26 600 lignes · 18 composants client · 666 tests · 154 URL au sitemap |
 
 ### Documents voisins
 

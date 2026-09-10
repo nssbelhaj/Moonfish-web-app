@@ -4,6 +4,7 @@ import { purgeExpired } from '@/lib/auth/mysql-adapter';
 import { sendOutingAlerts } from '@/lib/contributions/alerts';
 import { mailEnabled } from '@/lib/auth/config';
 import { databaseEnabled } from '@/lib/db/mysql';
+import { refusExplique } from '@/lib/diagnostic/refus';
 import { RETENTION_MS } from '@/lib/limites';
 import { purgeRateLimits } from '@/lib/providers/mysql/rate-limit';
 
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   */
   const secret = process.env.CRON_SECRET?.trim();
   if (secret && request.headers.get('authorization') !== `Bearer ${secret}`) {
-    return NextResponse.json({ ok: false, message: 'Non autorisé.' }, { status: 401 });
+    return refusExplique(request.headers.get('authorization'));
   }
 
   if (!databaseEnabled()) {

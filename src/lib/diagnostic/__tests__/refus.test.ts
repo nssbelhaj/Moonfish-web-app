@@ -15,8 +15,10 @@ import { readFileSync } from 'node:fs';
   ────────────────────────────────────────────────────────────────────────────
 */
 
-const SOURCE = readFileSync('src/app/api/diagnostic/route.ts', 'utf8');
-const REFUS = SOURCE.slice(SOURCE.indexOf('if (secret &&'), SOURCE.indexOf('const points ='));
+const REFUS = readFileSync('src/lib/diagnostic/refus.ts', 'utf8');
+
+/** Les deux routes d'exploitation doivent refuser de la même façon. */
+const ROUTES = ['src/app/api/diagnostic/route.ts', 'src/app/api/entretien/route.ts'];
 
 describe('le refus du diagnostic', () => {
   it('dit quel en-tête ajouter', () => {
@@ -34,10 +36,11 @@ describe('le refus du diagnostic', () => {
       Le refus est alors identique à celui d'un mauvais secret, et rien ne
       suggère de regarder l'en-tête qu'on vient d'envoyer.
     */
-    const motif = /\/(.+?)\/i\.test\(entete\)/.exec(REFUS)?.[1];
+    const motif = /\/(.+?)\/i\.test\(/.exec(REFUS)?.[1];
     expect(motif, 'aucune détection de texte d’exemple').toBeDefined();
 
-    const detecte = new RegExp(motif!.replace(/\\\\/g, '\\'), 'i');
+    // La source lue sur disque porte déjà les échappements du littéral.
+    const detecte = new RegExp(motif!, 'i');
     for (const exemple of [
       'Bearer COLLEZ_ICI_VOTRE_CRON_SECRET',
       'Bearer LA_VALEUR_DE_CRON_SECRET',
@@ -49,8 +52,7 @@ describe('le refus du diagnostic', () => {
   });
 
   it('ne prend PAS un vrai secret pour un exemple', () => {
-    const motif = /\/(.+?)\/i\.test\(entete\)/.exec(REFUS)![1]!;
-    const detecte = new RegExp(motif.replace(/\\\\/g, '\\'), 'i');
+    const detecte = new RegExp(/\/(.+?)\/i\.test\(/.exec(REFUS)![1]!, 'i');
 
     // Des secrets plausibles : sortie de `openssl rand -base64 32`.
     for (const vrai of [
@@ -59,6 +61,16 @@ describe('le refus du diagnostic', () => {
     ]) {
       expect(detecte.test(vrai), vrai).toBe(false);
     }
+  });
+
+  it.each(ROUTES)('%s l’utilise, plutôt que de refuser à sa façon', (route) => {
+    /*
+      Les deux routes portaient le même « Non autorisé. » nu, copié d'un
+      fichier à l'autre. Un message partagé ne se corrige qu'une fois.
+    */
+    const source = readFileSync(route, 'utf8');
+    expect(source).toContain('refusExplique(');
+    expect(source).not.toContain("message: 'Non autorisé.' }");
   });
 
   it('ne divulgue jamais le secret attendu — seulement comment le présenter', () => {
@@ -72,5 +84,7 @@ describe('le refus du diagnostic', () => {
 
     expect(corps).not.toContain('${secret}');
     expect(corps).not.toContain('process.env.CRON_SECRET');
+    // Le helper ne reçoit que l'en-tête reçu : il ne PEUT pas lire le secret.
+    expect(REFUS).not.toContain('process.env');
   });
 });

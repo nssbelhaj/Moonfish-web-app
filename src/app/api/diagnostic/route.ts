@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { SPOTS } from '@/data/spots';
 import { diagnostiquer, verdictGlobal } from '@/lib/diagnostic/etat';
 import { etatMigrations } from '@/lib/diagnostic/migrations';
+import { refusExplique } from '@/lib/diagnostic/refus';
 import { essaiSmtp } from '@/lib/diagnostic/smtp';
 import { uploadsDir } from '@/lib/photo/storage';
 
@@ -30,39 +31,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const secret = process.env.CRON_SECRET?.trim();
   if (secret && request.headers.get('authorization') !== `Bearer ${secret}`) {
-    /*
-      ── Un refus qui n'explique rien fait perdre autant de temps que la panne
-
-      Cette route est l'outil qu'on vient consulter quand plus rien ne marche.
-      Elle répondait « Non autorisé. » — exact, et parfaitement inutile : on ne
-      sait ni quel en-tête manque, ni où trouver la valeur, ni si on s'est
-      trompé de secret ou de forme.
-
-      Le message ci-dessous ne divulgue rien de plus que le refus lui-même :
-      il dit COMMENT demander, jamais ce qu'il faudrait répondre. Il nomme
-      aussi l'erreur la plus fréquente — recopier le texte d'exemple au lieu
-      de la valeur.
-    */
-    const entete = request.headers.get('authorization') ?? '';
-    const ressembleAUnExemple = /VOTRE|COLLEZ|VALEUR|XXX|<|\.\.\./i.test(entete);
-
-    return NextResponse.json(
-      {
-        ok: false,
-        message: 'Non autorisé.',
-        commentDemander:
-          'Ajoutez l’en-tête « Authorization: Bearer VALEUR », où VALEUR est le contenu de la variable d’environnement CRON_SECRET de ce déploiement.',
-        ouTrouverLaValeur:
-          'hPanel → votre site → Web App (ou Node.js) → Variables d’environnement → ligne CRON_SECRET. La valeur y est lisible et modifiable.',
-        ...(ressembleAUnExemple
-          ? {
-              remarque:
-                'L’en-tête reçu ressemble à un texte d’exemple, pas à un secret : remplacez-le par la valeur réelle de CRON_SECRET.',
-            }
-          : {}),
-      },
-      { status: 401, headers: { 'cache-control': 'no-store' } },
-    );
+    return refusExplique(request.headers.get('authorization'));
   }
 
   const points = diagnostiquer({
