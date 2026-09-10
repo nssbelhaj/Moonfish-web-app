@@ -30,9 +30,20 @@ export async function etatMigrations(): Promise<Point> {
     };
   }
 
-  const attendues = readdirSync(path.join(process.cwd(), 'db/migrations'))
-    .filter((nom) => nom.endsWith('.sql'))
-    .sort();
+  /*
+    `db/migrations/` peut ne pas être présent à côté du serveur : certains
+    hébergeurs ne déploient que le résultat de la compilation. Sans ce garde,
+    le diagnostic tomberait en erreur — précisément l'outil qu'on vient
+    consulter quand plus rien ne marche.
+  */
+  let attendues: string[];
+  try {
+    attendues = readdirSync(path.join(process.cwd(), 'db/migrations'))
+      .filter((nom) => nom.endsWith('.sql'))
+      .sort();
+  } catch {
+    attendues = [];
+  }
 
   let appliquees: string[];
   try {
@@ -50,6 +61,15 @@ export async function etatMigrations(): Promise<Point> {
         'La table de suivi `schema_migrations` n’existe pas : AUCUNE migration n’a été appliquée. La base répond, mais elle est vide — comptes, contributions et compteurs d’appels échoueront tous, chacun sous un autre déguisement.',
       remede:
         'Le démarrage doit passer par `npm start` (qui déclenche `prestart` → migrations), pas par `next start` directement. Vérifiez la commande de démarrage de l’application, puis redéployez.',
+    };
+  }
+
+  if (attendues.length === 0) {
+    return {
+      sujet: 'Migrations de la base',
+      etat: 'attention',
+      constat: `${appliquees.length} migration(s) enregistrée(s) en base, mais le dossier db/migrations/ n’est pas lisible depuis le serveur : impossible de dire s’il en manque.`,
+      remede: 'Vérifiez que db/migrations/ est bien déployé à côté de l’application.',
     };
   }
 

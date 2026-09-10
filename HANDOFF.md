@@ -176,7 +176,7 @@ envoi, traçabilité du consentement avec sa version.
   quota d'envoi du serveur de courriel
 - **Diagnostic en ligne** — `/api/diagnostic` rend l'état de chaque variable
   d'environnement en français, avec le remède, sans jamais recopier un secret
-- **656 tests** (52 fichiers), dont 37 d'intégration
+- **659 tests** (53 fichiers), dont 40 d'intégration
 
 ### Ce qui n'a jamais pu être vérifié
 
@@ -315,6 +315,7 @@ build — mais c'est à savoir.
 | **Durée annoncée ≠ durée calculée** | Le site annonçait des créneaux de trois heures alors que `SLOT_HOURS` vaut 2 — jusque dans la balise de description. `duree-creneau.test.ts` lit la constante. |
 | **Un base64 ne se relit pas à l'œil** | La tuile de repli, commentée « PNG transparent d'un pixel », décodait en `(0, 255, 0, 127)` — vert vif à moitié opaque. Chaque tuile manquante peignait un carré vert sur la carte. Invisible en développement, où les tuiles répondent. `tuile-vide.test.ts` décode le PNG et lit ses quatre composantes. |
 | **Un marqueur écarté hors du cadre reste cliquable et invisible** | `separatePoints` n'avait pas de bornes dans Leaflet non plus : six marqueurs sur quarante-deux sortaient du conteneur sur un écran de 390 px. Le cadre fait maintenant partie de la relaxation, ici comme sur la carte statique. |
+| **Une migration en échec éteignait TOUT le site** | La politique « arrêt sur échec » supposait qu'une version précédente reste en ligne. Sur un hébergement mutualisé il n'y en a pas : le processus sort en 1, l'hébergeur le relance, il ressort en 1, et le serveur rend un **503 sur tout le site** — marées, météo, carte et guides compris, qui ne touchent jamais la base. Observé en production. Au démarrage, l'échec avertit maintenant et laisse partir ; `MIGRATIONS_STRICT=1` rétablit l'arrêt. |
 | **Migrations sautées au démarrage** | `prestart` les lance, donc `npm start` les lance. Un hébergeur qui exécute `next start` directement les saute sans rien dire : la base répond, l'application démarre, il manque des tables. La panne prend alors le visage d'autre chose — une `rate_limits` absente fait répondre au formulaire de connexion « trop de demandes, réessayez dans quinze minutes ». `/api/diagnostic` compare maintenant `schema_migrations` aux fichiers présents. |
 | **Un budget pris avant l'action, jamais rendu** | Les trois budgets du formulaire de connexion se consommaient avant l'envoi et n'étaient pas remboursés en cas d'échec. Après trois envois ratés, le site répondait « un lien a déjà été demandé, vérifiez vos indésirables » — envoyant chercher un courriel jamais parti, et masquant la panne réelle un quart d'heure. Observé en production. |
 | **Une protection qui existe n'est pas une protection qui s'applique** | Le limiteur de débit était écrit, documenté, testé — et branché sur **un seul** point d'entrée. Le formulaire de connexion, écrit plus tard, faisait partir un courriel vers une adresse fournie par l'appelant, sans compteur. Rien ne le signalait. `limites.test.ts` refuse désormais qu'une action oublie son budget. |
@@ -364,7 +365,7 @@ sudo mysql -e "create database if not exists lunamarea_test;
 export DATABASE_URL='mysql://luna:luna@127.0.0.1:3306/lunamarea_test'
 npm run migrate                           # applique 0001 puis 0002
 npm run migrate                           # doit dire « schéma déjà à jour »
-npx vitest run                            # 656 tests
+npx vitest run                            # 659 tests
 ```
 
 ### Le site complet en local, comptes compris
@@ -472,7 +473,7 @@ s'en écarte.
 | Base de production | `u969082232_moonfish` — **le nom ne change pas** : Hostinger le fixe à la création |
 | Hébergement | Hostinger Web Apps, déploiement GitHub automatique, Node ≥ 20.9 |
 | Régime légal | Non professionnel (art. 6-III-2 LCEN) — adresse dispensée tant qu'aucune recette |
-| Volume | 210 fichiers TS/TSX · ~26 600 lignes · 18 composants client · 656 tests · 154 URL au sitemap |
+| Volume | 210 fichiers TS/TSX · ~26 600 lignes · 18 composants client · 659 tests · 154 URL au sitemap |
 
 ### Documents voisins
 

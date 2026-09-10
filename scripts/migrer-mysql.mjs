@@ -26,14 +26,32 @@
   Au démarrage (`--au-demarrage`) :
     · pas de base configurée   → on passe, sans bruit. Le site tourne sans
       comptes, c'est un mode prévu ;
-    · base injoignable         → AVERTISSEMENT, et on démarre quand même. Une
-      panne passagère de base ne doit pas empêcher de servir les marées, la
-      météo et les guides, qui n'en dépendent pas ;
-    · migration en échec       → ARRÊT. Faire tourner du code contre un schéma
-      à moitié migré corrompt des données en silence ; mieux vaut que le
-      déploiement échoue et que la version précédente reste en ligne.
+    · base injoignable         → AVERTISSEMENT, et on démarre quand même ;
+    · migration en échec       → AVERTISSEMENT, et on démarre quand même.
 
-  En manuel, l'injoignabilité est une erreur : on a demandé une migration.
+  ─── Pourquoi le dernier point a CHANGÉ ────────────────────────────────────
+
+  Il valait « ARRÊT », avec ce raisonnement : faire tourner du code contre un
+  schéma à moitié migré corrompt des données en silence, mieux vaut que le
+  déploiement échoue et que la version précédente reste en ligne.
+
+  Le raisonnement était juste ; sa PRÉMISSE ne l'est pas ici. Sur un
+  hébergement mutualisé, aucune version précédente ne reste en ligne : le
+  processus sort en 1, l'hébergeur le relance, il ressort en 1, et le serveur
+  finit par rendre un 503 sur TOUT le site — y compris les marées, la météo,
+  la carte et les guides, qui ne touchent jamais la base. Observé en
+  production : une seule migration en échec, et il ne reste plus rien.
+
+  Le risque qui justifiait l'arrêt n'est par ailleurs plus silencieux. Les
+  chemins qui ont besoin d'une table absente refusent maintenant en nommant la
+  cause (« les migrations n'ont probablement pas été appliquées »), et
+  `/api/diagnostic` compare `schema_migrations` aux fichiers présents.
+
+  `MIGRATIONS_STRICT=1` rétablit l'arrêt, pour un hébergeur qui sait vraiment
+  garder la version précédente en ligne.
+
+  En manuel, l'échec reste une erreur : on a demandé une migration, on veut
+  savoir qu'elle n'est pas passée.
 */
 
 import { createHash } from 'node:crypto';
@@ -44,6 +62,28 @@ import mysql from 'mysql2/promise';
 import { lireConfigBase } from './lib/config-base.mjs';
 
 const AT_STARTUP = process.argv.includes('--au-demarrage');
+
+/** Au démarrage, un échec avertit et laisse partir — sauf demande contraire. */
+const STRICT = !AT_STARTUP || process.env.MIGRATIONS_STRICT === '1';
+
+/**
+ * Sortie sur échec de migration.
+ *
+ * Rendre 1 au démarrage d'un hébergement mutualisé, c'est éteindre le site
+ * entier pour protéger la partie qui a besoin de la base. Le reste — marées,
+ * météo, carte, guides — n'a rien demandé.
+ */
+function terminerSurEchec(connection) {
+  if (STRICT) return connection.end().then(() => process.exit(1));
+
+  console.error(
+    '\n[migration] LE SITE DÉMARRE QUAND MÊME, avec un schéma incomplet.\n' +
+      'Les comptes et les contributions échoueront en nommant cette cause ;\n' +
+      'le reste du site fonctionne. Diagnostic : /api/diagnostic\n' +
+      'Pour arrêter le démarrage sur cette erreur : MIGRATIONS_STRICT=1',
+  );
+  return connection.end();
+}
 
 function loadEnvFile() {
   try {
@@ -159,6 +199,7 @@ const files = readdirSync(dir)
   .sort();
 
 let count = 0;
+let echec = false;
 
 for (const file of files) {
   const sql = readFileSync(path.join(dir, file), 'utf8');
@@ -173,8 +214,9 @@ for (const file of files) {
           'silence : la base garde l’ancienne forme, le dépôt affiche la nouvelle.\n' +
           'Créez plutôt une NOUVELLE migration qui exprime le changement.',
       );
-      await connection.end();
-      process.exit(1);
+      echec = true;
+      await terminerSurEchec(connection);
+      break;
     }
 
     continue;
@@ -196,15 +238,24 @@ for (const file of files) {
     console.log('ÉCHEC');
     console.error(`\n${error.sqlMessage ?? error.message}`);
     console.error(
-      '\nLa migration n’est PAS enregistrée : elle sera retentée au prochain passage.\n' +
-        'Rien ne doit tourner contre un schéma à moitié migré.',
+      '\nLa migration n’est PAS enregistrée : elle sera retentée au prochain passage.',
     );
-    await connection.end();
-    process.exit(1);
+    echec = true;
+    await terminerSurEchec(connection);
+    break;
   }
 }
 
-if (count === 0) console.log('[migration] schéma déjà à jour.');
-else console.log(`[migration] ${count} migration(s) appliquée(s).`);
+/*
+  Le compte rendu final ne doit jamais dire « à jour » après un échec : c'est
+  précisément la ligne qu'on relit dans un journal de déploiement pour se
+  rassurer.
+*/
+if (echec) {
+  console.error(`[migration] INTERROMPUE après ${count} migration(s). Schéma incomplet.`);
+} else {
+  if (count === 0) console.log('[migration] schéma déjà à jour.');
+  else console.log(`[migration] ${count} migration(s) appliquée(s).`);
 
-await connection.end();
+  await connection.end();
+}
