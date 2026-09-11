@@ -1,5 +1,23 @@
 import type { NextConfig } from 'next';
 
+/**
+ * Horodatage de construction, posé par le script `build` AVANT toute chose.
+ *
+ * Il ne peut pas être calculé ici : Next charge ce fichier PLUSIEURS FOIS
+ * pendant une même construction, et un `new Date()` à cet endroit rendait
+ * une valeur différente à chaque chargement. Mesuré : une seconde d'écart
+ * entre l'en-tête de réponse et la valeur vue par l'application, alors que
+ * le diagnostic affirmait leur égalité.
+ *
+ * Le shell le calcule une fois, avant de lancer `next build` ; les deux
+ * lecteurs partagent donc forcément la même valeur.
+ *
+ * Absent, il vaut « inconnue » — ce qui arrive si quelqu'un lance
+ * `next build` directement au lieu de `npm run build`. Le diagnostic le dit
+ * alors, plutôt que d'afficher un horodatage qui ne voudrait rien dire.
+ */
+const BUILD_STAMP = process.env.LUNA_BUILD ?? 'inconnue';
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
@@ -37,6 +55,27 @@ const nextConfig: NextConfig = {
    */
   images: {
     remotePatterns: [],
+  },
+
+  /** Remplacée littéralement à la compilation, donc figée avec le build. */
+  env: { LUNA_BUILD: BUILD_STAMP },
+
+  /**
+   * En-tête d'empreinte de construction, sur toutes les réponses.
+   *
+   * `headers()` est évaluée à la COMPILATION et sérialisée dans le manifeste
+   * des routes : la valeur servie est donc bien celle du build, pas celle du
+   * démarrage. C'est ce qui permet de distinguer « le correctif n'est pas
+   * déployé » de « le correctif est déployé et échoue » — deux situations
+   * qui produisent exactement le même symptôme à l'écran.
+   */
+  async headers() {
+    return [
+      {
+        source: '/:chemin*',
+        headers: [{ key: 'x-luna-marea-build', value: BUILD_STAMP }],
+      },
+    ];
   },
 };
 

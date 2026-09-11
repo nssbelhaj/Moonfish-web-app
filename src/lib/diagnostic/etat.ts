@@ -1,4 +1,5 @@
 import { lireConfigBase } from '@/lib/db/config';
+import { BUILD_STAMP } from '@/lib/build-stamp';
 import { smtpWarning } from '@/lib/auth/config';
 import { parseAllowedSpots } from '@/lib/providers/selective-tide';
 
@@ -71,6 +72,30 @@ export interface Contexte {
 
 export function diagnostiquer({ env, spotCount, uploadsDir, appDir }: Contexte): Point[] {
   const points: Point[] = [];
+
+  /*
+    En tête, parce que c'est la première question à trancher : le reste de ce
+    diagnostic décrit la construction en ligne, qui n'est peut-être pas la
+    dernière poussée. Sans cette ligne, un correctif non déployé et un
+    correctif déployé qui échoue se ressemblent exactement.
+  */
+  points.push(
+    BUILD_STAMP === 'inconnue'
+      ? {
+          sujet: 'Version en ligne',
+          etat: 'attention',
+          constat:
+            'L’horodatage de construction est absent : le site a été compilé par `next build` directement, sans passer par `npm run build`.',
+          remede:
+            'Sans lui, impossible de dire si un correctif est déployé ou s’il échoue — les deux donnent le même symptôme. Faites compiler par `npm run build`.',
+        }
+      : {
+          sujet: 'Version en ligne',
+          etat: 'ok',
+          constat: `Construction du ${BUILD_STAMP}. Le même horodatage est servi dans l’en-tête « x-luna-marea-build » de chaque réponse.`,
+          remede: null,
+        },
+  );
 
   // ── 1. L'adresse du site ────────────────────────────────────────────────
   const siteUrl = env['NEXT_PUBLIC_SITE_URL'];

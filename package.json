@@ -8,7 +8,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "LUNA_BUILD=$(date -u +%Y-%m-%dT%H:%M:%SZ) next build",
     "prestart": "node scripts/migrer-mysql.mjs --au-demarrage",
     "start": "next start",
     "lint": "next lint",
