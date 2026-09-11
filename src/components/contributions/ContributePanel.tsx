@@ -19,6 +19,8 @@ interface AccountState {
   ownReview?: OwnReview | null;
 }
 
+type Action = 'avis' | 'prise' | 'sortie';
+
 type Session =
   | { kind: 'loading' }
   | { kind: 'signed-out' }
@@ -35,6 +37,7 @@ export function ContributePanel({
   speciesSuggestions: readonly string[];
 }) {
   const [session, setSession] = useState<Session>({ kind: 'loading' });
+  const [action, setAction] = useState<Action>('avis');
 
   useEffect(() => {
     const controller = new AbortController();
@@ -100,43 +103,65 @@ export function ContributePanel({
 
   const own = session.ownReview;
 
+  /*
+    Une action à la fois. Trois formulaires côte à côte tenaient en colonnes
+    étroites sur grand écran et s'empilaient sur trois hauteurs d'écran sur
+    mobile ; on choisit ce qu'on vient faire, et le formulaire prend la place.
+  */
+  const ACTIONS: { cle: Action; libelle: string; sous: string }[] = [
+    {
+      cle: 'avis',
+      libelle: own ? 'Votre avis' : 'Noter ce spot',
+      sous: 'Un avis par personne et par spot ; vous pouvez le réviser quand vous voulez.',
+    },
+    { cle: 'prise', libelle: 'Déclarer une prise', sous: 'Rien n’est obligatoire hormis l’espèce et le moment.' },
+    {
+      cle: 'sortie',
+      libelle: 'Programmer une sortie',
+      sous: 'Et recevoir la veille, par courriel, les conditions prévues à cette heure-là.',
+    },
+  ];
+  const courante = ACTIONS.find((a) => a.cle === action) ?? ACTIONS[0];
+
   return (
-    <div className="grid gap-6 lg:grid-cols-3">
-      <div className="surface p-4">
-        <h3 className="card-title">{own ? 'Votre avis sur ce spot' : 'Noter ce spot'}</h3>
-        <p className="mt-1 text-meta text-fg-muted">
-          Un avis par personne et par spot ; vous pouvez le réviser quand vous voulez.
-        </p>
-        <div className="mt-4">
-          <ReviewForm
-            spotSlug={spotSlug}
-            spotPath={spotPath}
-            {...(own ? { existing: { rating: own.rating, comment: own.comment } } : {})}
-          />
-        </div>
+    <div className="surface p-4 md:p-6">
+      <div className="segments-compte max-w-[40rem]" role="tablist" aria-label="Contribuer">
+        {ACTIONS.map((a) => (
+          <button
+            key={a.cle}
+            type="button"
+            role="tab"
+            id={`contribuer-${a.cle}`}
+            aria-selected={action === a.cle}
+            aria-controls={`contribuer-panneau-${a.cle}`}
+            className="onglet-compte"
+            data-actif={action === a.cle ? '' : undefined}
+            onClick={() => setAction(a.cle)}
+          >
+            {a.libelle}
+          </button>
+        ))}
       </div>
 
-      <div className="surface p-4">
-        <h3 className="card-title">Déclarer une prise</h3>
-        <p className="mt-1 text-meta text-fg-muted">
-          Rien n’est obligatoire hormis l’espèce et le moment.
-        </p>
+      <div
+        role="tabpanel"
+        id={`contribuer-panneau-${courante?.cle ?? 'avis'}`}
+        aria-labelledby={`contribuer-${courante?.cle ?? 'avis'}`}
+        className="mt-5 max-w-[40rem]"
+      >
+        <p className="text-body text-fg-muted">{courante?.sous}</p>
         <div className="mt-4">
-          <CatchForm
-            spotSlug={spotSlug}
-            spotPath={spotPath}
-            speciesSuggestions={speciesSuggestions}
-          />
-        </div>
-      </div>
-
-      <div className="surface p-4">
-        <h3 className="card-title">Programmer une sortie</h3>
-        <p className="mt-1 text-meta text-fg-muted">
-          Et recevoir la veille, par courriel, les conditions prévues à cette heure-là.
-        </p>
-        <div className="mt-4">
-          <OutingForm spotSlug={spotSlug} spotPath={spotPath} />
+          {action === 'avis' && (
+            <ReviewForm
+              spotSlug={spotSlug}
+              spotPath={spotPath}
+              {...(own ? { existing: { rating: own.rating, comment: own.comment } } : {})}
+            />
+          )}
+          {action === 'prise' && (
+            <CatchForm spotSlug={spotSlug} spotPath={spotPath} speciesSuggestions={speciesSuggestions} />
+          )}
+          {action === 'sortie' && <OutingForm spotSlug={spotSlug} spotPath={spotPath} />}
         </div>
       </div>
     </div>

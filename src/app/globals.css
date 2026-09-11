@@ -546,6 +546,13 @@
   transition: background-color 120ms ease, color 120ms ease;
 }
 
+.onglet-compte[data-actif] {
+  background-color: var(--card);
+  color: var(--fg);
+  font-weight: 600;
+  box-shadow: var(--ombre-controle);
+}
+
 .onglet-compte:hover {
   color: var(--fg);
 }
@@ -609,6 +616,42 @@
   border-radius: 999px;
   /* Le rail ne doit pas se couper au bord de l'écran sur mobile. */
   scrollbar-width: none;
+}
+
+/*
+  Sur grand écran, le rail devient une colonne fixe à gauche et les panneaux
+  prennent la largeur restante. Un compte lu à 1440 px dans une colonne de
+  68 caractères laissait deux tiers de l'écran vides ; ce n'est pas de
+  l'espace, c'est de l'absence.
+*/
+@media (min-width: 1024px) {
+  .espace-compte {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 40px;
+    align-items: start;
+  }
+
+  .onglets-espace {
+    position: sticky;
+    top: 16px;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0;
+    overflow: visible;
+    background: transparent;
+    border-radius: 0;
+  }
+
+  .onglet-espace {
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 16px;
+  }
+
+  .panneau-espace {
+    margin-top: 0;
+  }
 }
 
 .onglets-espace::-webkit-scrollbar {
@@ -717,4 +760,212 @@
   width: 1px;
   height: 1px;
   overflow: hidden;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Filtres de la page /spots — une barre, pas un formulaire.
+   ══════════════════════════════════════════════════════════════════════════ */
+.filtres {
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--card);
+}
+
+@media (min-width: 768px) {
+  .filtres {
+    padding: 20px 24px;
+  }
+}
+
+.filtres-pays {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filtre-pilule {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--edge);
+  background: transparent;
+  color: var(--fg);
+  font-size: 15px;
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.filtre-pilule:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+.filtre-pilule[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--fg-on-accent);
+  font-weight: 600;
+}
+
+.filtre-pilule:disabled {
+  color: var(--fg-muted);
+  border-style: dashed;
+}
+
+.filtre-compte {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.filtres-grille {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+@media (min-width: 768px) {
+  .filtres-grille {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.filtre-champ {
+  display: block;
+  min-width: 0;
+}
+
+.filtre-libelle {
+  display: block;
+  font-size: 12px;
+  color: var(--fg-muted);
+}
+
+.filtre-select {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 6px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid var(--edge-strong);
+  background: var(--surface-2);
+  color: var(--fg);
+  font-size: 15px;
+}
+
+.filtres-pied {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  margin-top: 16px;
+}
+
+.filtres-actifs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.filtre-actif {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 0;
+  background: var(--surface-2);
+  color: var(--fg);
+  font-size: 13px;
+}
+
+.filtre-actif:hover {
+  background: var(--edge);
+}
+
+.filtre-tout {
+  min-height: 32px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--fg-muted);
+  font-size: 13px;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 4px;
+}
+
+.filtre-tout:hover {
+  color: var(--fg);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Étoiles de notation. Le chiffre reste dans le DOM pour le lecteur d'écran ;
+   le remplissage « jusqu'à l'étoile choisie » est purement visuel.
+   ══════════════════════════════════════════════════════════════════════════ */
+.etoiles {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.etoile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.etoile:has(:focus-visible) {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.etoile-glyphe {
+  font-size: 30px;
+  line-height: 1;
+  color: var(--edge);
+  transition: color 100ms ease, transform 100ms ease;
+}
+
+.etoile:hover .etoile-glyphe {
+  transform: scale(1.12);
+}
+
+/* Sans `:has`, seule l'étoile cochée se remplit : c'est déjà lisible. */
+.etoile:has(:checked) .etoile-glyphe {
+  color: var(--warn);
+}
+
+@supports selector(:has(*)) {
+  /* Toutes celles AVANT la cochée se remplissent aussi : « 4 sur 5 » se voit. */
+  .etoiles:has(:checked) .etoile:has(~ .etoile :checked) .etoile-glyphe {
+    color: var(--warn);
+  }
+
+  /* Au survol, aperçu jusqu'à l'étoile visée. */
+  .etoiles:hover .etoile .etoile-glyphe {
+    color: var(--edge);
+  }
+
+  .etoiles:hover .etoile:hover .etoile-glyphe,
+  .etoiles:hover .etoile:has(~ .etoile:hover) .etoile-glyphe {
+    color: var(--warn);
+  }
+}
+
+.etoiles-lecture {
+  display: inline-flex;
+  gap: 1px;
+  font-size: 15px;
+  line-height: 1;
+  letter-spacing: 1px;
 }

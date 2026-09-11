@@ -10,15 +10,27 @@ import { formatDateTime } from '@/lib/time';
 const TIME_ZONE = 'Europe/Paris';
 
 function Stars({ rating }: { rating: number }) {
-  // Une note se lit en clair pour tout le monde ; les cercles pleins sont un
-  // renfort visuel, pas le porteur de l'information (D-redondance).
+  // Une note se lit en clair pour tout le monde ; les étoiles sont un renfort
+  // visuel, pas le porteur de l'information (D-redondance).
   return (
     <span className="inline-flex items-center gap-2">
-      <span className="nums text-body font-600 text-fg">{rating}/5</span>
-      <span aria-hidden="true" className="text-body text-fg-muted">
-        {'●'.repeat(rating)}
-        {'○'.repeat(5 - rating)}
+      <span aria-hidden="true" className="etoiles-lecture">
+        <span className="text-warn">{'★'.repeat(rating)}</span>
+        <span className="text-edge">{'★'.repeat(5 - rating)}</span>
       </span>
+      <span className="nums text-meta text-fg-muted">{rating}/5</span>
+    </span>
+  );
+}
+
+/** Pastille d'initiale : ce qu'on a d'un auteur sans photo, et sans image cassée. */
+function Initiale({ nom }: { nom: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-surface-2 font-serif text-body text-fg"
+    >
+      {nom.trim().slice(0, 1).toUpperCase() || '•'}
     </span>
   );
 }
@@ -143,16 +155,21 @@ export function SpotContributionsSection({
                 <ul className="mt-3 space-y-3">
                   {contributions.reviews.map((review) => (
                     <li key={review.id} className="surface p-4">
-                      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                        <span className="text-body font-600 text-fg">{review.authorName}</span>
-                        <Stars rating={review.rating} />
+                      <div className="flex items-start gap-3">
+                        <Initiale nom={review.authorName} />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                            <span className="text-body font-600 text-fg">{review.authorName}</span>
+                            <Stars rating={review.rating} />
+                          </div>
+                          <p className="card-source mt-0.5 nums">
+                            {formatDateTime(new Date(review.createdAt), TIME_ZONE)}
+                          </p>
+                          {review.comment && (
+                            <p className="mt-2 max-w-prose text-body text-fg">{review.comment}</p>
+                          )}
+                        </div>
                       </div>
-                      {review.comment && (
-                        <p className="mt-2 max-w-prose text-body text-fg">{review.comment}</p>
-                      )}
-                      <p className="card-source mt-3 nums">
-                        {formatDateTime(new Date(review.createdAt), TIME_ZONE)}
-                      </p>
                     </li>
                   ))}
                 </ul>
@@ -179,9 +196,21 @@ export function SpotContributionsSection({
                 <ul className="mt-3 space-y-3">
                   {contributions.catches.map((entry) => {
                     const size = formatMeasures(entry.lengthCm, entry.weightG);
+                    const vignette = photoUrl(entry.photoPath);
 
                     return (
-                      <li key={entry.id} className="surface p-4">
+                      <li key={entry.id} className="surface flex gap-3 p-4">
+                        {vignette !== null && (
+                          <Image
+                            src={vignette}
+                            alt=""
+                            width={96}
+                            height={72}
+                            sizes="96px"
+                            className="h-[72px] w-[96px] shrink-0 rounded-inner object-cover"
+                          />
+                        )}
+                        <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                           <span className="text-body font-600 text-fg">{entry.species}</span>
                           {size && <span className="nums text-body text-fg-muted">{size}</span>}
@@ -198,6 +227,7 @@ export function SpotContributionsSection({
                           </span>
                           {entry.released && <span>remis à l’eau</span>}
                         </p>
+                        </div>
                       </li>
                     );
                   })}

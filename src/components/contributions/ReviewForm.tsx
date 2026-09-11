@@ -31,21 +31,27 @@ export function ReviewForm({
 
       <fieldset>
         <legend className="text-meta text-fg-muted">Votre note</legend>
-        <div className="mt-2 flex flex-wrap gap-2">
+        {/*
+          Cinq étoiles, qui sont cinq boutons radio : navigables au clavier,
+          annoncées par leur chiffre, fonctionnelles avant tout script. Le
+          remplissage jusqu'à l'étoile choisie est du CSS (`:has`), et sans
+          lui l'étoile cochée reste seule pleine — toujours lisible.
+        */}
+        <div className="etoiles mt-2">
           {RATINGS.map((value) => (
-            <label
-              key={value}
-              className="flex min-h-tap min-w-tap cursor-pointer items-center justify-center gap-2 rounded-ctl border border-edge-strong px-4 text-body text-fg has-[:checked]:bg-surface-2 has-[:checked]:font-600"
-            >
+            <label key={value} className="etoile" title={`${value} sur 5`}>
               <input
                 type="radio"
                 name="rating"
                 value={value}
                 required
                 defaultChecked={existing?.rating === value}
-                className="h-4 w-4"
+                className="sr-only"
               />
-              <span className="nums">{value}</span>
+              <span aria-hidden="true" className="etoile-glyphe">
+                ★
+              </span>
+              <span className="sr-only">{value} sur 5</span>
             </label>
           ))}
         </div>

@@ -100,3 +100,76 @@ export function describeFilters(
   }
   return parts.length > 0 ? parts.join(' ') : null;
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Facettes : la même règle que `applyFilters`, mais sur une forme LÉGÈRE du
+   spot, envoyée au navigateur pour filtrer sans recharger.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+export interface FacetteSpot {
+  slug: string;
+  pays: string;
+  paysNom: string;
+  region: string;
+  regionNom: string;
+  type: string;
+  fond: string;
+  techniques: readonly string[];
+}
+
+export function toFacette(spot: Spot): FacetteSpot {
+  return {
+    slug: spot.slug,
+    pays: spot.countrySlug,
+    paysNom: spot.countryName,
+    region: spot.regionSlug,
+    regionNom: spot.regionName,
+    type: spot.type,
+    fond: spot.bottom,
+    techniques: spot.techniques,
+  };
+}
+
+export type FiltreCle = keyof SpotFilters;
+
+/**
+ * Le spot passe-t-il les filtres — en ignorant, si demandé, l'un d'eux ?
+ *
+ * Ignorer un filtre sert à compter les options de SA facette contre les
+ * autres : c'est ce qui fait qu'après avoir choisi « Maroc », « Bretagne »
+ * affiche 0 et non 10.
+ */
+export function correspond(spot: FacetteSpot, f: SpotFilters, sauf: FiltreCle | null = null): boolean {
+  return (
+    (sauf === 'country' || f.country === null || spot.pays === f.country) &&
+    (sauf === 'region' || f.region === null || spot.region === f.region) &&
+    (sauf === 'type' || f.type === null || spot.type === f.type) &&
+    (sauf === 'bottom' || f.bottom === null || spot.fond === f.bottom) &&
+    (sauf === 'technique' || f.technique === null || spot.techniques.includes(f.technique))
+  );
+}
+
+export interface OptionFacette {
+  value: string;
+  label: string;
+  count: number;
+}
+
+/** Options d'une facette, comptées contre les AUTRES filtres actifs, triées en français. */
+export function optionsFacette(
+  spots: readonly FacetteSpot[],
+  f: SpotFilters,
+  cle: FiltreCle,
+  valeurs: (s: FacetteSpot) => readonly (readonly [string, string])[],
+): OptionFacette[] {
+  const comptes = new Map<string, OptionFacette>();
+  for (const spot of spots) {
+    const compte = correspond(spot, f, cle);
+    for (const [value, label] of valeurs(spot)) {
+      const o = comptes.get(value) ?? { value, label, count: 0 };
+      if (compte) o.count += 1;
+      comptes.set(value, o);
+    }
+  }
+  return [...comptes.values()].sort((a, b) => a.label.localeCompare(b.label, 'fr'));
+}

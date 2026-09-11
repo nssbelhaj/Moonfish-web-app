@@ -312,35 +312,39 @@ export default async function ComptePage({
                     .
                   </p>
 
-                  <div className="surface mt-4 max-w-prose p-4">
-                    <h3 className="card-title">Photo</h3>
-                    <div className="mt-3">
-                      <AvatarForm
-                        avatarUrl={photoUrl(profile.avatarPath)}
-                        initiale={profile.displayName.slice(0, 1).toUpperCase()}
-                      />
-                    </div>
-                  </div>
+                  <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
+                    <div className="space-y-4">
+                      <div className="surface p-4">
+                        <h3 className="card-title">Photo</h3>
+                        <div className="mt-3">
+                          <AvatarForm
+                            avatarUrl={photoUrl(profile.avatarPath)}
+                            initiale={profile.displayName.slice(0, 1).toUpperCase()}
+                          />
+                        </div>
+                      </div>
 
-                  <div className="surface mt-4 max-w-prose p-4">
-                    <h3 className="card-title">Nom affiché</h3>
-                    <p className="mt-2 text-body text-fg-muted">
-                      Votre adresse e-mail, elle, n’est jamais affichée.
-                    </p>
-                    <div className="mt-3">
-                      <ProfileForm mode="rename" currentName={profile.displayName} />
+                      <div className="surface p-4">
+                        <h3 className="card-title">Nom affiché</h3>
+                        <p className="mt-2 text-body text-fg-muted">
+                          Votre adresse e-mail, elle, n’est jamais affichée.
+                        </p>
+                        <div className="mt-3">
+                          <ProfileForm mode="rename" currentName={profile.displayName} />
+                        </div>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="surface mt-4 max-w-prose p-4">
-                    <h3 className="card-title">Informations et localisation</h3>
-                    <p className="mt-2 text-body text-fg-muted">
-                      Rien n’est obligatoire ici, et rien n’est public : ces champs ne servent
-                      qu’à vous. La ville sert à retrouver vos spots proches ; elle n’est pas une
-                      position, et nous ne demandons jamais la vôtre.
-                    </p>
-                    <div className="mt-3">
-                      <ProfilForm profil={profile} />
+                    <div className="surface p-4 lg:p-6">
+                      <h3 className="card-title">Informations et localisation</h3>
+                      <p className="mt-2 max-w-prose text-body text-fg-muted">
+                        Rien n’est obligatoire ici, et rien n’est public : ces champs ne servent
+                        qu’à vous. La ville sert à retrouver vos spots proches ; elle n’est pas une
+                        position, et nous ne demandons jamais la vôtre.
+                      </p>
+                      <div className="mt-3">
+                        <ProfilForm profil={profile} />
+                      </div>
                     </div>
                   </div>
                 </section>
@@ -696,6 +700,7 @@ export default async function ComptePage({
 
                 {/* ── Vos données ────────────────────────────────────────── */}
                 <section id="espace-donnees" className="panneau-espace mt-6" aria-label="Vos données">
+                  <div className="grid gap-x-10 lg:grid-cols-2">
                   <section aria-labelledby="donnees" className="mt-10 max-w-prose">
                     <h2 id="donnees" className="font-serif text-h2 font-semibold">
                       Vos données
@@ -733,6 +738,7 @@ export default async function ComptePage({
                     </div>
                   </section>
 
+                  </div>
                   {exploitation}
                 </section>
               </div>

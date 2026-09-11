@@ -1,12 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { SpotFilters, type FilterOption } from '@/components/forms/SpotFilters';
+import { SpotFilters } from '@/components/forms/SpotFilters';
 import { NearbySpots } from '@/components/spot/NearbySpots';
 import { SpotResults, SpotResultsSkeleton } from '@/components/spot/SpotResults';
 import { Section } from '@/components/ui/Section';
 import { BOTTOM_LABELS, CATALOGUE, SPOT_TYPE_LABELS, TECHNIQUE_LABELS } from '@/data/spots';
-import type { Spot } from '@/data/schemas';
 import { spots as spotRepository } from '@/lib/providers';
 import { absoluteUrl, spotPath } from '@/lib/routes';
 import {
@@ -15,6 +14,7 @@ import {
   filtersToSearchParams,
   hasAnyFilter,
   parseFilters,
+  toFacette,
 } from '@/lib/spot-filters';
 
 export const revalidate = 3600;
@@ -58,38 +58,6 @@ export async function generateMetadata({
   };
 }
 
-function countBy(spots: readonly Spot[], key: (spot: Spot) => string): Map<string, number> {
-  const counts = new Map<string, number>();
-  for (const spot of spots) {
-    const value = key(spot);
-    counts.set(value, (counts.get(value) ?? 0) + 1);
-  }
-  return counts;
-}
-
-/**
- * Un spot porte plusieurs techniques : le comptage est donc multi-valué et ne
- * peut pas passer par `countBy`, qui suppose une clé unique par spot.
- */
-function countTechniques(spots: readonly Spot[]): Map<string, number> {
-  const counts = new Map<string, number>();
-  for (const spot of spots) {
-    for (const technique of spot.techniques) {
-      counts.set(technique, (counts.get(technique) ?? 0) + 1);
-    }
-  }
-  return counts;
-}
-
-function toOptions(
-  counts: Map<string, number>,
-  label: (value: string) => string,
-): FilterOption[] {
-  return [...counts.entries()]
-    .map(([value, count]) => ({ value, label: label(value), count }))
-    .sort((a, b) => a.label.localeCompare(b.label, 'fr'));
-}
-
 export default async function SpotsPage({
   searchParams,
 }: {
@@ -98,9 +66,6 @@ export default async function SpotsPage({
   const all = await spotRepository.list();
   const filters = parseFilters(await searchParams, all);
   const matching = applyFilters(all, filters);
-
-  const nameFor = (spots: readonly Spot[], slugKey: 'countrySlug' | 'regionSlug', nameKey: 'countryName' | 'regionName') =>
-    (value: string): string => spots.find((spot) => spot[slugKey] === value)?.[nameKey] ?? value;
 
   const description = describeFilters(filters, all, {
     type: SPOT_TYPE_LABELS,
@@ -143,51 +108,39 @@ export default async function SpotsPage({
 
         <h2 className="sr-only">Filtrer les spots</h2>
         <SpotFilters
-          filters={filters}
-          countries={toOptions(
-            countBy(all, (spot) => spot.countrySlug),
-            nameFor(all, 'countrySlug', 'countryName'),
-          )}
-          regions={toOptions(
-            countBy(all, (spot) => spot.regionSlug),
-            nameFor(all, 'regionSlug', 'regionName'),
-          )}
-          types={toOptions(countBy(all, (spot) => spot.type), (value) => SPOT_TYPE_LABELS[value as Spot['type']] ?? value)}
-          techniques={toOptions(
-            countTechniques(all),
-            (value) => TECHNIQUE_LABELS[value as Spot['techniques'][number]] ?? value,
-          )}
-          bottoms={toOptions(countBy(all, (spot) => spot.bottom), (value) => BOTTOM_LABELS[value as Spot['bottom']] ?? value)}
-          total={matching.length}
+          initial={filters}
+          spots={all.map(toFacette)}
+          libelles={{ type: SPOT_TYPE_LABELS, fond: BOTTOM_LABELS, technique: TECHNIQUE_LABELS }}
         />
 
-        {matching.length === 0 ? (
-          <div className="mt-6 surface px-4 py-8">
-            <p className="text-body font-semibold font-600">Aucun spot ne correspond à cette combinaison.</p>
-            <p className="mt-2 max-w-prose text-body text-fg-muted">
-              Le catalogue compte {all.length} spots pour l’instant. Retirez un filtre, ou repartez
-              de la liste complète.
-            </p>
-            <Link
-              href="/spots"
-              className="mt-4 inline-flex min-h-[48px] items-center rounded-ctl border border-edge-strong px-4 font-600"
-            >
-              Voir les {all.length} spots
-            </Link>
-          </div>
-        ) : (
-          <>
-            <h2 className="mt-8 font-serif text-h2 font-semibold">
-              {matching.length} spot{matching.length > 1 ? 's' : ''}
-              {description ? ` ${description}` : ''}
-            </h2>
-            {/* Le calcul des scores est diffusé en flux : la coquille de la page,
-                métadonnées comprises, part sans l'attendre. */}
-            <Suspense fallback={<SpotResultsSkeleton count={matching.length} />}>
-              <SpotResults spots={matching} />
-            </Suspense>
-          </>
-        )}
+        {/*
+          Les deux états sont rendus, l'un des deux masqué : le filtre côté
+          client bascule entre eux sans recharger. `data-vide` et `data-liste`
+          sont les poignées qu'il actionne.
+        */}
+        <div className="mt-6 surface px-4 py-8" data-vide="" hidden={matching.length > 0}>
+          <p className="text-body font-600">Aucun spot ne correspond à cette combinaison.</p>
+          <p className="mt-2 max-w-prose text-body text-fg-muted">
+            Le catalogue compte {all.length} spots pour l’instant. Retirez un filtre, ou repartez de
+            la liste complète.
+          </p>
+          <Link
+            href="/spots"
+            className="mt-4 inline-flex min-h-[48px] items-center rounded-ctl border border-edge-strong px-4 font-600"
+          >
+            Voir les {all.length} spots
+          </Link>
+        </div>
+
+        <h2 className="mt-8 font-serif text-h2 font-semibold" data-liste="" hidden={matching.length === 0}>
+          <span data-compteur="">{matching.length}</span> spot{matching.length > 1 ? 's' : ''}
+          {description ? ` ${description}` : ''}
+        </h2>
+        {/* Le calcul des scores est diffusé en flux : la coquille de la page,
+            métadonnées comprises, part sans l'attendre. */}
+        <Suspense fallback={<SpotResultsSkeleton count={matching.length} />}>
+          <SpotResults spots={all} visibles={new Set(matching.map((spot) => spot.slug))} />
+        </Suspense>
 
         {hasAnyFilter(filters) && (
           <p className="mt-6 text-meta nums text-fg-faint" data-numeric="">

@@ -1,118 +1,225 @@
 'use client';
 
-// "use client" justifié : la soumission automatique du formulaire au changement
-// d'un select demande du JS. Le formulaire reste un <form method="GET"> complet
-// avec bouton de soumission visible, donc il fonctionne SANS JavaScript — le JS
-// ne fait qu'éviter un clic. L'état n'est jamais dupliqué côté client : la
-// vérité est l'URL.
-
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useRef } from 'react';
-import type { SpotFilters as Filters } from '@/lib/spot-filters';
+import { useEffect, useMemo, useState } from 'react';
 
-export interface FilterOption {
-  value: string;
-  label: string;
-  count: number;
+import {
+  EMPTY_FILTERS,
+  correspond,
+  filtersToSearchParams,
+  hasAnyFilter,
+  optionsFacette,
+  type FacetteSpot,
+  type FiltreCle,
+  type OptionFacette,
+  type SpotFilters as Filters,
+} from '@/lib/spot-filters';
+
+/**
+ * Filtres de la page /spots.
+ *
+ * ─── Instantanés, sans rechargement, et l'URL reste la vérité ────────────
+ *
+ * La première version soumettait un formulaire GET à chaque changement : la
+ * page entière repartait au serveur, et les listes d'options comptaient
+ * toujours TOUT le catalogue — choisir « Maroc » laissait « Bretagne » sous
+ * Région, avec ses dix spots qu'on ne verrait jamais.
+ *
+ * Ici, la page rend TOUTES les cartes au serveur, chacune portant son slug en
+ * `data-spot`. Filtrer, c'est masquer : aucune requête, et les cartes gardent
+ * leurs scores calculés au serveur. Les options se recomptent contre les
+ * AUTRES filtres actifs — c'est la définition d'une recherche à facettes —
+ * et une option qui ne donnerait plus rien reste visible mais grisée, pour ne
+ * pas faire sauter la liste.
+ *
+ * L'adresse suit chaque changement : elle est partageable, et la même URL
+ * rechargée donne la même liste, rendue au serveur, avant tout script.
+ * Sans JavaScript, le formulaire reste un GET complet avec son bouton.
+ */
+
+export interface Libelles {
+  type: Record<string, string>;
+  fond: Record<string, string>;
+  technique: Record<string, string>;
 }
 
-export interface SpotFiltersProps {
-  filters: Filters;
-  countries: FilterOption[];
-  regions: FilterOption[];
-  types: FilterOption[];
-  bottoms: FilterOption[];
-  techniques: FilterOption[];
-  total: number;
-}
+const CHAMPS: { cle: FiltreCle; nom: string; libelle: string }[] = [
+  { cle: 'technique', nom: 'technique', libelle: 'Technique' },
+  { cle: 'region', nom: 'region', libelle: 'Région' },
+  { cle: 'type', nom: 'type', libelle: 'Type de spot' },
+  { cle: 'bottom', nom: 'fond', libelle: 'Type de fond' },
+];
 
-const FIELDS = [
-  { name: 'technique', label: 'Technique', key: 'techniques' },
-  { name: 'pays', label: 'Pays', key: 'countries' },
-  { name: 'region', label: 'Région', key: 'regions' },
-  { name: 'type', label: 'Type de spot', key: 'types' },
-  { name: 'fond', label: 'Type de fond', key: 'bottoms' },
-] as const;
+export function SpotFilters({
+  initial,
+  spots,
+  libelles,
+}: {
+  initial: Filters;
+  spots: readonly FacetteSpot[];
+  libelles: Libelles;
+}) {
+  const [f, setF] = useState<Filters>(initial);
+  const [hydrate, setHydrate] = useState(false);
+  useEffect(() => setHydrate(true), []);
 
-export function SpotFilters(props: SpotFiltersProps) {
-  const { filters, total } = props;
-  const router = useRouter();
-  const formRef = useRef<HTMLFormElement>(null);
+  const visibles = useMemo(
+    () => new Set(spots.filter((s) => correspond(s, f)).map((s) => s.slug)),
+    [spots, f],
+  );
 
-  const current: Record<string, string | null> = {
-    technique: filters.technique,
-    pays: filters.country,
-    region: filters.region,
-    type: filters.type,
-    fond: filters.bottom,
-  };
-
-  const options: Record<string, FilterOption[]> = {
-    countries: props.countries,
-    regions: props.regions,
-    types: props.types,
-    bottoms: props.bottoms,
-    techniques: props.techniques,
-  };
-
-  function submitNow(): void {
-    const form = formRef.current;
-    if (!form) return;
-    const data = new FormData(form);
-    const params = new URLSearchParams();
-    for (const [key, value] of data.entries()) {
-      if (typeof value === 'string' && value.length > 0) params.set(key, value);
+  /*
+    La liste est rendue au serveur ; le filtre la MASQUE. On touche au DOM
+    plutôt que de rapatrier les cartes côté client : elles portent des scores
+    calculés au serveur, et les recalculer ici doublerait le code de prévision.
+  */
+  useEffect(() => {
+    if (!hydrate) return;
+    for (const carte of document.querySelectorAll<HTMLElement>('[data-spot]')) {
+      carte.hidden = !visibles.has(carte.dataset['spot'] ?? '');
     }
-    const query = params.toString();
-    router.push(query ? `/spots?${query}` : '/spots');
+    for (const el of document.querySelectorAll<HTMLElement>('[data-compteur]')) {
+      el.textContent = String(visibles.size);
+    }
+    for (const el of document.querySelectorAll<HTMLElement>('[data-vide]')) el.hidden = visibles.size > 0;
+    for (const el of document.querySelectorAll<HTMLElement>('[data-liste]')) el.hidden = visibles.size === 0;
+
+    const query = filtersToSearchParams(f).toString();
+    const url = query ? `/spots?${query}` : '/spots';
+    if (`${location.pathname}${location.search}` !== url) history.replaceState(null, '', url);
+  }, [visibles, f, hydrate]);
+
+  const facettes: Record<FiltreCle, OptionFacette[]> = {
+    country: optionsFacette(spots, f, 'country', (s) => [[s.pays, s.paysNom]]),
+    technique: optionsFacette(spots, f, 'technique', (s) =>
+      s.techniques.map((t) => [t, libelles.technique[t] ?? t] as const),
+    ),
+    region: optionsFacette(spots, f, 'region', (s) => [[s.region, s.regionNom]]),
+    type: optionsFacette(spots, f, 'type', (s) => [[s.type, libelles.type[s.type] ?? s.type]]),
+    bottom: optionsFacette(spots, f, 'bottom', (s) => [[s.fond, libelles.fond[s.fond] ?? s.fond]]),
+  };
+
+  const libelleDe = (cle: FiltreCle, value: string): string =>
+    facettes[cle].find((o) => o.value === value)?.label ?? value;
+
+  const actifs = (Object.keys(f) as FiltreCle[]).filter((cle) => f[cle] !== null);
+
+  function poser(cle: FiltreCle, value: string | null): void {
+    setF((prev) => {
+      const next: Filters = { ...prev, [cle]: value === '' ? null : value };
+      // Une région appartient à un pays : changer de pays retire une région
+      // qui n'en fait plus partie, plutôt que de laisser une liste vide.
+      if (cle === 'country' && next.region !== null) {
+        const region = next.region;
+        const encore = spots.some((s) => s.region === region && (next.country === null || s.pays === next.country));
+        if (!encore) next.region = null;
+      }
+      return next;
+    });
   }
 
   return (
-    <form ref={formRef} method="GET" action="/spots" className="surface p-4">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        {FIELDS.map((field) => (
-          <div key={field.name}>
-            <label
-              htmlFor={`filter-${field.name}`}
-              className="block text-meta text-fg-faint nums"
-            >
-              {field.label}
-            </label>
+    <form method="GET" action="/spots" className="filtres" aria-label="Filtrer les spots">
+      {/* ── Pays : la facette de tête, en boutons ──────────────────────── */}
+      <div className="filtres-pays" role="group" aria-label="Pays">
+        <button
+          type="button"
+          className="filtre-pilule"
+          aria-pressed={f.country === null}
+          onClick={() => poser('country', null)}
+        >
+          Tous les pays
+        </button>
+        {facettes.country.map((o) => (
+          <button
+            key={o.value}
+            type="button"
+            className="filtre-pilule"
+            aria-pressed={f.country === o.value}
+            disabled={o.count === 0 && f.country !== o.value}
+            onClick={() => poser('country', f.country === o.value ? null : o.value)}
+          >
+            {o.label} <span className="filtre-compte nums">{o.count}</span>
+          </button>
+        ))}
+        {/* Le GET sans script a besoin d'un champ nommé : un select le porte, hors écran. */}
+        <select
+          name="pays"
+          value={f.country ?? ''}
+          onChange={(e) => poser('country', e.target.value)}
+          className="sr-only"
+          tabIndex={-1}
+          aria-hidden="true"
+        >
+          <option value="">Tous</option>
+          {facettes.country.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="filtres-grille">
+        {CHAMPS.map(({ cle, nom, libelle }) => (
+          <label key={cle} className="filtre-champ">
+            <span className="filtre-libelle">{libelle}</span>
             <select
-              id={`filter-${field.name}`}
-              name={field.name}
-              defaultValue={current[field.name] ?? ''}
-              onChange={submitNow}
-              className="mt-2 min-h-[48px] w-full rounded-ctl border border-edge-strong bg-surface-2 px-3 text-body text-fg"
+              name={nom}
+              value={f[cle] ?? ''}
+              onChange={(e) => poser(cle, e.target.value)}
+              className="filtre-select nums"
             >
               <option value="">Tous</option>
-              {options[field.key]?.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label} ({option.count})
+              {facettes[cle].map((o) => (
+                <option key={o.value} value={o.value} disabled={o.count === 0 && f[cle] !== o.value}>
+                  {o.label} ({o.count})
                 </option>
               ))}
             </select>
-          </div>
+          </label>
         ))}
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <button
-          type="submit"
-          className="inline-flex min-h-[48px] items-center rounded-ctl border border-edge-strong px-4 font-600"
-        >
-          Filtrer
-        </button>
-        <Link
-          href="/spots"
-          className="inline-flex min-h-[48px] items-center px-2 text-meta nums text-fg-muted underline decoration-dotted underline-offset-4"
-        >
-          Tout afficher
-        </Link>
-        <p className="text-meta nums text-fg-muted" data-numeric="" aria-live="polite">
-          {total} spot{total > 1 ? 's' : ''}
+      <div className="filtres-pied">
+        <p className="nums text-body text-fg" aria-live="polite">
+          <strong className="font-600" data-compteur="">
+            {visibles.size}
+          </strong>{' '}
+          spot{visibles.size > 1 ? 's' : ''}
+          {actifs.length > 0 && <span className="text-fg-muted"> sur {spots.length}</span>}
         </p>
+
+        {actifs.length > 0 && (
+          <ul className="filtres-actifs" aria-label="Filtres actifs">
+            {actifs.map((cle) => (
+              <li key={cle}>
+                <button type="button" className="filtre-actif" onClick={() => poser(cle, null)}>
+                  {libelleDe(cle, f[cle] ?? '')}
+                  <span aria-hidden="true"> ×</span>
+                  <span className="sr-only"> — retirer ce filtre</span>
+                </button>
+              </li>
+            ))}
+            <li>
+              <button type="button" className="filtre-tout" onClick={() => setF(EMPTY_FILTERS)}>
+                Tout effacer
+              </button>
+            </li>
+          </ul>
+        )}
+
+        {/* Sans script : le bouton soumet le GET. Avec : il n'a plus de raison d'être. */}
+        {!hydrate && (
+          <button type="submit" className="filtre-tout">
+            Filtrer
+          </button>
+        )}
+        {!hydrate && hasAnyFilter(initial) && (
+          <Link href="/spots" className="filtre-tout">
+            Tout afficher
+          </Link>
+        )}
       </div>
     </form>
   );

@@ -13,7 +13,20 @@ import { SpotCard } from './SpotCard';
  * séparation, Next diffère l'injection du `<title>` et de la `<meta name="description">`
  * dans le flux, et les robots qui ne rendent pas le JavaScript ne les voient pas.
  */
-export async function SpotResults({ spots }: { spots: readonly Spot[] }) {
+/**
+ * TOUTES les cartes sont rendues, et celles hors filtre sont masquées par
+ * `hidden`. C'est ce qui permet aux filtres de s'appliquer sans recharger :
+ * le script ne fait que montrer et cacher. Sans script, l'attribut posé au
+ * serveur donne déjà la bonne liste.
+ */
+export async function SpotResults({
+  spots,
+  visibles,
+}: {
+  spots: readonly Spot[];
+  /** Slugs qui passent les filtres de l'URL. */
+  visibles: ReadonlySet<string>;
+}) {
   const now = referenceNow();
   const summaries = await Promise.all(spots.map((spot) => getSpotSummary(spot, now)));
   summaries.sort((a, b) => (b.current?.score.value ?? 0) - (a.current?.score.value ?? 0));
@@ -26,9 +39,9 @@ export async function SpotResults({ spots }: { spots: readonly Spot[] }) {
           detail={<TideCoverageDetail {...tideCoverage(summaries)} />}
         />
       </div>
-      <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3" data-liste="" hidden={visibles.size === 0}>
         {summaries.map((summary) => (
-          <li key={summary.spot.slug}>
+          <li key={summary.spot.slug} data-spot={summary.spot.slug} hidden={!visibles.has(summary.spot.slug)}>
             <SpotCard summary={summary} />
           </li>
         ))}
