@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 import { SPOTS } from '@/data/spots';
 import { diagnostiquer, verdictGlobal } from '@/lib/diagnostic/etat';
+import { BUILD_STAMP } from '@/lib/build-stamp';
 import { etatMigrations } from '@/lib/diagnostic/migrations';
 import { refusExplique } from '@/lib/diagnostic/refus';
 import { essaiSmtp } from '@/lib/diagnostic/smtp';
@@ -36,6 +37,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const points = diagnostiquer({
     env: process.env,
+    buildStamp: BUILD_STAMP,
     spotCount: SPOTS.length,
     uploadsDir: uploadsDir(),
     appDir: process.cwd(),

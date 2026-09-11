@@ -15,7 +15,12 @@ import { diagnostiquer, verdictGlobal, type Environnement } from '../etat';
   ────────────────────────────────────────────────────────────────────────────
 */
 
-const CONTEXTE = { spotCount: 42, uploadsDir: '/var/photos', appDir: '/app' };
+const CONTEXTE = {
+  buildStamp: '2026-09-11T08:00:00Z',
+  spotCount: 42,
+  uploadsDir: '/var/photos',
+  appDir: '/app',
+};
 
 /** Des secrets impossibles à confondre avec autre chose. */
 const SECRETS = {
@@ -216,5 +221,31 @@ describe('l’état des comptes suit la règle réelle, pas l’ancienne', () =>
 
   it('base et courriel : rien à signaler', () => {
     expect(compte(COMPLET).etat).toBe('ok');
+  });
+});
+
+
+describe('l’empreinte de construction dans le diagnostic', () => {
+  const version = (buildStamp: string) =>
+    diagnostiquer({ ...CONTEXTE, buildStamp, env: COMPLET }).find((p) => p.sujet === 'Version en ligne')!;
+
+  it('est le PREMIER point : c’est la question à trancher avant les autres', () => {
+    const points = diagnostiquer({ ...CONTEXTE, env: COMPLET });
+    expect(points[0]?.sujet).toBe('Version en ligne');
+  });
+
+  it('affiche l’horodatage reçu', () => {
+    expect(version('2026-09-11T08:00:00Z').constat).toContain('2026-09-11T08:00:00Z');
+  });
+
+  it('dit son absence au lieu de la maquiller', () => {
+    /*
+      Compilé par `next build` directement, l'horodatage manque. Afficher un
+      instant inventé annulerait tout l'intérêt du dispositif : on croirait
+      savoir quelle version est en ligne.
+    */
+    const p = version('inconnue');
+    expect(p.etat).toBe('attention');
+    expect(p.remede).toContain('npm run build');
   });
 });

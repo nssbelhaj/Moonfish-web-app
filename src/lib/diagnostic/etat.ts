@@ -1,5 +1,4 @@
 import { lireConfigBase } from '@/lib/db/config';
-import { BUILD_STAMP } from '@/lib/build-stamp';
 import { smtpWarning } from '@/lib/auth/config';
 import { parseAllowedSpots } from '@/lib/providers/selective-tide';
 
@@ -62,6 +61,17 @@ function hote(brut: string | undefined): string {
 
 export interface Contexte {
   env: Environnement;
+  /**
+   * Horodatage de construction, INJECTÉ plutôt que lu ici.
+   *
+   * Il vaut « inconnue » sous Vitest, où le script de construction n'a pas
+   * tourné. Lu en dur, il faisait échouer le test « une configuration
+   * complète est déclarée saine » — un test qui décrivait alors l'exécuteur
+   * de tests, pas la configuration. Toutes les autres entrées de ce
+   * diagnostic sont déjà injectées ; celle-ci n'avait aucune raison de faire
+   * exception.
+   */
+  buildStamp: string;
   /** Nombre de spots du catalogue, pour le calcul de quota. */
   spotCount: number;
   /** Répertoire réellement utilisé pour les photos. */
@@ -70,7 +80,7 @@ export interface Contexte {
   appDir: string;
 }
 
-export function diagnostiquer({ env, spotCount, uploadsDir, appDir }: Contexte): Point[] {
+export function diagnostiquer({ env, buildStamp, spotCount, uploadsDir, appDir }: Contexte): Point[] {
   const points: Point[] = [];
 
   /*
@@ -80,7 +90,7 @@ export function diagnostiquer({ env, spotCount, uploadsDir, appDir }: Contexte):
     correctif déployé qui échoue se ressemblent exactement.
   */
   points.push(
-    BUILD_STAMP === 'inconnue'
+    buildStamp === 'inconnue'
       ? {
           sujet: 'Version en ligne',
           etat: 'attention',
@@ -92,7 +102,7 @@ export function diagnostiquer({ env, spotCount, uploadsDir, appDir }: Contexte):
       : {
           sujet: 'Version en ligne',
           etat: 'ok',
-          constat: `Construction du ${BUILD_STAMP}. Le même horodatage est servi dans l’en-tête « x-luna-marea-build » de chaque réponse.`,
+          constat: `Construction du ${buildStamp}. Le même horodatage est servi dans l’en-tête « x-luna-marea-build » de chaque réponse.`,
           remede: null,
         },
   );
