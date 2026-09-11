@@ -27,6 +27,60 @@ export const metadata: Metadata = {
   alternates: { canonical: absoluteUrl('/carte') },
 };
 
+/**
+ * Trois informations indépendantes se superposent sur un marqueur : le
+ * chiffre, la couleur du palier, et une forme par type de spot — en niveaux
+ * de gris, ou pour un œil qui distingue mal les couleurs, la carte reste
+ * lisible. La légende le montre plutôt que de le décrire.
+ */
+function Legende() {
+  const formes: [string, string][] = [
+    ['rounded-full', 'Plage, estran'],
+    ['rounded-[3px]', 'Estuaire'],
+    ['rounded-[3px] rotate-45', 'Pointe, digue'],
+  ];
+  const paliers: [string, string][] = [
+    ['var(--score-4)', 'Excellent'],
+    ['var(--score-3)', 'Bon'],
+    ['var(--score-2)', 'Moyen'],
+    ['var(--score-1)', 'Faible'],
+    ['var(--danger)', 'Danger'],
+  ];
+
+  return (
+    <dl className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-meta text-fg-muted">
+      {formes.map(([classe, libelle]) => (
+        <div key={libelle} className="flex items-center gap-2">
+          <dt className="sr-only">Forme</dt>
+          <dd className="flex items-center gap-2">
+            <span aria-hidden="true" className={`inline-block h-3 w-3 bg-fg-muted ${classe}`} />
+            {libelle}
+          </dd>
+        </div>
+      ))}
+      <span aria-hidden="true" className="hidden h-4 w-px bg-edge sm:inline-block" />
+      {paliers.map(([couleur, libelle]) => (
+        <div key={libelle} className="flex items-center gap-2">
+          <dt className="sr-only">Palier</dt>
+          <dd className="flex items-center gap-2">
+            <span aria-hidden="true" className="inline-block h-3 w-3 rounded-full" style={{ background: couleur }} />
+            {libelle}
+          </dd>
+        </div>
+      ))}
+      <div className="flex items-center gap-2">
+        <dt className="sr-only">Groupe</dt>
+        <dd className="flex items-center gap-2">
+          <span aria-hidden="true" className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-card text-[9px] font-bold text-fg ring-2 ring-accent">
+            6
+          </span>
+          Plusieurs spots
+        </dd>
+      </div>
+    </dl>
+  );
+}
+
 export default async function CartePage() {
   const summaries = await getAllSpotSummaries();
 
@@ -54,11 +108,13 @@ export default async function CartePage() {
     <div className="mx-auto w-full max-w-shell px-4 py-8 md:px-8 md:py-12">
       <h1 className="font-serif text-h1 font-semibold">Carte des spots</h1>
       <p className="mt-3 max-w-prose text-body text-fg-muted">
-        Chaque marqueur porte le score du créneau en cours et mène à la page du spot. Trois
-        informations indépendantes s’y superposent : le chiffre, la couleur du palier, et une forme
-        par type de spot — en niveaux de gris, ou pour un œil qui distingue mal les couleurs, la
-        carte reste lisible.
+        Chaque marqueur porte le score du créneau en cours et mène à la page du spot. Les spots
+        proches se regroupent en une pastille chiffrée : cliquez dessus, ou zoomez, pour les
+        séparer. La carte s’ouvre là où vous l’avez laissée ; « Autour de moi » la cadre sur
+        votre position, qui ne quitte pas votre appareil.
       </p>
+
+      <Legende />
 
       <div className="mt-6">
         <DemoDataNotice

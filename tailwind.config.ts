@@ -75,6 +75,14 @@ const config: Config = {
       },
       spacing: { tap: '48px', 'tap-lg': '56px' },
       borderRadius: { card: '12px', inner: '9px', pill: '999px', frame: '20px', ctl: '9px' },
+      /*
+        Tailwind 3 ne connaît que `font-semibold`, `font-bold`… Le site est
+        écrit avec les poids numériques du handoff (`font-600`), et cinquante-
+        trois d'entre eux ne produisaient AUCUN style : les titres de cartes,
+        les libellés, les noms d'auteur s'affichaient en poids normal. Rien
+        ne le signalait — une classe inconnue est simplement ignorée.
+      */
+      fontWeight: { 400: '400', 500: '500', 600: '600', 700: '700' },
       maxWidth: { shell: '1392px', prose: '68ch' },
       screens: { sm: '480px', md: '768px', lg: '1024px', xl: '1280px', '2xl': '1440px' },
     },

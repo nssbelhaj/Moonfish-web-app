@@ -426,23 +426,78 @@
 }
 
 /*
-  Couche d'écartement des marqueurs.
+  Pastille d'un GROUPE de spots.
 
-  Deux spots trop proches à l'échelle affichée se recouvrent ; l'écartement les
-  sépare le temps du zoom concerné. Le liseré pointillé dit qu'un marqueur
-  n'est PAS exactement sur sa position — sans lui, la carte mentirait
-  discrètement sur quinze kilomètres.
+  Le nombre est l'information ; le petit score en dessous est le meilleur du
+  groupe, dans la couleur de son palier — « six spots, dont un bon ». Le fond
+  reste celui de la carte pour que la pastille ne se confonde pas avec un
+  marqueur simple : un chiffre sur fond clair, c'est un groupe ; un chiffre
+  sur fond coloré, c'est un spot.
 */
-.carte-decalage {
-  position: relative;
-  display: block;
-  width: 34px;
-  height: 34px;
+.carte-groupe {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--fg);
+  line-height: 1;
+  /* L'anneau prend en ligne la couleur du meilleur palier du groupe. */
+  box-shadow: 0 0 0 3px var(--accent), var(--ombre-marqueur);
+  cursor: pointer;
 }
 
-.carte-decalage[data-ecarte='oui'] .carte-marqueur {
-  outline: 1px dashed var(--card);
-  outline-offset: 2px;
+.carte-groupe-nombre {
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.carte-groupe-meilleur {
+  margin-top: 2px;
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-muted);
+}
+
+/*
+  Boutons posés SUR la carte, en haut à droite, à l'opposé du zoom.
+
+  Ce sont de vrais boutons HTML hors du DOM de Leaflet : ils gardent le focus
+  clavier du site, ses couleurs et sa taille de cible. Les poser en contrôle
+  Leaflet aurait demandé d'écrire du HTML dans une chaîne, sans React.
+*/
+.carte-controles {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 500;
+  display: flex;
+  gap: 6px;
+}
+
+.carte-controle {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--edge);
+  background: var(--card);
+  color: var(--fg);
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: var(--ombre-controle);
+}
+
+.carte-controle:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+.carte-controle:disabled {
+  color: var(--fg-muted);
 }
 
 

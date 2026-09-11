@@ -212,7 +212,7 @@ export const PROCESSORS: readonly Processor[] = [
 
 /**
  * Ce que le site écrit dans le navigateur. Aujourd'hui : une préférence
- * d'affichage, et rien d'autre.
+ * d'affichage, le dernier cadrage de la carte, et le cookie de session.
  *
  * La liste est vérifiée par `src/lib/__tests__/privacy-claims.test.ts` : si
  * quelqu'un ajoute un stockage sans le déclarer ici, les tests tombent. C'est
@@ -235,6 +235,15 @@ export const CLIENT_STORAGE: readonly ClientStorageEntry[] = [
     kind: 'localStorage',
     purpose:
       'Retenir si vous avez choisi l’affichage clair ou l’affichage de nuit, pour ne pas vous éblouir au chargement suivant.',
+    retention: 'Jusqu’à ce que vous effaciez les données du site dans votre navigateur.',
+    consentRequired: false,
+    scope: 'always',
+  },
+  {
+    key: 'luna-marea:carte:vue',
+    kind: 'localStorage',
+    purpose:
+      'Rouvrir la carte des spots là où vous l’aviez laissée : le centre et le niveau de zoom du dernier cadrage. Ce n’est pas votre position — le bouton « Autour de moi » la demande au clic, l’utilise pour cadrer, et ne l’enregistre nulle part.',
     retention: 'Jusqu’à ce que vous effaciez les données du site dans votre navigateur.',
     consentRequired: false,
     scope: 'always',
@@ -282,6 +291,12 @@ export const CLIENT_STORAGE_WRITE_SITES: readonly StorageWriteSite[] = [
     entry: 'lunamarea-theme',
     why: 'Mémorise le thème choisi.',
   },
+  {
+    file: 'src/components/map/CarteInteractive.tsx',
+    writes: 1,
+    entry: 'luna-marea:carte:vue',
+    why: 'Mémorise le dernier cadrage de la carte.',
+  },
 ];
 
 /**
@@ -295,7 +310,7 @@ export const CLIENT_STORAGE_WRITE_SITES: readonly StorageWriteSite[] = [
  */
 
 /** Dernière révision des deux pages légales. À dater à la main : une date automatique mentirait. */
-export const LEGAL_UPDATED = '2026-09-01';
+export const LEGAL_UPDATED = '2026-09-11';
 
 /** Autorité de contrôle compétente. */
 export const CNIL = {

@@ -4,9 +4,10 @@
 // CDN ferait joindre un tiers au navigateur — exactement ce que la page de
 // confidentialité affirme ne jamais se produire.
 import 'leaflet/dist/leaflet.css';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
-import { separatePoints, type MarkerShape } from '@/lib/map/projection';
+import type { MarkerShape } from '@/lib/map/projection';
+import { regrouper } from '@/lib/map/regroupement';
 
 /**
  * Carte à tuiles, avec un marqueur cliquable par spot.
@@ -20,16 +21,24 @@ import { separatePoints, type MarkerShape } from '@/lib/map/projection';
  *   · le composant n'est chargé que sur `/carte`, jamais ailleurs ;
  *   · sans JavaScript, la page rend une carte dessinée au serveur, qui donne
  *     la même information — positions, scores, liens — sans interaction ;
- *   · aucune image de marqueur n'est chargée : ce sont des éléments HTML, ce
- *     qui supprime au passage la douzaine de requêtes que Leaflet ferait pour
- *     ses icônes par défaut.
+ *   · aucune image de marqueur n'est chargée : ce sont des éléments HTML.
+ *
+ * ─── Ce qu'on voit à chaque échelle ───────────────────────────────────────
+ *
+ * À l'échelle où France et Maroc tiennent ensemble, quarante-deux pastilles
+ * ne se lisent pas : elles se regroupent en quelques pastilles chiffrées.
+ * Un clic sur l'une d'elles zoome jusqu'à ce que ses membres se séparent ;
+ * chaque marqueur revient alors exactement sur sa position.
+ *
+ * La carte s'ouvre là où on l'a laissée — le dernier cadre est gardé dans
+ * le navigateur, et nulle part ailleurs. Le bouton « Autour de moi » demande
+ * la position au clic, jamais au chargement, et elle ne quitte pas l'appareil.
  *
  * ─── Les trois canaux du score, tenus ici aussi ───────────────────────────
  *
  * Le chiffre, la couleur du palier et la forme selon le type de spot disent la
  * même chose de trois façons indépendantes. Une carte lue en niveaux de gris,
- * ou par un œil qui distingue mal les couleurs, reste exploitable — c'est la
- * règle du site, et une carte n'en est pas dispensée.
+ * ou par un œil qui distingue mal les couleurs, reste exploitable.
  */
 
 export interface PointCarte {
@@ -51,7 +60,15 @@ export interface PointCarte {
   danger: boolean;
 }
 
-const RAYON_TERRE_ZOOM = { min: 4, max: 13 } as const;
+const ZOOM = { min: 4, max: 13 } as const;
+
+/** En deçà de cette distance en pixels, deux marqueurs se fondent. */
+const RAYON_GROUPE = 44;
+
+/** Zoom donné à « Autour de moi » : une côte entière, pas une rue. */
+const ZOOM_AUTOUR = 9;
+
+const CLE_VUE = 'luna-marea:carte:vue';
 
 /** Rayon de bord arrondi selon la forme, pour distinguer sans image. */
 const ARRONDI: Record<MarkerShape, string> = {
@@ -60,9 +77,11 @@ const ARRONDI: Record<MarkerShape, string> = {
   triangle: '4px',
 };
 
-function marqueurHtml(point: PointCarte): string {
-  const texte = point.score === null ? '—' : point.score.toFixed(1).replace('.', ',');
+function texteScore(score: number | null): string {
+  return score === null ? '—' : score.toFixed(1).replace('.', ',');
+}
 
+function marqueurHtml(point: PointCarte): string {
   /*
     Le triangle est dessiné par une rotation de 45° du carré, avec le chiffre
     remis d'aplomb par une rotation inverse. Un `clip-path` triangulaire
@@ -71,24 +90,70 @@ function marqueurHtml(point: PointCarte): string {
   const rotation = point.forme === 'triangle' ? 'transform:rotate(45deg);' : '';
   const antiRotation = point.forme === 'triangle' ? 'transform:rotate(-45deg);' : '';
 
-  /*
-    La couche `carte-decalage` existe pour porter l'écartement calculé à chaque
-    zoom. Elle est séparée de la pastille parce que celle-ci porte déjà une
-    rotation pour les triangles : deux transformations sur le même élément se
-    remplaceraient l'une l'autre.
-  */
   return `
-    <span class="carte-decalage">
-      <span class="carte-marqueur" style="background:${point.couleur};border-radius:${ARRONDI[point.forme]};${rotation}">
-        <span style="${antiRotation}">${texte}</span>
-      </span>
-      ${point.danger ? '<span class="carte-danger" aria-hidden="true">!</span>' : ''}
+    <span class="carte-marqueur" style="background:${point.couleur};border-radius:${ARRONDI[point.forme]};${rotation}">
+      <span style="${antiRotation}">${texteScore(point.score)}</span>
     </span>
+    ${point.danger ? '<span class="carte-danger" aria-hidden="true">!</span>' : ''}
   `;
 }
 
+/**
+ * Pastille d'un groupe : le nombre, et le MEILLEUR score du groupe en couleur
+ * de fond. « Six spots ici, dont le meilleur est bon » se lit d'un coup d'œil
+ * sans ouvrir le groupe ; un danger dans le groupe garde son point rouge.
+ */
+function groupeHtml(membres: readonly PointCarte[]): string {
+  const meilleur = membres.reduce<PointCarte | null>(
+    (acc, p) => (acc === null || (p.score ?? -1) > (acc.score ?? -1) ? p : acc),
+    null,
+  );
+  const danger = membres.some((p) => p.danger);
+  const couleur = meilleur?.couleur ?? 'var(--edge-strong)';
+
+  return `
+    <span class="carte-groupe" style="box-shadow:0 0 0 3px ${couleur}, var(--ombre-marqueur)">
+      <span class="carte-groupe-nombre">${membres.length}</span>
+      <span class="carte-groupe-meilleur" style="color:${couleur}">${texteScore(meilleur?.score ?? null)}</span>
+    </span>
+    ${danger ? '<span class="carte-danger" aria-hidden="true">!</span>' : ''}
+  `;
+}
+
+interface Vue {
+  lat: number;
+  lng: number;
+  zoom: number;
+}
+
+function lireVue(): Vue | null {
+  try {
+    const brut = localStorage.getItem(CLE_VUE);
+    if (brut === null) return null;
+    const v = JSON.parse(brut) as Partial<Vue>;
+    if (typeof v.lat !== 'number' || typeof v.lng !== 'number' || typeof v.zoom !== 'number') return null;
+    if (!Number.isFinite(v.lat) || !Number.isFinite(v.lng)) return null;
+    return { lat: v.lat, lng: v.lng, zoom: Math.min(ZOOM.max, Math.max(ZOOM.min, v.zoom)) };
+  } catch {
+    return null;
+  }
+}
+
+function ecrireVue(vue: Vue): void {
+  try {
+    localStorage.setItem(CLE_VUE, JSON.stringify(vue));
+  } catch {
+    // Navigation privée, stockage plein ou bloqué : la carte s'ouvrira sur
+    // le cadre par défaut. Ce n'est pas une erreur à montrer.
+  }
+}
+
+type EtatPosition = 'repos' | 'demande' | 'refus' | 'introuvable';
+
 export function CarteInteractive({ points }: { points: PointCarte[] }) {
   const conteneur = useRef<HTMLDivElement>(null);
+  const carteRef = useRef<import('leaflet').Map | null>(null);
+  const [position, setPosition] = useState<EtatPosition>('repos');
 
   useEffect(() => {
     const cible = conteneur.current;
@@ -111,10 +176,11 @@ export function CarteInteractive({ points }: { points: PointCarte[] }) {
         // zoome la carte piège le défilement quand on ne fait que passer.
         // Ctrl + molette et les boutons restent disponibles.
         scrollWheelZoom: false,
-        minZoom: RAYON_TERRE_ZOOM.min,
-        maxZoom: RAYON_TERRE_ZOOM.max,
+        minZoom: ZOOM.min,
+        maxZoom: ZOOM.max,
         attributionControl: false,
       });
+      carteRef.current = carte;
 
       /*
         Chemin RELATIF : le navigateur ne joint que notre origine, qui relaie.
@@ -122,149 +188,193 @@ export function CarteInteractive({ points }: { points: PointCarte[] }) {
         privée, et à raison — ce serait un tiers non déclaré.
       */
       L.tileLayer('/api/tuiles/{z}/{x}/{y}', {
-        minZoom: RAYON_TERRE_ZOOM.min,
-        maxZoom: RAYON_TERRE_ZOOM.max,
+        minZoom: ZOOM.min,
+        maxZoom: ZOOM.max,
         // Sans cela, Leaflet demande des tuiles hors grille aux bords du monde
         // et notre relais les refuse, ce qui laisse des cases vides.
         noWrap: true,
         className: 'carte-tuiles',
       }).addTo(carte);
 
-      const limites = L.latLngBounds([]);
-      const marqueurs: import('leaflet').Marker[] = [];
+      const calque = L.layerGroup().addTo(carte);
 
-      for (const point of points) {
-        limites.extend([point.lat, point.lng]);
-
-        const icone = L.divIcon({
-          html: marqueurHtml(point),
-          className: 'carte-icone',
-          iconSize: [34, 34],
-          iconAnchor: [17, 17],
-        });
-
-        const marqueur = L.marker([point.lat, point.lng], {
-          icon: icone,
-          // Annoncé aux lecteurs d'écran et atteignable au clavier : un
-          // marqueur qu'on ne peut pas tabuler n'existe pas pour tout le monde.
-          keyboard: true,
-          title: `${point.nom} — ${point.palier}`,
-          alt: `${point.nom}, ${point.region}. Score ${point.score ?? 'indisponible'}. ${point.palier}.`,
-        }).addTo(carte as import('leaflet').Map);
-
-        marqueurs.push(marqueur);
-
-        marqueur.bindPopup(
-          `<p class="carte-popup-titre">${point.nom}</p>
-           <p class="carte-popup-lieu">${point.region}</p>
-           <p class="carte-popup-score" style="color:${point.couleur}">
-             ${point.score === null ? 'Score indisponible' : `${point.score.toFixed(1).replace('.', ',')} / 10 · ${point.palier}`}
-           </p>
-           <a class="carte-popup-lien" href="${point.href}">Voir le spot</a>`,
-          { closeButton: true, maxWidth: 220 },
-        );
-      }
+      const popupDe = (point: PointCarte): string =>
+        `<p class="carte-popup-titre">${point.nom}</p>
+         <p class="carte-popup-lieu">${point.region}</p>
+         <p class="carte-popup-score" style="color:${point.couleur}">
+           ${point.score === null ? 'Score indisponible' : `${texteScore(point.score)} / 10 · ${point.palier}`}
+         </p>
+         <a class="carte-popup-lien" href="${point.href}">Voir le spot</a>`;
 
       /*
-        ─── Écarter ce qui se recouvre ───────────────────────────────────────
+        ─── Reconstruit à chaque zoom, jamais au déplacement ─────────────────
 
-        Agadir et Taghazout sont à quinze kilomètres. À l'échelle où France et
-        Maroc tiennent ensemble, cela fait moins d'un marqueur d'écart : l'un
-        recouvrait l'autre AU POINT DE LE RENDRE INCLIQUABLE. Vérifié dans un
-        navigateur — un clic sur Taghazout atterrissait sur Agadir.
-
-        L'écartement est recalculé à chaque zoom, en pixels, et il DISPARAÎT
-        dès que les marqueurs cessent de se toucher : en s'approchant, chacun
-        revient exactement sur sa position réelle. C'est ce qui le distingue
-        d'un décalage figé, qui mentirait sur la carte à toutes les échelles.
+        Le regroupement dépend de la distance en pixels entre les spots, qui
+        ne change qu'avec le zoom. On projette donc en coordonnées de CALQUE
+        (`project`), indépendantes du cadre, et on ne recalcule qu'au
+        `zoomend` : faire glisser la carte ne redessine rien.
       */
-      const ecarter = (): void => {
+      const dessiner = (): void => {
         const vue = carte;
         if (vue === null) return;
+        calque.clearLayers();
 
-        /*
-          Le calcul repart TOUJOURS des positions d'origine, jamais des
-          positions déjà écartées : sinon chaque zoom repousserait un peu plus
-          les marqueurs, et ils dériveraient jusqu'à quitter leur région.
-        */
-        const bruts = points.map((point) => {
-          const p = vue.latLngToContainerPoint([point.lat, point.lng]);
-          return { x: p.x, y: p.y };
+        const zoom = vue.getZoom();
+        const pixels = points.map((p) => {
+          const q = vue.project([p.lat, p.lng], zoom);
+          return { x: q.x, y: q.y };
         });
 
-        /*
-          ── L'écartement doit rester DANS le cadre ──────────────────────────
+        for (const groupe of regrouper(pixels, RAYON_GROUPE)) {
+          const membres = groupe.membres
+            .map((i) => points[i])
+            .filter((p): p is PointCarte => p !== undefined);
+          if (membres.length === 0) continue;
 
-          Sans cette contrainte, un marqueur poussé vers le bord finit hors du
-          conteneur : il reste cliquable pour le code et invisible pour l'œil.
-          Mesuré à quarante-deux spots sur un écran de 390 px : six marqueurs
-          sortaient du cadre, dont Dakhla, seul tout en bas.
+          const seul = membres.length === 1 ? membres[0] : undefined;
 
-          La marge vaut le demi-marqueur plus deux pixels de liseré, pour
-          qu'une pastille rabattue reste entièrement visible plutôt que
-          tronquée par le bord arrondi.
-        */
-        const taille = vue.getSize();
-        const marge = 19;
-        const ecartes = separatePoints(bruts, 38, 80, {
-          minX: marge,
-          maxX: Math.max(marge, taille.x - marge),
-          minY: marge,
-          maxY: Math.max(marge, taille.y - marge),
-        });
+          if (seul !== undefined) {
+            L.marker([seul.lat, seul.lng], {
+              icon: L.divIcon({
+                html: marqueurHtml(seul),
+                className: 'carte-icone',
+                iconSize: [34, 34],
+                iconAnchor: [17, 17],
+              }),
+              // Annoncé aux lecteurs d'écran et atteignable au clavier : un
+              // marqueur qu'on ne peut pas tabuler n'existe pas pour tout le monde.
+              keyboard: true,
+              title: `${seul.nom} — ${seul.palier}`,
+              alt: `${seul.nom}, ${seul.region}. Score ${seul.score ?? 'indisponible'}. ${seul.palier}.`,
+            })
+              .bindPopup(popupDe(seul), { closeButton: true, maxWidth: 220 })
+              .addTo(calque);
+            continue;
+          }
 
-        marqueurs.forEach((marqueur, index) => {
-          const depart = bruts[index];
-          const arrivee = ecartes[index];
-          const point = points[index];
-          if (depart === undefined || arrivee === undefined || point === undefined) return;
+          const centre = vue.unproject([groupe.x, groupe.y], zoom);
+          const limites = L.latLngBounds(membres.map((p) => [p.lat, p.lng] as [number, number]));
+          const noms = membres.map((p) => p.nom).join(', ');
 
-          const dx = arrivee.x - depart.x;
-          const dy = arrivee.y - depart.y;
-          const deplace = Math.abs(dx) >= 1 || Math.abs(dy) >= 1;
-
-          /*
-            On déplace le MARQUEUR, pas seulement son dessin.
-
-            Une première version décalait la pastille par une transformation
-            CSS. Visuellement c'était juste — et parfaitement inutile : Leaflet
-            garde la zone cliquable sur l'élément parent, resté en place. Un
-            clic sur Taghazout continuait d'atteindre Agadir, sauf que
-            maintenant l'écran ne le montrait plus. Un défaut invisible est
-            pire que le défaut d'origine.
-          */
-          marqueur.setLatLng(
-            deplace ? vue.containerPointToLatLng([arrivee.x, arrivee.y]) : [point.lat, point.lng],
-          );
-
-          const couche = marqueur.getElement()?.querySelector<HTMLElement>('.carte-decalage');
-          // Un marqueur écarté n'est plus exactement sur sa position : le
-          // liseré pointillé le dit, plutôt que de laisser croire au contraire.
-          if (couche) couche.dataset['ecarte'] = deplace ? 'oui' : '';
-        });
+          L.marker(centre, {
+            icon: L.divIcon({
+              html: groupeHtml(membres),
+              className: 'carte-icone',
+              iconSize: [44, 44],
+              iconAnchor: [22, 22],
+            }),
+            keyboard: true,
+            title: `${membres.length} spots — cliquer pour les séparer`,
+            alt: `${membres.length} spots regroupés : ${noms}. Activer pour zoomer.`,
+          })
+            .on('click', () => {
+              // Jusqu'à ce que les membres se séparent, sans dépasser le zoom
+              // où une rue apparaît : ce n'est pas une carte marine.
+              vue.fitBounds(limites, { padding: [48, 48], maxZoom: 12 });
+            })
+            .on('keypress', (e) => {
+              const touche = (e as unknown as { originalEvent: KeyboardEvent }).originalEvent;
+              if (touche.key === 'Enter' || touche.key === ' ') {
+                vue.fitBounds(limites, { padding: [48, 48], maxZoom: 12 });
+              }
+            })
+            .addTo(calque);
+        }
       };
 
-      carte.on('zoomend', ecarter);
-      carte.on('moveend', ecarter);
+      carte.on('zoomend', dessiner);
+      carte.on('moveend', () => {
+        const vue = carte;
+        if (vue === null) return;
+        const c = vue.getCenter();
+        ecrireVue({ lat: c.lat, lng: c.lng, zoom: vue.getZoom() });
+      });
 
-      if (points.length > 0) carte.fitBounds(limites, { padding: [42, 42], maxZoom: 9 });
-      ecarter();
+      // Là où on l'a laissée ; sinon, tout le catalogue dans le cadre.
+      const souvenir = lireVue();
+      if (souvenir !== null) {
+        carte.setView([souvenir.lat, souvenir.lng], souvenir.zoom);
+      } else if (points.length > 0) {
+        carte.fitBounds(
+          L.latLngBounds(points.map((p) => [p.lat, p.lng] as [number, number])),
+          { padding: [32, 32], maxZoom: 9 },
+        );
+      } else {
+        carte.setView([44, -2], ZOOM.min);
+      }
+      dessiner();
     });
 
     return () => {
       annule = true;
+      carteRef.current = null;
       carte?.remove();
     };
   }, [points]);
 
+  /*
+    ═══ La position ne quitte JAMAIS le navigateur. ═══
+
+    Demandée au CLIC, jamais au chargement : un site qui réclame la position
+    à l'arrivée entraîne au refus réflexe. Elle sert à cadrer la carte, puis
+    n'est ni gardée, ni envoyée — il n'existe aucun point d'accès serveur qui
+    accepterait une position.
+  */
+  function autourDeMoi(): void {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) return setPosition('introuvable');
+    setPosition('demande');
+
+    navigator.geolocation.getCurrentPosition(
+      (p) => {
+        setPosition('repos');
+        carteRef.current?.setView([p.coords.latitude, p.coords.longitude], ZOOM_AUTOUR);
+      },
+      (erreur) => setPosition(erreur.code === 1 ? 'refus' : 'introuvable'),
+      { enableHighAccuracy: false, timeout: 10_000, maximumAge: 300_000 },
+    );
+  }
+
+  function toutVoir(): void {
+    const vue = carteRef.current;
+    if (vue === null || points.length === 0) return;
+    void import('leaflet').then((L) => {
+      vue.fitBounds(L.latLngBounds(points.map((p) => [p.lat, p.lng] as [number, number])), {
+        padding: [32, 32],
+        maxZoom: 9,
+      });
+    });
+  }
+
   return (
-    <div
-      ref={conteneur}
-      className="h-[420px] w-full overflow-hidden rounded-[12px] md:h-[560px]"
-      // La carte est un complément : la même information existe dans la liste
-      // qui la suit, laquelle est, elle, entièrement rendue au serveur.
-      role="application"
-      aria-label="Carte des spots. Chaque marqueur porte le score du créneau en cours et mène à la page du spot."
-    />
+    <div className="relative">
+      <div
+        ref={conteneur}
+        className="carte-cadre h-[60vh] min-h-[420px] max-h-[760px] w-full overflow-hidden rounded-[12px]"
+        // La carte est un complément : la même information existe dans la liste
+        // qui la suit, laquelle est, elle, entièrement rendue au serveur.
+        role="application"
+        aria-label="Carte des spots. Les spots proches se regroupent en une pastille chiffrée ; chaque marqueur porte le score du créneau en cours et mène à la page du spot."
+      />
+
+      <div className="carte-controles" role="group" aria-label="Cadrage de la carte">
+        <button type="button" className="carte-controle" onClick={autourDeMoi} disabled={position === 'demande'}>
+          {position === 'demande' ? 'Recherche…' : 'Autour de moi'}
+        </button>
+        <button type="button" className="carte-controle" onClick={toutVoir}>
+          Tout voir
+        </button>
+      </div>
+
+      {position === 'refus' && (
+        <p className="mt-2 text-meta text-fg-muted" role="status">
+          Position non partagée. La carte reste telle quelle — rien n’a été envoyé.
+        </p>
+      )}
+      {position === 'introuvable' && (
+        <p className="mt-2 text-meta text-fg-muted" role="status">
+          Position introuvable. Cela arrive à l’intérieur d’un bâtiment ou sans signal.
+        </p>
+      )}
+    </div>
   );
 }
