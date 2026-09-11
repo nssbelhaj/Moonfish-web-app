@@ -328,3 +328,66 @@ describeDb('le propriétaire du site', () => {
     expect(await comptes2.premierCompte()).toBe(second);
   });
 });
+
+describeDb('la lecture directe d’une session', () => {
+  let db3: typeof import('@/lib/db/mysql');
+  let comptes3: typeof import('../comptes');
+
+  beforeAll(async () => {
+    db3 = await import('@/lib/db/mysql');
+    comptes3 = await import('../comptes');
+  });
+
+  beforeEach(async () => {
+    for (const table of ['sessions', 'user_credentials', 'profiles', 'users']) {
+      await db3.execute(`delete from ${table}`);
+    }
+  });
+
+  async function compte(): Promise<string> {
+    const r = await comptes3.creerCompteAvecMotDePasse({
+      firstName: 'A', lastName: 'B', birthDate: '1990-01-01', displayName: 'A',
+      consentVersion: '2026-09-01', email: 'session@exemple.fr',
+      passwordHash: await hacher('un-mot-de-passe-honnete'),
+    });
+    if (!r.ok) throw new Error('création impossible');
+    return r.userId;
+  }
+
+  it('rend l’utilisateur d’une session valide', async () => {
+    /*
+      Ce chemin existe parce qu'Auth.js refuse de lire une session quand
+      AUTH_URL manque en production : il lève `UntrustedHost` à CHAQUE
+      requête, et le site affiche un visiteur perpétuellement déconnecté
+      sans qu'aucun message n'apparaisse.
+    */
+    const userId = await compte();
+    const jeton = await comptes3.creerSession(userId, new Date(Date.now() + 3_600_000));
+
+    const trouve = await comptes3.utilisateurDeSession(jeton);
+    expect(trouve?.id).toBe(userId);
+    expect(trouve?.email).toBe('session@exemple.fr');
+  });
+
+  it('refuse un jeton EXPIRÉ', async () => {
+    // La condition est dans la requête, pas chez l'appelant : une session
+    // périmée ne doit jamais remonter, même si quelqu'un oublie de vérifier.
+    const userId = await compte();
+    const jeton = await comptes3.creerSession(userId, new Date(Date.now() - 1_000));
+
+    expect(await comptes3.utilisateurDeSession(jeton)).toBeNull();
+  });
+
+  it('refuse un jeton inventé', async () => {
+    await compte();
+    expect(await comptes3.utilisateurDeSession('jeton-invente')).toBeNull();
+  });
+
+  it('la session tombe avec le compte', async () => {
+    const userId = await compte();
+    const jeton = await comptes3.creerSession(userId, new Date(Date.now() + 3_600_000));
+
+    await db3.execute('delete from users where id = ?', [userId]);
+    expect(await comptes3.utilisateurDeSession(jeton)).toBeNull();
+  });
+});

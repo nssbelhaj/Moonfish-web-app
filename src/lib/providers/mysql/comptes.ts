@@ -282,3 +282,25 @@ export async function premierCompte(): Promise<string | null> {
   );
   return ligne?.id ?? null;
 }
+
+/**
+ * Utilisateur d'une session valide, par son jeton.
+ *
+ * Lecture DIRECTE, sans passer par Auth.js. Elle sert de second chemin quand
+ * la bibliothèque refuse de servir la requête — voir `currentUser()`.
+ *
+ * `expires > now(3)` est dans la requête, pas dans le code appelant : une
+ * session expirée ne doit jamais remonter, même si l'appelant oublie de
+ * vérifier.
+ */
+export async function utilisateurDeSession(
+  jeton: string,
+): Promise<{ id: string; email: string | null } | null> {
+  const ligne = await queryOne<{ id: string; email: string | null }>(
+    'select u.id, u.email from sessions s join users u on u.id = s.userId ' +
+      'where s.sessionToken = ? and s.expires > now(3)',
+    [jeton],
+  );
+
+  return ligne ?? null;
+}

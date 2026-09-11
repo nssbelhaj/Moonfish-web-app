@@ -183,7 +183,7 @@ envoi, traçabilité du consentement avec sa version.
   réservé au premier compte inscrit : ni terminal ni secret
 - **Empreinte de construction** — l'en-tête `x-luna-marea-build` dit, sans
   secret ni compte, quelle version est en ligne
-- **804 tests** (63 fichiers), dont 65 d'intégration
+- **813 tests** (63 fichiers), dont 69 d'intégration
 
 ### Ce qui n'a jamais pu être vérifié
 
@@ -331,6 +331,8 @@ build — mais c'est à savoir.
 | **Un base64 ne se relit pas à l'œil** | La tuile de repli, commentée « PNG transparent d'un pixel », décodait en `(0, 255, 0, 127)` — vert vif à moitié opaque. Chaque tuile manquante peignait un carré vert sur la carte. Invisible en développement, où les tuiles répondent. `tuile-vide.test.ts` décode le PNG et lit ses quatre composantes. |
 | **Un marqueur écarté hors du cadre reste cliquable et invisible** | `separatePoints` n'avait pas de bornes dans Leaflet non plus : six marqueurs sur quarante-deux sortaient du conteneur sur un écran de 390 px. Le cadre fait maintenant partie de la relaxation, ici comme sur la carte statique. |
 | **Une migration en échec éteignait TOUT le site** | La politique « arrêt sur échec » supposait qu'une version précédente reste en ligne. Sur un hébergement mutualisé il n'y en a pas : le processus sort en 1, l'hébergeur le relance, il ressort en 1, et le serveur rend un **503 sur tout le site** — marées, météo, carte et guides compris, qui ne touchent jamais la base. Observé en production. Au démarrage, l'échec avertit maintenant et laisse partir ; `MIGRATIONS_STRICT=1` rétablit l'arrêt. |
+| **Auth.js ne LÈVE pas sur `UntrustedHost`** | Il journalise et rend `null`. Sans `AUTH_URL` en production, chaque lecture de session rend donc « personne » : l'inscription réussit, la page suivante affiche un visiteur déconnecté, et **aucun message n'apparaît**. Une première version du repli ne se branchait que sur une exception — elle ne se déclenchait jamais dans le cas qu'elle visait. |
+| **Le nom du cookie se décide sur la REQUÊTE** | Auth.js calcule `url.protocol === 'https:'` d'après la requête ; nous lisions trois variables d'environnement. Sur un site HTTPS sans `AUTH_URL`, nous écrivions `authjs.session-token` quand la bibliothèque cherchait `__Secure-authjs.session-token`. Un test compare maintenant notre nom à celui que rend la fonction d'Auth.js elle-même. |
 | **Un texte d'exemple pris pour une valeur** | `DATABASE_URL=mysql://UTILISATEUR:MOTDEPASSE@…` collé tel quel. MySQL répond « Access denied for user 'UTILISATEUR' » à chaque page — mais en aval, migrations, comptes et compteurs échouent, **chacun se plaignant d'autre chose**. Aucun ne nommait la cause. `gabarits.ts` la détecte et la place en tête du diagnostic. Troisième occurrence après deux secrets collés au gabarit. |
 | **Lire une configuration n'est pas s'y connecter** | Le diagnostic affirmait « base de données : OK » parce que l'URL se *parsait*, pendant que le serveur refusait toutes les connexions. `essaiBase()` ouvre désormais une vraie connexion, comme `essaiSmtp()`. |
 | **`prestart` ne part pas chez tout le monde** | `npm start` déclenche les migrations ; beaucoup d'hébergeurs lancent `next start` directement, et le crochet ne part jamais. La base répond, l'application démarre, il manque toutes les tables — et la panne se présente sous d'autres noms. Le serveur applique maintenant les migrations lui-même dans `register()`, sous verrou d'avis MySQL, sans jamais bloquer le démarrage. |
@@ -362,7 +364,7 @@ npm run dev            # http://localhost:3000 — aucune variable requise
 ```bash
 npx tsc --noEmit                          # typage strict
 npx next lint                             # ESLint
-npx vitest run                            # 739 tests hermétiques
+npx vitest run                            # 744 tests hermétiques
 npm run build                             # 77 pages
 npm audit                                 # doit rester à 0
 node scripts/generer-import-sql.mjs --verifier
@@ -383,7 +385,7 @@ sudo mysql -e "create database if not exists lunamarea_test;
 export DATABASE_URL='mysql://luna:luna@127.0.0.1:3306/lunamarea_test'
 npm run migrate                           # applique 0001 puis 0002
 npm run migrate                           # doit dire « schéma déjà à jour »
-npx vitest run                            # 804 tests
+npx vitest run                            # 813 tests
 ```
 
 ### Le site complet en local, comptes compris
@@ -491,7 +493,7 @@ s'en écarte.
 | Base de production | `u969082232_moonfish` — **le nom ne change pas** : Hostinger le fixe à la création |
 | Hébergement | Hostinger Web Apps, déploiement GitHub automatique, Node ≥ 20.9 |
 | Régime légal | Non professionnel (art. 6-III-2 LCEN) — adresse dispensée tant qu'aucune recette |
-| Volume | 210 fichiers TS/TSX · ~26 600 lignes · 18 composants client · 804 tests · 154 URL au sitemap |
+| Volume | 210 fichiers TS/TSX · ~26 600 lignes · 18 composants client · 813 tests · 154 URL au sitemap |
 
 ### Documents voisins
 
