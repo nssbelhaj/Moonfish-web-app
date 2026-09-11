@@ -254,3 +254,31 @@ export async function creerSession(userId: string, expiration: Date): Promise<st
 export async function supprimerSession(jeton: string): Promise<void> {
   await execute('delete from sessions where sessionToken = ?', [jeton]);
 }
+
+/**
+ * Le compte le plus ancien du site.
+ *
+ * ── Pourquoi « le premier inscrit » plutôt qu'une variable ───────────────
+ *
+ * Désigner le propriétaire par une variable d'environnement suppose qu'on
+ * sache la retrouver. Six échanges ont buté là-dessus pour `CRON_SECRET` :
+ * la chercher, la reconnaître, la recopier sans se tromper. Le premier compte
+ * créé, lui, ne demande rien — c'est forcément celui de la personne qui a
+ * déployé le site, puisqu'à ce moment-là personne d'autre n'en connaît
+ * l'adresse.
+ *
+ * Ce que cette qualité permet est volontairement ÉTROIT : lire l'état de la
+ * configuration. Aucune action, aucune donnée d'autrui, aucune suppression.
+ * Le pire qu'un usurpateur y gagnerait serait de savoir quelles variables
+ * d'environnement sont définies — pas leurs valeurs.
+ *
+ * L'égalité de date est départagée par l'identifiant, pour que la réponse
+ * soit stable : deux comptes créés dans la même milliseconde ne doivent pas
+ * se voler la place d'une requête à l'autre.
+ */
+export async function premierCompte(): Promise<string | null> {
+  const ligne = await queryOne<{ id: string }>(
+    'select id from users order by created_at asc, id asc limit 1',
+  );
+  return ligne?.id ?? null;
+}

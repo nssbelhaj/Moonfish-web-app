@@ -257,3 +257,74 @@ describeDb('les comptes dans MySQL', () => {
     expect(r.userId).not.toBe(randomUUID());
   });
 });
+
+describeDb('le propriétaire du site', () => {
+  let db2: typeof import('@/lib/db/mysql');
+  let comptes2: typeof import('../comptes');
+
+  beforeAll(async () => {
+    db2 = await import('@/lib/db/mysql');
+    comptes2 = await import('../comptes');
+  });
+
+  beforeEach(async () => {
+    for (const table of ['password_resets', 'user_credentials', 'sessions', 'profiles', 'users']) {
+      await db2.execute(`delete from ${table}`);
+    }
+  });
+
+  async function inscrire(email: string, quand: string): Promise<string> {
+    const r = await comptes2.creerCompteAvecMotDePasse({
+      firstName: 'A',
+      lastName: 'B',
+      birthDate: '1990-01-01',
+      displayName: 'A',
+      consentVersion: '2026-09-01',
+      email,
+      passwordHash: await hacher('un-mot-de-passe-honnete'),
+    });
+    if (!r.ok) throw new Error('création impossible');
+
+    await db2.execute('update users set created_at = ? where id = ?', [quand, r.userId]);
+    return r.userId;
+  }
+
+  it('sans aucun compte, il n’y a pas de propriétaire', async () => {
+    expect(await comptes2.premierCompte()).toBeNull();
+  });
+
+  it('c’est le compte le plus ANCIEN, pas le dernier connecté', async () => {
+    const ancien = await inscrire('premier@exemple.fr', '2026-09-01 10:00:00.000');
+    await inscrire('second@exemple.fr', '2026-09-02 10:00:00.000');
+    await inscrire('troisieme@exemple.fr', '2026-09-03 10:00:00.000');
+
+    expect(await comptes2.premierCompte()).toBe(ancien);
+  });
+
+  it('la réponse est STABLE quand deux comptes partagent la milliseconde', async () => {
+    /*
+      Sans départage, deux comptes créés dans la même milliseconde se
+      voleraient la place d'une requête à l'autre : le propriétaire
+      changerait au rechargement de la page.
+    */
+    const meme = '2026-09-01 10:00:00.000';
+    await inscrire('a@exemple.fr', meme);
+    await inscrire('b@exemple.fr', meme);
+
+    const lectures = await Promise.all([
+      comptes2.premierCompte(),
+      comptes2.premierCompte(),
+      comptes2.premierCompte(),
+    ]);
+
+    expect(new Set(lectures).size).toBe(1);
+  });
+
+  it('supprimer le premier compte fait passer la main au suivant', async () => {
+    const premier = await inscrire('premier@exemple.fr', '2026-09-01 10:00:00.000');
+    const second = await inscrire('second@exemple.fr', '2026-09-02 10:00:00.000');
+
+    await db2.execute('delete from users where id = ?', [premier]);
+    expect(await comptes2.premierCompte()).toBe(second);
+  });
+});

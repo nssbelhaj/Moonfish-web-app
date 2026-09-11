@@ -13,6 +13,7 @@ import { deleteCatch, deleteOuting, deleteReview, signOut } from '@/lib/auth/act
 import { absoluteUrl, spotPath } from '@/lib/routes';
 import { currentUser } from '@/lib/auth/session';
 import { magicLinkEnabled } from '@/lib/auth/config';
+import { estProprietaire } from '@/lib/auth/proprietaire';
 import { formatScore, tierForOrNull } from '@/lib/score-display';
 import { formatDateTime } from '@/lib/time';
 
@@ -529,6 +530,32 @@ export default async function ComptePage({
                     </li>
                   ))}
                 </ul>
+              </section>
+            )}
+
+            {(await estProprietaire()) && (
+              /*
+                Visible du seul compte qui a déployé le site — le premier
+                inscrit. Cet écran a manqué pendant six échanges : l'état du
+                déploiement n'était lisible qu'avec un secret qu'on ne
+                retrouvait pas, dans un terminal.
+              */
+              <section aria-labelledby="exploitation" className="mt-10 max-w-prose">
+                <h2 id="exploitation" className="font-serif text-h2 font-semibold">
+                  Exploitation du site
+                </h2>
+                <p className="mt-2 text-read text-fg-muted">
+                  Vous êtes le premier compte inscrit : vous pouvez consulter l’état de la
+                  configuration — base, courriel, marées, migrations — sans terminal ni secret.
+                </p>
+                <p className="mt-3">
+                  <Link
+                    href="/compte/diagnostic"
+                    className="underline decoration-dotted underline-offset-4"
+                  >
+                    Voir l’état du déploiement
+                  </Link>
+                </p>
               </section>
             )}
 

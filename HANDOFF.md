@@ -179,9 +179,11 @@ envoi, traçabilité du consentement avec sa version.
 - **Comptes classiques** — inscription par adresse e-mail et mot de passe,
   avec nom, prénom et date de naissance ; mot de passe oublié ; connexion par
   lien conservée comme second chemin
+- **État du déploiement, lisible en se connectant** — `/compte/diagnostic`,
+  réservé au premier compte inscrit : ni terminal ni secret
 - **Empreinte de construction** — l'en-tête `x-luna-marea-build` dit, sans
   secret ni compte, quelle version est en ligne
-- **770 tests** (62 fichiers), dont 61 d'intégration
+- **774 tests** (62 fichiers), dont 65 d'intégration
 
 ### Ce qui n'a jamais pu être vérifié
 
@@ -374,7 +376,7 @@ sudo mysql -e "create database if not exists lunamarea_test;
 export DATABASE_URL='mysql://luna:luna@127.0.0.1:3306/lunamarea_test'
 npm run migrate                           # applique 0001 puis 0002
 npm run migrate                           # doit dire « schéma déjà à jour »
-npx vitest run                            # 770 tests
+npx vitest run                            # 774 tests
 ```
 
 ### Le site complet en local, comptes compris
@@ -482,7 +484,7 @@ s'en écarte.
 | Base de production | `u969082232_moonfish` — **le nom ne change pas** : Hostinger le fixe à la création |
 | Hébergement | Hostinger Web Apps, déploiement GitHub automatique, Node ≥ 20.9 |
 | Régime légal | Non professionnel (art. 6-III-2 LCEN) — adresse dispensée tant qu'aucune recette |
-| Volume | 210 fichiers TS/TSX · ~26 600 lignes · 18 composants client · 770 tests · 154 URL au sitemap |
+| Volume | 210 fichiers TS/TSX · ~26 600 lignes · 18 composants client · 774 tests · 154 URL au sitemap |
 
 ### Documents voisins
 

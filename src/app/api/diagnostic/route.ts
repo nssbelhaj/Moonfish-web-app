@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { SPOTS } from '@/data/spots';
 import { diagnostiquer, verdictGlobal } from '@/lib/diagnostic/etat';
 import { BUILD_STAMP } from '@/lib/build-stamp';
+import { estProprietaire } from '@/lib/auth/proprietaire';
 import { etatMigrations } from '@/lib/diagnostic/migrations';
 import { refusExplique } from '@/lib/diagnostic/refus';
 import { essaiSmtp } from '@/lib/diagnostic/smtp';
@@ -30,8 +31,18 @@ export const dynamic = 'force-dynamic';
  * sortie plutôt que de le taire.
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
+  /*
+    Deux clés pour la même porte, et c'est délibéré.
+
+    Le secret sert à la tâche planifiée, qui n'a pas de session. La session du
+    propriétaire sert à un humain — qui, lui, n'a pas à retrouver une variable
+    d'environnement dans un panneau d'hébergeur pour savoir si son site va
+    bien. Six échanges ont été perdus sur exactement cela.
+  */
   const secret = process.env.CRON_SECRET?.trim();
-  if (secret && request.headers.get('authorization') !== `Bearer ${secret}`) {
+  const parSecret = secret !== undefined && request.headers.get('authorization') === `Bearer ${secret}`;
+
+  if (secret && !parSecret && !(await estProprietaire())) {
     return refusExplique(request.headers.get('authorization'));
   }
 
