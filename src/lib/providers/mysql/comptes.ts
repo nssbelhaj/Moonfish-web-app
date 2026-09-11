@@ -304,3 +304,66 @@ export async function utilisateurDeSession(
 
   return ligne ?? null;
 }
+
+/**
+ * Met à jour les informations déclaratives du profil.
+ *
+ * `user_id = ?` est dans chaque `update` de ce fichier : c'est ce qui tient
+ * lieu, en MySQL, de la politique de sécurité que PostgreSQL appliquait. Un
+ * test de discipline SQL échoue si une modification l'oublie.
+ */
+export async function majProfil(
+  userId: string,
+  champs: {
+    firstName: string | null;
+    lastName: string | null;
+    city: string | null;
+    country: string | null;
+    bio: string | null;
+  },
+): Promise<void> {
+  await execute(
+    'update profiles set first_name = ?, last_name = ?, city = ?, country = ?, bio = ? where user_id = ?',
+    [champs.firstName, champs.lastName, champs.city, champs.country, champs.bio, userId],
+  );
+}
+
+/** Préférences d'envoi. Deux booléens, pas un réglage libre : ce qui n'est pas listé n'est pas envoyé. */
+export async function majPreferences(
+  userId: string,
+  preferences: { notifyOutings: boolean; notifyNews: boolean },
+): Promise<void> {
+  await execute('update profiles set notify_outings = ?, notify_news = ? where user_id = ?', [
+    preferences.notifyOutings ? 1 : 0,
+    preferences.notifyNews ? 1 : 0,
+    userId,
+  ]);
+}
+
+/**
+ * Enregistre le chemin d'un avatar et rend le PRÉCÉDENT, s'il existait.
+ *
+ * Rendre l'ancien chemin permet à l'appelant de supprimer le fichier. Le
+ * faire ici mélangerait l'accès à la base et l'accès au disque dans une même
+ * fonction, et rendrait l'échec de l'un indiscernable de l'échec de l'autre.
+ */
+export async function majAvatar(userId: string, chemin: string): Promise<string | null> {
+  const avant = await queryOne<{ avatar_path: string | null }>(
+    'select avatar_path from profiles where user_id = ?',
+    [userId],
+  );
+
+  await execute('update profiles set avatar_path = ? where user_id = ?', [chemin, userId]);
+  return avant?.avatar_path ?? null;
+}
+
+/** Retire l'avatar et rend son chemin, pour que l'appelant efface le fichier. */
+export async function retirerAvatar(userId: string): Promise<string | null> {
+  const avant = await queryOne<{ avatar_path: string | null }>(
+    'select avatar_path from profiles where user_id = ?',
+    [userId],
+  );
+
+  await execute('update profiles set avatar_path = null where user_id = ?', [userId]);
+  return avant?.avatar_path ?? null;
+}

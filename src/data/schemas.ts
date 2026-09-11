@@ -183,6 +183,26 @@ export const profileSchema = z.object({
   consentVersion: z.string(),
   consentAt: isoDateTime,
   createdAt: isoDateTime,
+
+  /*
+    Tout ce qui suit est NULLABLE, et le restera. Un compte créé avant ces
+    champs n'en a aucun ; les rendre obligatoires ici casserait la lecture de
+    son profil. Le formulaire peut exiger ce qu'il veut — le schéma décrit ce
+    qui EST en base, pas ce qu'on souhaiterait y trouver.
+  */
+  firstName: z.string().nullable(),
+  lastName: z.string().nullable(),
+  /** Date seule, sans heure ni fuseau : « 1990-04-12 ». */
+  birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
+
+  avatarPath: z.string().nullable(),
+  /** Déclarative, jamais mesurée : c'est la personne qui la dit. */
+  city: z.string().nullable(),
+  country: z.string().nullable(),
+  bio: z.string().nullable(),
+
+  notifyOutings: z.boolean(),
+  notifyNews: z.boolean(),
 });
 
 export type Profile = z.infer<typeof profileSchema>;

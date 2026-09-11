@@ -121,3 +121,40 @@ export const nouveauMotDePasseSchema = z
     message: 'Les deux mots de passe ne sont pas identiques.',
     path: ['passwordConfirm'],
   });
+
+/**
+ * Champ libre facultatif : vide devient `null`, jamais chaîne vide.
+ *
+ * La distinction compte en base : une chaîne vide dit « renseigné avec
+ * rien », `null` dit « pas renseigné ». L'affichage n'a pas à deviner.
+ */
+const facultatif = (max: number, message: string) =>
+  z
+    .string()
+    .trim()
+    .max(max, message)
+    .transform((v) => (v.length === 0 ? null : v))
+    .nullable();
+
+export const profilSchema = z.object({
+  firstName: facultatif(60, 'Prénom trop long.'),
+  lastName: facultatif(60, 'Nom trop long.'),
+  city: facultatif(80, 'Nom de ville trop long.'),
+  country: facultatif(60, 'Nom de pays trop long.'),
+  bio: facultatif(280, 'Présentation trop longue (280 caractères au maximum).'),
+});
+
+export type ProfilInput = z.infer<typeof profilSchema>;
+
+/**
+ * Préférences d'envoi.
+ *
+ * Une case non cochée n'est PAS transmise par un formulaire HTML : son
+ * absence vaut « non ». Lire `formData.get(...) === 'oui'` traite donc
+ * correctement les deux cas, là où un schéma booléen strict refuserait
+ * l'absence.
+ */
+export const preferencesSchema = z.object({
+  notifyOutings: z.boolean(),
+  notifyNews: z.boolean(),
+});

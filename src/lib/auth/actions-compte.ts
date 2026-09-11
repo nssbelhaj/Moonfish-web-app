@@ -8,18 +8,24 @@ import {
   inscriptionSchema,
   motDePasseOublieSchema,
   nouveauMotDePasseSchema,
+  preferencesSchema,
+  profilSchema,
 } from '@/data/schemas-compte';
 import { accountsEnabled, magicLinkEnabled } from '@/lib/auth/config';
 import { hacher, verifier } from '@/lib/auth/password';
 import { fermerSession, ouvrirSession } from '@/lib/auth/session-cookie';
 import { currentUser } from '@/lib/auth/session';
 import { BUDGETS, consommer, delaiLisible, ipAppelante, rembourser } from '@/lib/limites';
+import { deletePhoto } from '@/lib/photo/storage';
 import {
   consommerReinitialisation,
   creerCompteAvecMotDePasse,
   echecDeConnexion,
   identifiantsDe,
+  majPreferences,
+  majProfil,
   ouvrirReinitialisation,
+  retirerAvatar,
   remplacerMotDePasse,
   succesDeConnexion,
 } from '@/lib/providers/mysql/comptes';
@@ -36,6 +42,23 @@ const FERMES: EtatCompte = {
   ok: false,
   message: 'Les comptes ne sont pas ouverts sur ce déploiement.',
 };
+
+const NON_CONNECTE: EtatCompte = {
+  ok: false,
+  message: 'Session expirée. Reconnectez-vous et recommencez : votre saisie n’a pas été perdue.',
+};
+
+/** Budget d'écriture du profil : les mêmes règles que les contributions. */
+async function budgetProfil(userId: string): Promise<EtatCompte | null> {
+  const decision = await consommer(BUDGETS.contribution, userId);
+  if (decision.allowed) return null;
+  if (decision.panne) return COMPTEUR_EN_PANNE;
+
+  return {
+    ok: false,
+    message: `Trop d’enregistrements d’affilée. Réessayez dans ${delaiLisible(decision.resetAt)}.`,
+  };
+}
 
 const COMPTEUR_EN_PANNE: EtatCompte = {
   ok: false,
@@ -326,4 +349,69 @@ export async function definirNouveauMotDePasse(
 /** Le compte est-il connecté ? Utilisé par les pages qui doivent choisir un affichage. */
 export async function estConnecte(): Promise<boolean> {
   return (await currentUser()) !== null;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Profil : informations déclaratives et préférences
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+export async function enregistrerProfil(
+  _precedent: EtatCompte | null,
+  formData: FormData,
+): Promise<EtatCompte> {
+  const utilisateur = await currentUser();
+  if (utilisateur === null) return NON_CONNECTE;
+
+  const analyse = profilSchema.safeParse({
+    firstName: formData.get('first_name') ?? '',
+    lastName: formData.get('last_name') ?? '',
+    city: formData.get('city') ?? '',
+    country: formData.get('country') ?? '',
+    bio: formData.get('bio') ?? '',
+  });
+  if (!analyse.success) return premierDefaut(analyse.error);
+
+  const trop = await budgetProfil(utilisateur.id);
+  if (trop) return trop;
+
+  await majProfil(utilisateur.id, analyse.data);
+  revalidatePath('/compte');
+
+  return { ok: true, message: 'Profil enregistré.' };
+}
+
+export async function enregistrerPreferences(
+  _precedent: EtatCompte | null,
+  formData: FormData,
+): Promise<EtatCompte> {
+  const utilisateur = await currentUser();
+  if (utilisateur === null) return NON_CONNECTE;
+
+  /*
+    Une case non cochée n'est pas transmise : son absence vaut « non ». C'est
+    la mécanique des formulaires HTML, et elle est ici la bonne — décocher
+    puis enregistrer doit désactiver, pas laisser en l'état.
+  */
+  const preferences = preferencesSchema.parse({
+    notifyOutings: formData.get('notify_outings') === 'oui',
+    notifyNews: formData.get('notify_news') === 'oui',
+  });
+
+  const trop = await budgetProfil(utilisateur.id);
+  if (trop) return trop;
+
+  await majPreferences(utilisateur.id, preferences);
+  revalidatePath('/compte');
+
+  return { ok: true, message: 'Préférences enregistrées.' };
+}
+
+export async function supprimerAvatar(): Promise<void> {
+  const utilisateur = await currentUser();
+  if (utilisateur === null) return;
+
+  const ancien = await retirerAvatar(utilisateur.id);
+  if (ancien) await deletePhoto(ancien).catch(() => undefined);
+
+  revalidatePath('/compte');
 }

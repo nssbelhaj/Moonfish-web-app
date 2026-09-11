@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Catch } from '@/data/schemas';
-import { formatMonth, summarizeCatches } from '../catch-log';
+import { formatMeasures, formatMonth, summarizeCatches } from '../catch-log';
 
 function prise(partial: Partial<Catch> & { caughtAt: string }): Catch {
   return {
@@ -112,5 +112,31 @@ describe('summarizeCatches', () => {
 describe('formatMonth', () => {
   it('écrit un mois en français court', () => {
     expect(formatMonth('2026-10')).toMatch(/oct\.? 2026/);
+  });
+});
+
+describe('formatMeasures', () => {
+  it('ne rend rien quand rien n’a été mesuré', () => {
+    // Une chaîne vide produirait « Bar ·  » : un séparateur orphelin qui donne
+    // l'impression qu'une mesure manque à l'affichage, pas à la déclaration.
+    expect(formatMeasures(null, null)).toBeNull();
+  });
+
+  it('annonce la longueur d’abord, comme un pêcheur', () => {
+    expect(formatMeasures(52, 1800)).toBe('52 cm · 1,80 kg');
+  });
+
+  it('compte en grammes sous le kilo, en kilos au-delà', () => {
+    expect(formatMeasures(null, 940)).toBe('940 g');
+    expect(formatMeasures(null, 1000)).toBe('1,00 kg');
+    expect(formatMeasures(null, 12500)).toBe('12,50 kg');
+  });
+
+  it('écrit la virgule décimale française', () => {
+    expect(formatMeasures(null, 2400)).not.toContain('.');
+  });
+
+  it('accepte une mesure seule', () => {
+    expect(formatMeasures(38, null)).toBe('38 cm');
   });
 });

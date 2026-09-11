@@ -145,3 +145,22 @@ export function formatMonth(key: string): string {
     new Date(Date.UTC(year, month - 1, 1)),
   );
 }
+
+/**
+ * Mesures d'une prise, dans l'ordre où un pêcheur les annonce.
+ *
+ * Rend `null` plutôt qu'une chaîne vide quand rien n'a été mesuré : l'appelant
+ * doit alors ne RIEN afficher, pas un séparateur orphelin. Le poids bascule en
+ * kilogrammes à partir du kilo, parce que « 2,40 kg » se lit et que
+ * « 2400 g » se compte.
+ */
+export function formatMeasures(lengthCm: number | null, weightG: number | null): string | null {
+  const parts: string[] = [];
+  if (lengthCm !== null) parts.push(`${lengthCm} cm`);
+  if (weightG !== null) {
+    parts.push(
+      weightG >= 1000 ? `${(weightG / 1000).toFixed(2).replace('.', ',')} kg` : `${weightG} g`,
+    );
+  }
+  return parts.length === 0 ? null : parts.join(' · ');
+}

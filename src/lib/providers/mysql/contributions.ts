@@ -110,6 +110,18 @@ interface ProfileRow {
   consent_version: string;
   consent_at: string;
   created_at: string;
+
+  // Ajoutées par la migration 0005, donc absentes des lignes plus anciennes :
+  // `select *` les rend `null`, et le mappage les traite comme telles.
+  first_name: string | null;
+  last_name: string | null;
+  birth_date: string | Date | null;
+  avatar_path: string | null;
+  city: string | null;
+  country: string | null;
+  bio: string | null;
+  notify_outings: number;
+  notify_news: number;
 }
 
 function failure<T>(
@@ -181,6 +193,21 @@ function toOuting(row: OutingRow): Outing {
   });
 }
 
+/**
+ * Une date MySQL rendue en « AAAA-MM-JJ ».
+ *
+ * `birth_date` est une colonne DATE : le pilote peut la rendre en chaîne ou
+ * en objet selon sa configuration. Passer par `toIso` puis tronquer donne la
+ * même réponse dans les deux cas, et sans décalage de fuseau — une date de
+ * naissance n'a pas d'heure, lui en donner une la ferait basculer d'un jour.
+ */
+function toDateSeule(valeur: string | Date | null): string | null {
+  if (valeur === null) return null;
+  if (typeof valeur === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(valeur)) return valeur;
+
+  return toIso(valeur)?.slice(0, 10) ?? null;
+}
+
 function toProfile(row: ProfileRow): Profile {
   return profileSchema.parse({
     id: row.user_id,
@@ -188,6 +215,19 @@ function toProfile(row: ProfileRow): Profile {
     consentVersion: row.consent_version,
     consentAt: toIso(row.consent_at),
     createdAt: toIso(row.created_at),
+
+    firstName: row.first_name ?? null,
+    lastName: row.last_name ?? null,
+    birthDate: toDateSeule(row.birth_date ?? null),
+
+    avatarPath: row.avatar_path ?? null,
+    city: row.city ?? null,
+    country: row.country ?? null,
+    bio: row.bio ?? null,
+
+    // MySQL rend un `tinyint(1)` en nombre : 0 ou 1, jamais un booléen.
+    notifyOutings: Number(row.notify_outings) === 1,
+    notifyNews: Number(row.notify_news) === 1,
   });
 }
 

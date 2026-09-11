@@ -375,6 +375,9 @@ export async function addCatch(
 
   const path = await spotSpeciesPath(formData);
   if (path) revalidatePath(path);
+  // Le carnet vit sur la page de compte : une prise déclarée depuis le carnet
+  // lui-même doit y apparaître sans que la personne ait à recharger.
+  revalidatePath('/compte');
 
   return { ok: true, message: 'Prise enregistrée.' };
 }

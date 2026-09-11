@@ -50,6 +50,110 @@ describeDb('les comptes dans MySQL', () => {
     });
   }
 
+  describe('profil', () => {
+    async function profilDe(userId: string) {
+      return db.queryOne<{
+        first_name: string | null;
+        last_name: string | null;
+        city: string | null;
+        country: string | null;
+        bio: string | null;
+        notify_outings: number;
+        notify_news: number;
+        avatar_path: string | null;
+      }>(
+        'select first_name, last_name, city, country, bio, notify_outings, notify_news, avatar_path from profiles where user_id = ?',
+        [userId],
+      );
+    }
+
+    it('vide un champ au lieu d’y laisser l’ancienne valeur', async () => {
+      /*
+        Le piège des formulaires partiels : effacer son nom doit l'effacer.
+        Un `update` qui ignore les valeurs nulles garderait l'ancien nom et
+        donnerait l'impression que le site refuse de nous oublier.
+      */
+      const r = await creer('profil@exemple.fr');
+      expect(r.ok).toBe(true);
+      if (!r.ok) return;
+
+      await comptes.majProfil(r.userId, {
+        firstName: 'Youness',
+        lastName: 'Belhaj',
+        city: 'Casablanca',
+        country: 'Maroc',
+        bio: 'Surfcasting le soir.',
+      });
+
+      await comptes.majProfil(r.userId, {
+        firstName: null,
+        lastName: null,
+        city: null,
+        country: null,
+        bio: null,
+      });
+
+      const profil = await profilDe(r.userId);
+      expect(profil?.first_name).toBeNull();
+      expect(profil?.city).toBeNull();
+      expect(profil?.bio).toBeNull();
+    });
+
+    it('ne touche pas au nom affiché', async () => {
+      // Le nom affiché a son propre formulaire, et il est public. Une
+      // modification du profil privé ne doit pas le renommer par ricochet.
+      const r = await creer('affiche@exemple.fr');
+      expect(r.ok).toBe(true);
+      if (!r.ok) return;
+
+      await comptes.majProfil(r.userId, {
+        firstName: 'Autre',
+        lastName: null,
+        city: null,
+        country: null,
+        bio: null,
+      });
+
+      const nom = await db.queryOne<{ display_name: string }>(
+        'select display_name from profiles where user_id = ?',
+        [r.userId],
+      );
+      expect(nom?.display_name).toBe(BASE.displayName);
+    });
+
+    it('n’envoie rien sans case cochée', async () => {
+      const r = await creer('prefs@exemple.fr');
+      expect(r.ok).toBe(true);
+      if (!r.ok) return;
+
+      await comptes.majPreferences(r.userId, { notifyOutings: false, notifyNews: false });
+
+      const profil = await profilDe(r.userId);
+      expect(profil?.notify_outings).toBe(0);
+      expect(profil?.notify_news).toBe(0);
+    });
+
+    it('rend l’ancien avatar pour que le fichier soit effaçable', async () => {
+      /*
+        Si la base oubliait l'ancien chemin avant de le rendre, le fichier
+        resterait sur le disque pour toujours, sans plus rien qui le désigne :
+        une fuite silencieuse, et une photo de visage qu'on a demandé à
+        remplacer et qui survit.
+      */
+      const r = await creer('avatar@exemple.fr');
+      expect(r.ok).toBe(true);
+      if (!r.ok) return;
+
+      expect(await comptes.majAvatar(r.userId, `${r.userId}/un.jpg`)).toBeNull();
+      expect(await comptes.majAvatar(r.userId, `${r.userId}/deux.jpg`)).toBe(`${r.userId}/un.jpg`);
+      expect(await comptes.retirerAvatar(r.userId)).toBe(`${r.userId}/deux.jpg`);
+      expect(await comptes.retirerAvatar(r.userId)).toBeNull();
+
+      const profil = await profilDe(r.userId);
+      expect(profil?.avatar_path).toBeNull();
+    });
+  });
+
   describe('création', () => {
     it('écrit le compte, ses identifiants ET son profil', async () => {
       const r = await creer('pecheur@exemple.fr');

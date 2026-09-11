@@ -531,3 +531,119 @@
     box-shadow: var(--ombre-controle);
   }
 }
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Onglets de la page de compte
+
+   Même mécanique que le contrôle segmenté de connexion — `:target`, aucun
+   JavaScript — mais avec CINQ panneaux et un défilement horizontal sur les
+   écrans étroits.
+
+   Le défaut affiche « Profil ». Sans `:has()`, les cinq panneaux s'affichent
+   à la suite : long, mais entier. Un onglet qui cacherait le carnet de prises
+   sans pouvoir le rappeler serait pire qu'une page longue.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.onglets-espace {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  overflow-x: auto;
+  background-color: var(--surface-2);
+  border-radius: 999px;
+  /* Le rail ne doit pas se couper au bord de l'écran sur mobile. */
+  scrollbar-width: none;
+}
+
+.onglets-espace::-webkit-scrollbar {
+  display: none;
+}
+
+.onglet-espace {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 9px 16px;
+  font-size: 15px;
+  line-height: 1.2;
+  color: var(--fg-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.onglet-espace:hover {
+  color: var(--fg);
+}
+
+@supports selector(:has(*)) {
+  /*
+    Tout replié, le panneau visé déplié.
+    ─── Une histoire de spécificité, pas de goût ─────────────────────────────
+    La première écriture nommait le défaut par son identifiant :
+    `.panneau-espace:not(#espace-profil) { display: none }`. Un `:not()` porte
+    la spécificité de ce qu'il contient — un IDENTIFIANT — et ce masquage
+    l'emportait alors sur `.panneau-espace:target { display: block }`, qui n'a
+    que des classes. Résultat mesuré au navigateur : cliquer sur un onglet
+    repliait le profil sans rien ouvrir à la place. La page se vidait.
+    Aucun identifiant ici, donc : le masquage reste plus faible que l'ouverture.
+  */
+  .espace-compte .panneau-espace {
+    display: none;
+  }
+
+  .espace-compte .panneau-espace:target {
+    display: block;
+  }
+
+  /* Rien de visé : le profil s'ouvre. L'identifiant passe DEVANT le masquage. */
+  .espace-compte:not(:has(.panneau-espace:target)) #espace-profil {
+    display: block;
+  }
+
+  /*
+    L'onglet actif, panneau par panneau. `:has(.panneau-espace:target)` ne
+    dirait pas LEQUEL est visé : il faut nommer chacun.
+  */
+  .espace-compte:not(:has(.panneau-espace:target)) .onglet-espace[href='#espace-profil'] {
+    background-color: var(--card);
+    color: var(--fg);
+    font-weight: 600;
+    box-shadow: var(--ombre-controle);
+  }
+
+  .espace-compte:has(#espace-profil:target) .onglet-espace[href='#espace-profil'] {
+    background-color: var(--card);
+    color: var(--fg);
+    font-weight: 600;
+    box-shadow: var(--ombre-controle);
+  }
+
+  .espace-compte:has(#espace-carnet:target) .onglet-espace[href='#espace-carnet'] {
+    background-color: var(--card);
+    color: var(--fg);
+    font-weight: 600;
+    box-shadow: var(--ombre-controle);
+  }
+
+  .espace-compte:has(#espace-sorties:target) .onglet-espace[href='#espace-sorties'] {
+    background-color: var(--card);
+    color: var(--fg);
+    font-weight: 600;
+    box-shadow: var(--ombre-controle);
+  }
+
+  .espace-compte:has(#espace-preferences:target) .onglet-espace[href='#espace-preferences'] {
+    background-color: var(--card);
+    color: var(--fg);
+    font-weight: 600;
+    box-shadow: var(--ombre-controle);
+  }
+
+  .espace-compte:has(#espace-donnees:target) .onglet-espace[href='#espace-donnees'] {
+    background-color: var(--card);
+    color: var(--fg);
+    font-weight: 600;
+    box-shadow: var(--ombre-controle);
+  }
+}

@@ -13,6 +13,13 @@ type PhotoState =
   | { kind: 'ready'; path: string }
   | { kind: 'error'; message: string };
 
+export interface SpotChoice {
+  slug: string;
+  name: string;
+  /** Groupe d'option : la région, pour retrouver un spot dans une longue liste. */
+  regionName: string;
+}
+
 /**
  * Déclaration d'une prise.
  *
@@ -25,12 +32,37 @@ export function CatchForm({
   spotSlug,
   spotPath,
   speciesSuggestions,
+  spotChoices,
+  formId,
 }: {
-  spotSlug: string;
-  spotPath: string;
+  spotSlug?: string;
+  spotPath?: string;
   speciesSuggestions: readonly string[];
+  /**
+   * Liste de spots à choisir, quand la déclaration ne part PAS d'une page de
+   * spot — depuis le carnet, par exemple, où l'on rattrape une sortie passée.
+   * Fournie, elle remplace le spot fixe par un menu déroulant.
+   */
+  spotChoices?: readonly SpotChoice[];
+  /**
+   * Suffixe des identifiants internes. Deux exemplaires du formulaire sur une
+   * même page partageraient sinon le même `id` de `datalist`, et le second
+   * n'aurait plus de suggestions.
+   */
+  formId?: string;
 }) {
   const [photo, setPhoto] = useState<PhotoState>({ kind: 'none' });
+  const listeEspeces = `especes-connues${formId ? `-${formId}` : ''}`;
+
+  // Les régions dans l'ordre de la liste, sans doublon : `Map` conserve
+  // l'ordre d'insertion, ce qu'un objet ne garantit pas pour des clés
+  // quelconques.
+  const parRegion = new Map<string, SpotChoice[]>();
+  for (const choix of spotChoices ?? []) {
+    const groupe = parRegion.get(choix.regionName);
+    if (groupe) groupe.push(choix);
+    else parRegion.set(choix.regionName, [choix]);
+  }
 
   // Valeur par défaut : maintenant, dans le fuseau du navigateur. La plupart des
   // prises se déclarent dans la foulée.
@@ -48,22 +80,45 @@ export function CatchForm({
 
   return (
     <ActionForm action={addCatch} submitLabel="Déclarer cette prise">
-      <input type="hidden" name="spot_slug" value={spotSlug} />
-      <input type="hidden" name="spot_path" value={spotPath} />
+      {spotChoices === undefined && (
+        <>
+          <input type="hidden" name="spot_slug" value={spotSlug ?? ''} />
+          <input type="hidden" name="spot_path" value={spotPath ?? ''} />
+        </>
+      )}
       <input type="hidden" name="tz_offset" value={offsetMinutes} />
       {photo.kind === 'ready' && <input type="hidden" name="photo_path" value={photo.path} />}
+
+      {spotChoices !== undefined && (
+        <Field label="Spot">
+          <select name="spot_slug" required defaultValue="" className={INPUT_CLASS}>
+            <option value="" disabled>
+              Choisissez un spot
+            </option>
+            {[...parRegion].map(([region, choix]) => (
+              <optgroup key={region} label={region}>
+                {choix.map((spot) => (
+                  <option key={spot.slug} value={spot.slug}>
+                    {spot.name}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </Field>
+      )}
 
       <Field label="Espèce">
         <input
           type="text"
           name="species"
           required
-          list="especes-connues"
+          list={listeEspeces}
           maxLength={60}
           className={INPUT_CLASS}
         />
       </Field>
-      <datalist id="especes-connues">
+      <datalist id={listeEspeces}>
         {speciesSuggestions.map((name) => (
           <option key={name} value={name} />
         ))}

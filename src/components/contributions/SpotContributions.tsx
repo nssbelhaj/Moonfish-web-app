@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 import { ContributePanel } from '@/components/contributions/ContributePanel';
+import { formatMeasures } from '@/lib/contributions/catch-log';
 import { photoUrl } from '@/lib/photo/url';
 import type { SpotContributions as Contributions } from '@/lib/providers';
 import { formatDateTime } from '@/lib/time';
@@ -20,16 +21,6 @@ function Stars({ rating }: { rating: number }) {
       </span>
     </span>
   );
-}
-
-/** Mesures d'une prise, dans l'ordre où un pêcheur les annonce. */
-function measures(lengthCm: number | null, weightG: number | null): string | null {
-  const parts: string[] = [];
-  if (lengthCm !== null) parts.push(`${lengthCm} cm`);
-  if (weightG !== null) {
-    parts.push(weightG >= 1000 ? `${(weightG / 1000).toFixed(2).replace('.', ',')} kg` : `${weightG} g`);
-  }
-  return parts.length === 0 ? null : parts.join(' · ');
 }
 
 /**
@@ -58,6 +49,19 @@ export function SpotContributionsSection({
   spotName: string;
   speciesSuggestions: readonly string[];
 }) {
+  /*
+    Les prises qui portent une photo, les plus récentes d'abord. Calculé ici et
+    non dans le dépôt : c'est une VUE, pas une donnée — la galerie ne vaut que
+    pour l'affichage, et la liste des prises reste la source.
+  */
+  const galerie = contributions.catches
+    .flatMap((entry) => {
+      const url = photoUrl(entry.photoPath);
+      return url === null ? [] : [{ entry, url }];
+    })
+    .sort((a, b) => b.entry.caughtAt.localeCompare(a.entry.caughtAt))
+    .slice(0, 12);
+
   return (
     <section aria-labelledby="contributions" className="mt-12">
       <h2 id="contributions" className="font-serif text-h2 font-semibold">
@@ -78,7 +82,45 @@ export function SpotContributionsSection({
         </p>
       ) : (
         <>
-          <div className="mt-6 grid gap-6 lg:grid-cols-2">
+          {galerie.length > 0 && (
+            <div className="mt-6">
+              <h3 className="card-title">
+                Photos partagées ici{' '}
+                <span className="nums font-400 text-fg-muted">{galerie.length}</span>
+              </h3>
+              <p className="mt-2 max-w-prose text-body text-fg-muted">
+                Publiées par des pêcheurs avec leur déclaration de prise. Les métadonnées, position
+                GPS comprise, sont retirées sur leur appareil avant tout envoi : une photo ne
+                trahit pas le poste de celui qui l’a prise.
+              </p>
+
+              <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                {galerie.map(({ entry, url }) => (
+                  <li key={entry.id} className="surface overflow-hidden">
+                    <Image
+                      src={url}
+                      alt={`Prise déclarée : ${entry.species} à ${spotName}`}
+                      width={640}
+                      height={480}
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 240px"
+                      className="h-[140px] w-full object-cover"
+                    />
+                    <div className="p-3">
+                      <p className="text-body font-600 text-fg">{entry.species}</p>
+                      <p className="card-source mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span>{entry.authorName}</span>
+                        <span className="nums">
+                          {formatDateTime(new Date(entry.caughtAt), TIME_ZONE)}
+                        </span>
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="mt-8 grid gap-6 lg:grid-cols-2">
             {/* ── Avis ───────────────────────────────────────────────── */}
             <div>
               <h3 className="card-title">
@@ -136,8 +178,7 @@ export function SpotContributionsSection({
               ) : (
                 <ul className="mt-3 space-y-3">
                   {contributions.catches.map((entry) => {
-                    const url = photoUrl(entry.photoPath);
-                    const size = measures(entry.lengthCm, entry.weightG);
+                    const size = formatMeasures(entry.lengthCm, entry.weightG);
 
                     return (
                       <li key={entry.id} className="surface p-4">
@@ -145,17 +186,6 @@ export function SpotContributionsSection({
                           <span className="text-body font-600 text-fg">{entry.species}</span>
                           {size && <span className="nums text-body text-fg-muted">{size}</span>}
                         </div>
-
-                        {url && (
-                          <Image
-                            src={url}
-                            alt={`Prise déclarée : ${entry.species} à ${spotName}`}
-                            width={640}
-                            height={480}
-                            sizes="(max-width: 768px) 100vw, 320px"
-                            className="mt-3 h-auto w-full rounded-inner"
-                          />
-                        )}
 
                         {entry.note && (
                           <p className="mt-2 max-w-prose text-body text-fg">{entry.note}</p>
