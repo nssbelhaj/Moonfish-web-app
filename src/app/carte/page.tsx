@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 import { DemoDataNotice } from '@/components/data/DemoDataNotice';
+import { TideCoverageDetail } from '@/components/data/TideCoverageDetail';
 import { SpotsMap } from '@/components/v3/SpotsMap';
 /*
   Importé normalement, sans `next/dynamic`.
@@ -12,7 +13,7 @@ import { SpotsMap } from '@/components/v3/SpotsMap';
   dynamique est à l'intérieur du composant, où il a du sens.
 */
 import { CarteInteractive, type PointCarte } from '@/components/map/CarteInteractive';
-import { collectSources, getAllSpotSummaries } from '@/lib/forecast';
+import { collectSources, getAllSpotSummaries, tideCoverage } from '@/lib/forecast';
 import { MARKER_SHAPES } from '@/lib/map/projection';
 import { absoluteUrl, spotPath } from '@/lib/routes';
 import { formatScore, tierForOrNull } from '@/lib/score-display';
@@ -60,7 +61,10 @@ export default async function CartePage() {
       </p>
 
       <div className="mt-6">
-        <DemoDataNotice sources={collectSources(summaries)} />
+        <DemoDataNotice
+          sources={collectSources(summaries)}
+          detail={<TideCoverageDetail {...tideCoverage(summaries)} />}
+        />
       </div>
 
       <div className="mt-6">

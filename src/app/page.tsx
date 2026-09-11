@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+
+import { CATALOGUE } from '@/data/spots';
 import Link from 'next/link';
 import { DemoDataNotice } from '@/components/data/DemoDataNotice';
 import { EmailCaptureForm } from '@/components/forms/EmailCaptureForm';
@@ -17,12 +19,12 @@ export const revalidate = 3600;
 export const metadata: Metadata = {
   title: 'Luna Marea — les meilleurs créneaux de pêche en mer, spot par spot',
   description:
-    'Un score sur 10 par créneau de 2 heures, sur 7 jours, pour 12 spots de pêche du bord en France et au Maroc. Surfcasting, lancer-ramener, rockfishing, shore-jigging. Marée, vent, houle et périodes solunaires, expliqués et pondérés.',
+    `Un score sur 10 par créneau de 2 heures, sur 7 jours, pour ${CATALOGUE.total} spots de pêche du bord ${CATALOGUE.etendue}. Surfcasting, lancer-ramener, rockfishing, shore-jigging. Marée, vent, houle et périodes solunaires, expliqués et pondérés.`,
   alternates: { canonical: absoluteUrl('/') },
   openGraph: {
     title: 'Luna Marea — les meilleurs créneaux de pêche en mer, spot par spot',
     description:
-      'Score de pêche du bord sur 7 jours : marée, vent, houle, lune. 12 spots en France et au Maroc.',
+      `Score de pêche du bord sur 7 jours : marée, vent, houle, lune. ${CATALOGUE.total} spots ${CATALOGUE.etendue}.`,
     url: absoluteUrl('/'),
   },
 };
@@ -136,7 +138,7 @@ export default async function HomePage() {
 
         <div className="mt-6">
           <ButtonLink href="/spots" variant="secondary">
-            Voir les 12 spots
+            Voir les {CATALOGUE.total} spots
           </ButtonLink>
         </div>
       </Section>

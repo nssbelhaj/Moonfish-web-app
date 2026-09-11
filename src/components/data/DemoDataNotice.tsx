@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import type { SourceMeta } from '@/lib/providers';
 
 /**
@@ -33,9 +35,16 @@ function subjectOf(source: SourceMeta): { noun: string; feminine: boolean } {
 export function DemoDataNotice({
   sources,
   compact = false,
+  detail,
 }: {
   sources: readonly SourceMeta[];
   compact?: boolean;
+  /**
+   * Précision sous l'avertissement — typiquement « réel sur trois spots,
+   * simulé sur les autres ». Sans elle, une page qui mêle les deux ne peut
+   * qu'annoncer le pire, et le lecteur conclut que rien ne marche.
+   */
+  detail?: ReactNode;
 }) {
   const simulated = simulatedSources(sources);
   if (simulated.length === 0) return null;
@@ -78,6 +87,7 @@ export function DemoDataNotice({
         </a>{' '}
         pour les horaires officiels.
       </p>
+      {detail !== undefined && <p className="mt-2 text-body text-fg-muted">{detail}</p>}
     </aside>
   );
 }

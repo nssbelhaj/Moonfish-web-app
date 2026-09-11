@@ -168,6 +168,27 @@ export function collectSources(summaries: readonly SpotSummary[]): SourceMeta[] 
   return [...seen.values()];
 }
 
+/**
+ * Quels spots ont des marées RÉELLES, et combien restent simulés.
+ *
+ * `collectSources` fond les sources par nom : sur une page qui liste tout le
+ * catalogue, une seule marée simulée suffisait à écrire « les marées sont
+ * simulées », sans dire que trente-neuf le sont et que trois ne le sont pas.
+ * Le lecteur en concluait que la clé ne fonctionnait pas — elle fonctionnait,
+ * sur les trois spots qu'on lui avait confiés. Ce détail doit être dit.
+ */
+export function tideCoverage(summaries: readonly SpotSummary[]): {
+  real: Spot[];
+  simulated: Spot[];
+} {
+  const real: Spot[] = [];
+  const simulated: Spot[] = [];
+  for (const summary of summaries) {
+    (summary.sources.tide.source.kind === 'simulated' ? simulated : real).push(summary.spot);
+  }
+  return { real, simulated };
+}
+
 /** Résumés de tous les spots, triés du meilleur score courant au moins bon. */
 export async function getAllSpotSummaries(now: Date = referenceNow()): Promise<SpotSummary[]> {
   const all = await spotRepository.list();

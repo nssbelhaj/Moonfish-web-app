@@ -40,7 +40,7 @@ export function parseFilters(
   const technique = firstValue(params.technique);
 
   // Une valeur inconnue est ignorée plutôt que de rendre une liste vide sans
-  // explication : /spots?pays=narnia doit afficher les 12 spots, pas une page morte.
+  // explication : /spots?pays=narnia doit afficher tout le catalogue, pas une page morte.
   return {
     country: spots.some((spot) => spot.countrySlug === country) ? country : null,
     region: spots.some((spot) => spot.regionSlug === region) ? region : null,

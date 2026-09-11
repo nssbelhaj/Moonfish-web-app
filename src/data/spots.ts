@@ -1,7 +1,7 @@
 import { spotSchema, type Spot } from './schemas';
 
 /**
- * Les 12 spots du MVP.
+ * Le catalogue des spots. Sa taille se lit dans `CATALOGUE`, jamais en dur.
  *
  * Coordonnées réelles, orientations relevées sur carte. Les descriptions et les
  * espèces cibles décrivent la réalité du terrain : c'est le seul contenu de
@@ -1003,6 +1003,19 @@ const RAW_SPOTS: Spot[] = [
 export const SPOTS: readonly Spot[] = Object.freeze(
   RAW_SPOTS.map((spot) => spotSchema.parse(spot)),
 );
+
+/**
+ * Taille et étendue du catalogue, pour les textes qui les citent.
+ *
+ * Le nombre a été écrit en dur — « 12 spots » — dans neuf endroits du site,
+ * et il est resté à douze après le passage à quarante-deux. Un chiffre recopié
+ * est un chiffre périmé en attente ; celui-ci se calcule.
+ */
+export const CATALOGUE = {
+  total: SPOTS.length,
+  /** « en France, en Espagne et au Maroc » — dans l'ordre du catalogue. */
+  etendue: 'en France, en Espagne et au Maroc',
+} as const;
 
 export const EXPOSURE_LABELS: Record<Spot['exposure'], string> = {
   abrite: 'Abrité',

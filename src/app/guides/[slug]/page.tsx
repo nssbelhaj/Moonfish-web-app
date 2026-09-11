@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+
+import { CATALOGUE } from '@/data/spots';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { GuideCard } from '@/components/guides/GuideCard';
@@ -112,7 +114,7 @@ export default async function GuidePage({ params }: { params: Promise<RouteParam
             Les scores affichés sur Luna Marea traduisent ce qui est décrit ici en une note par
             créneau de deux heures.{' '}
             <Link href="/spots" className="underline decoration-dotted underline-offset-4">
-              Voir les 12 spots suivis
+              Voir les {CATALOGUE.total} spots suivis
             </Link>
             .
           </p>

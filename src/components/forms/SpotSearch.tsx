@@ -5,6 +5,8 @@
 // transiter chaque frappe par le serveur.
 
 import Link from 'next/link';
+
+import { CATALOGUE } from '@/data/spots';
 import { useId, useMemo, useState } from 'react';
 import { formatScore, tierFor } from '@/lib/score-display';
 
@@ -70,7 +72,7 @@ export function SpotSearch({ spots }: { spots: readonly SearchableSpot[] }) {
         <ul id={listId} className="mt-3 divide-y divide-edge surface">
           {results.length === 0 && (
             <li className="px-4 py-4 text-body text-fg-muted">
-              Aucun spot ne correspond. Les 12 spots du catalogue sont listés sur{' '}
+              Aucun spot ne correspond. Les {CATALOGUE.total} spots du catalogue sont listés sur{' '}
               <Link href="/spots" className="underline decoration-dotted underline-offset-4">
                 la page Spots
               </Link>

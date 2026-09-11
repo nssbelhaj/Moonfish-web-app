@@ -1,6 +1,7 @@
 import { DemoDataNotice } from '@/components/data/DemoDataNotice';
+import { TideCoverageDetail } from '@/components/data/TideCoverageDetail';
 import type { Spot } from '@/data/schemas';
-import { collectSources, getSpotSummary, referenceNow } from '@/lib/forecast';
+import { collectSources, getSpotSummary, referenceNow, tideCoverage } from '@/lib/forecast';
 import { SpotCard } from './SpotCard';
 
 /**
@@ -8,7 +9,7 @@ import { SpotCard } from './SpotCard';
  *
  * Isolée dans son propre composant asynchrone pour être placée derrière un
  * `<Suspense>` : la coquille de /spots — dont ses métadonnées — est ainsi
- * envoyée immédiatement, sans attendre le calcul des 12 prévisions. Sans cette
+ * envoyée immédiatement, sans attendre le calcul des prévisions de tout le catalogue. Sans cette
  * séparation, Next diffère l'injection du `<title>` et de la `<meta name="description">`
  * dans le flux, et les robots qui ne rendent pas le JavaScript ne les voient pas.
  */
@@ -20,7 +21,10 @@ export async function SpotResults({ spots }: { spots: readonly Spot[] }) {
   return (
     <>
       <div className="mt-4">
-        <DemoDataNotice sources={collectSources(summaries)} />
+        <DemoDataNotice
+          sources={collectSources(summaries)}
+          detail={<TideCoverageDetail {...tideCoverage(summaries)} />}
+        />
       </div>
       <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {summaries.map((summary) => (

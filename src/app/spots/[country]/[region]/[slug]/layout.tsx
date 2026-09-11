@@ -12,7 +12,7 @@ import { findSpot, resolveSpot, spotStaticParams, type RouteParams } from './spo
 
 export const revalidate = 3600;
 
-/** Les 12 spots sont pré-rendus, et avec eux les trois onglets de chacun. */
+/** Tous les spots du catalogue sont pré-rendus, et avec eux les trois onglets de chacun. */
 export const generateStaticParams = spotStaticParams;
 
 /**

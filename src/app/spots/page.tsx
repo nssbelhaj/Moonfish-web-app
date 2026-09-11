@@ -5,7 +5,7 @@ import { SpotFilters, type FilterOption } from '@/components/forms/SpotFilters';
 import { NearbySpots } from '@/components/spot/NearbySpots';
 import { SpotResults, SpotResultsSkeleton } from '@/components/spot/SpotResults';
 import { Section } from '@/components/ui/Section';
-import { BOTTOM_LABELS, SPOT_TYPE_LABELS, TECHNIQUE_LABELS } from '@/data/spots';
+import { BOTTOM_LABELS, CATALOGUE, SPOT_TYPE_LABELS, TECHNIQUE_LABELS } from '@/data/spots';
 import type { Spot } from '@/data/schemas';
 import { spots as spotRepository } from '@/lib/providers';
 import { absoluteUrl, spotPath } from '@/lib/routes';
@@ -45,9 +45,8 @@ export async function generateMetadata({
 
   if (!description) {
     return {
-      title: 'Les 12 spots de pêche du bord suivis par Luna Marea',
-      description:
-        'Bretagne, Normandie, Hauts-de-France, Nouvelle-Aquitaine, Occitanie et Souss-Massa : score du créneau en cours, prochaine bonne fenêtre, marée et vent. Filtrables par technique — surfcasting, lancer-ramener, rockfishing, shore-jigging, pêche à pied.',
+      title: `Les ${all.length} spots de pêche du bord suivis par Luna Marea`,
+      description: `${all.length} spots ${CATALOGUE.etendue} : score du créneau en cours, prochaine bonne fenêtre, marée et vent. Filtrables par pays, région, technique — surfcasting, lancer-ramener, rockfishing, shore-jigging, pêche à pied — et type de fond.`,
       alternates: { canonical },
     };
   }
@@ -113,7 +112,7 @@ export default async function SpotsPage({
     <>
       <div className="mx-auto w-full max-w-shell px-4 pt-8 md:px-8 md:pt-12">
         <h1 className="font-serif text-h1 font-semibold">
-          {description ? `Spots de pêche ${description}` : 'Les 12 spots suivis par Luna Marea'}
+          {description ? `Spots de pêche ${description}` : `Les ${all.length} spots suivis par Luna Marea`}
         </h1>
         <p className="mt-3 max-w-prose text-body text-fg-muted">
           Le classement suit le score du créneau en cours. Filtrez par technique — surfcasting,
@@ -166,14 +165,14 @@ export default async function SpotsPage({
           <div className="mt-6 surface px-4 py-8">
             <p className="text-body font-semibold font-600">Aucun spot ne correspond à cette combinaison.</p>
             <p className="mt-2 max-w-prose text-body text-fg-muted">
-              Le catalogue compte 12 spots pour l’instant. Retirez un filtre, ou repartez de la
-              liste complète.
+              Le catalogue compte {all.length} spots pour l’instant. Retirez un filtre, ou repartez
+              de la liste complète.
             </p>
             <Link
               href="/spots"
               className="mt-4 inline-flex min-h-[48px] items-center rounded-ctl border border-edge-strong px-4 font-600"
             >
-              Voir les 12 spots
+              Voir les {all.length} spots
             </Link>
           </div>
         ) : (

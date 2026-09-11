@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { CATALOGUE } from '@/data/spots';
 import { Archivo, Spectral } from 'next/font/google';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { MobileNav, SiteHeader } from '@/components/layout/SiteHeader';
@@ -29,7 +30,7 @@ export const metadata: Metadata = {
     template: '%s · Luna Marea',
   },
   description:
-    'Score de pêche du bord sur 7 jours, calculé à partir de la marée, du vent, de la houle et des périodes solunaires. Surfcasting, lancer-ramener, rockfishing : 12 spots en France et au Maroc.',
+    `Score de pêche du bord sur 7 jours, calculé à partir de la marée, du vent, de la houle et des périodes solunaires. Surfcasting, lancer-ramener, rockfishing : ${CATALOGUE.total} spots ${CATALOGUE.etendue}.`,
   applicationName: 'Luna Marea',
   authors: [{ name: 'Luna Marea' }],
   robots: { index: true, follow: true },

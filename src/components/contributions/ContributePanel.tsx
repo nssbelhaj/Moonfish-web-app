@@ -81,7 +81,7 @@ export function ContributePanel({
         >
           connectez-vous
         </Link>
-        . Un compte demande une adresse e-mail, rien d’autre : ni mot de passe, ni nom, ni position.
+        . Un compte se crée en une minute, avec une adresse e-mail et un mot de passe. Il ne demande jamais votre position.
       </p>
     );
   }
