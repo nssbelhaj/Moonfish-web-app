@@ -13,6 +13,7 @@ import {
 } from '@/data/schemas-compte';
 import { accountsEnabled, magicLinkEnabled } from '@/lib/auth/config';
 import { hacher, verifier } from '@/lib/auth/password';
+import { piegeDeclenche } from '@/lib/auth/piege';
 import { fermerSession, ouvrirSession } from '@/lib/auth/session-cookie';
 import { currentUser } from '@/lib/auth/session';
 import { BUDGETS, consommer, delaiLisible, ipAppelante, rembourser } from '@/lib/limites';
@@ -60,6 +61,16 @@ async function budgetProfil(userId: string): Promise<EtatCompte | null> {
   };
 }
 
+/*
+  Message du champ-piège. Il dit VRAI sans dire comment : nommer le champ
+  apprendrait à celui qui l'a rempli exprès lequel laisser vide la fois
+  suivante. Un humain ne peut pas le lire — le champ lui est inatteignable —
+  sauf si le piège se casse, et dans ce cas la phrase doit lui rester
+  compréhensible et lui donner un recours.
+*/
+const ROBOT =
+  'Cette demande a été écartée par une protection automatique. Si vous êtes bien une personne, rechargez la page et recommencez ; écrivez-nous si cela se reproduit.';
+
 const COMPTEUR_EN_PANNE: EtatCompte = {
   ok: false,
   message:
@@ -87,6 +98,18 @@ export async function inscrire(
   formData: FormData,
 ): Promise<EtatCompte> {
   if (!accountsEnabled()) return FERMES;
+
+  /*
+    Le champ-piège d'abord, avant toute écriture et même avant le budget : un
+    robot qui s'y prend ne doit consommer ni ligne de compteur, ni requête, et
+    surtout pas le quota d'un accès partagé — un hôtel, un campus, un
+    téléphone en partage de connexion — où il enfermerait dehors des gens
+    réels.
+  */
+  if (piegeDeclenche(formData)) {
+    console.warn('[inscription] champ-piège rempli, demande écartée');
+    return { ok: false, message: ROBOT };
+  }
 
   const analyse = inscriptionSchema.safeParse({
     email: formData.get('email'),

@@ -647,3 +647,19 @@
     box-shadow: var(--ombre-controle);
   }
 }
+
+/*
+  Le champ-piège anti-robot (voir `src/lib/auth/piege.ts`).
+
+  `display: none` serait plus court, et c'est justement ce que les robots
+  sérieux détectent avant de décider s'il faut remplir. Le champ est donc
+  RENDU, simplement placé hors de l'écran ; `aria-hidden` et `tabindex="-1"`,
+  posés sur le balisage, le retirent des lecteurs d'écran et du clavier.
+*/
+.piege-robot {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 
 import { ActionForm, Field, INPUT_CLASS } from '@/components/forms/ActionForm';
+import { CHAMP_PIEGE } from '@/lib/auth/piege';
 import {
   definirNouveauMotDePasse,
   demanderNouveauMotDePasse,
@@ -60,6 +61,22 @@ export function ConnexionForm() {
 export function InscriptionForm() {
   return (
     <ActionForm action={inscrire} submitLabel="Créer mon compte" pendingLabel="Création…">
+      {/*
+        Champ-piège : hors écran, hors clavier, hors lecteur d'écran. Un robot
+        qui remplit tout se dénonce en le remplissant. Voir `lib/auth/piege.ts`
+        pour ce que cela vaut, et pourquoi ce n'est pas un CAPTCHA d'un tiers.
+      */}
+      <div aria-hidden="true" className="piege-robot">
+        <label htmlFor="champ-site-web">Laissez ce champ vide</label>
+        <input
+          type="text"
+          id="champ-site-web"
+          name={CHAMP_PIEGE}
+          tabIndex={-1}
+          autoComplete="off"
+        />
+      </div>
+
       {/*
         Prénom et nom sur une ligne dès qu'il y a la place : ce sont deux
         champs courts, et les empiler allongeait le formulaire sans raison.
