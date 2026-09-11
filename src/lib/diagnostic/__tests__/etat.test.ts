@@ -34,7 +34,9 @@ const SECRETS = {
 const COMPLET: Environnement = {
   NODE_ENV: 'production',
   NEXT_PUBLIC_SITE_URL: 'https://lunamarea.fr',
-  DATABASE_URL: `mysql://utilisateur:${SECRETS.motDePasseBase}@mysql.hostinger.com:3306/u969082232_moonfish`,
+  // Identifiant RÉALISTE : « utilisateur » est justement le mot d’exemple
+  // que le détecteur de gabarits refuse, et la fixture le déclenchait.
+  DATABASE_URL: `mysql://u969082232_luna:${SECRETS.motDePasseBase}@mysql.hostinger.com:3306/u969082232_moonfish`,
   EMAIL_SERVER: `smtp://contact%40lunamarea.fr:${SECRETS.motDePasseSmtp}@smtp.hostinger.com:587`,
   EMAIL_FROM: 'contact@lunamarea.fr',
   AUTH_URL: 'https://lunamarea.fr',
@@ -247,5 +249,57 @@ describe('l’empreinte de construction dans le diagnostic', () => {
     const p = version('inconnue');
     expect(p.etat).toBe('attention');
     expect(p.remede).toContain('npm run build');
+  });
+});
+
+
+describe('les textes d’exemple pris pour des valeurs', () => {
+  const sujets = (env: Environnement) =>
+    diagnostiquer({ ...CONTEXTE, env }).filter((p) => p.etat !== 'ok').map((p) => p.sujet);
+
+  const GABARIT = 'Textes d’exemple pris pour des valeurs';
+
+  it('attrape le cas réel : « UTILISATEUR » et « MOTDEPASSE » dans DATABASE_URL', () => {
+    /*
+      Le cas observé en production. L'identifiant MySQL était resté le mot
+      d'exemple de la documentation, et MySQL répondait « Access denied for
+      user 'UTILISATEUR' » à chaque page. En aval, migrations, comptes et
+      compteurs échouaient — chacun se plaignant d'autre chose.
+    */
+    const colle = {
+      ...COMPLET,
+      DATABASE_URL: 'mysql://UTILISATEUR:MOTDEPASSE@localhost:3306/u969082232_moonfish',
+    };
+
+    const point = diagnostiquer({ ...CONTEXTE, env: colle }).find((p) => p.sujet === GABARIT);
+
+    expect(point?.etat).toBe('absent');
+    expect(point?.constat).toContain('l’identifiant');
+    expect(point?.constat).toContain('le mot de passe');
+  });
+
+  it('attrape aussi un secret laissé au gabarit', () => {
+    expect(sujets({ ...COMPLET, CRON_SECRET: 'COLLEZ_ICI_VOTRE_CRON_SECRET' })).toContain(GABARIT);
+    expect(sujets({ ...COMPLET, AUTH_SECRET: 'VOTRE_SECRET' })).toContain(GABARIT);
+  });
+
+  it('ne signale RIEN sur des valeurs réelles', () => {
+    // Le contrôle doit rester muet sur une configuration correcte, sinon on
+    // cesse de le lire — et c'est précisément ce qu'il fallait éviter.
+    expect(sujets(COMPLET)).not.toContain(GABARIT);
+  });
+
+  it('est rendu AVANT les points qui ne feraient que répéter la panne', () => {
+    const colle = {
+      ...COMPLET,
+      DATABASE_URL: 'mysql://UTILISATEUR:MOTDEPASSE@localhost:3306/base',
+    };
+    const points = diagnostiquer({ ...CONTEXTE, env: colle });
+
+    const rangGabarit = points.findIndex((p) => p.sujet === GABARIT);
+    const rangBase = points.findIndex((p) => p.sujet === 'Base de données');
+
+    expect(rangGabarit).toBeGreaterThanOrEqual(0);
+    expect(rangGabarit).toBeLessThan(rangBase);
   });
 });

@@ -39,7 +39,7 @@ export async function essaiSmtp(url: string | undefined, from: string | undefine
       sujet: 'Connexion au serveur d’envoi',
       etat: 'absent',
       constat: 'EMAIL_SERVER n’est pas une URL lisible.',
-      remede: 'Forme attendue : smtp://UTILISATEUR:MOTDEPASSE@smtp.hostinger.com:587',
+      remede: 'Forme attendue : smtp://‹adresse-complète›:‹mot-de-passe›@smtp.hostinger.com:587',
     };
   }
 
@@ -137,7 +137,7 @@ function remedePour(message: string): string {
     return 'Le nom du serveur est introuvable. Un « / », « ? », « # » ou « % » dans le MOT DE PASSE coupe l’URL et détourne la connexion : encodez-les (%2F %3F %23 %25) ou changez le mot de passe.';
   }
   return (
-    'Relisez EMAIL_SERVER : smtp://ADRESSE_COMPLETE:MOTDEPASSE@smtp.hostinger.com:587. ' +
+    'Relisez EMAIL_SERVER : smtp://‹adresse-complète›:‹mot-de-passe›@smtp.hostinger.com:587. ' +
     'Le « @ » de l’identifiant n’a pas besoin d’être encodé ; ceux du MOT DE PASSE, si.'
   );
 }

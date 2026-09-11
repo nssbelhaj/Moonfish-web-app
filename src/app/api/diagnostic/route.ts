@@ -6,6 +6,7 @@ import { BUILD_STAMP } from '@/lib/build-stamp';
 import { estProprietaire } from '@/lib/auth/proprietaire';
 import { etatMigrations } from '@/lib/diagnostic/migrations';
 import { refusExplique } from '@/lib/diagnostic/refus';
+import { essaiBase } from '@/lib/diagnostic/essai-base';
 import { essaiSmtp } from '@/lib/diagnostic/smtp';
 import { uploadsDir } from '@/lib/photo/storage';
 
@@ -56,6 +57,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   // L'état des migrations demande une requête, pas une variable : il ne peut
   // pas vivre dans le diagnostic purement synchrone.
+  /*
+    L'essai de connexion PRÉCÈDE l'état des migrations : si la base refuse,
+    tout ce qui suit ne fait que répéter la même panne sous d'autres noms.
+  */
+  points.push(await essaiBase(process.env.DATABASE_URL));
   points.push(await etatMigrations());
 
   /*

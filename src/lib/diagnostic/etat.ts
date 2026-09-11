@@ -1,5 +1,6 @@
 import { lireConfigBase } from '@/lib/db/config';
 import { smtpWarning } from '@/lib/auth/config';
+import { partiesGabarit, ressembleAUnGabarit } from '@/lib/diagnostic/gabarits';
 import { parseAllowedSpots } from '@/lib/providers/selective-tide';
 
 /**
@@ -127,6 +128,32 @@ export function diagnostiquer({ env, buildStamp, spotCount, uploadsDir, appDir }
         },
   );
 
+  /*
+    ── Les textes d'exemple pris pour des valeurs ──────────────────────────
+
+    Placé TÔT, et volontairement : quand l'identifiant de la base est resté
+    le mot `UTILISATEUR`, tout échoue en aval — migrations, comptes,
+    compteurs — et chaque point se plaint d'autre chose. Aucun ne disait la
+    cause. Celui-ci la dit en premier.
+  */
+  const gabarits: string[] = [
+    ...partiesGabarit(env['DATABASE_URL']).map((partie) => `DATABASE_URL : ${partie}`),
+    ...partiesGabarit(env['EMAIL_SERVER']).map((partie) => `EMAIL_SERVER : ${partie}`),
+    ...(['AUTH_SECRET', 'CRON_SECRET', 'STORMGLASS_API_KEY', 'EMAIL_FROM'] as const)
+      .filter((cle) => ressembleAUnGabarit(env[cle]))
+      .map((cle) => `${cle} : la valeur entière`),
+  ];
+
+  if (gabarits.length > 0) {
+    points.push({
+      sujet: 'Textes d’exemple pris pour des valeurs',
+      etat: 'absent',
+      constat: `Ces réglages portent encore un mot de la documentation au lieu d’une vraie valeur — ${gabarits.join(' ; ')}.`,
+      remede:
+        'Remplacez-les par les valeurs réelles relevées chez l’hébergeur. Tant qu’ils restent, tout ce qui en dépend échouera, chaque panne se plaignant d’autre chose que de la cause.',
+    });
+  }
+
   // ── 2. La base ──────────────────────────────────────────────────────────
   const verdict = lireConfigBase(env);
   points.push(
@@ -183,7 +210,7 @@ export function diagnostiquer({ env, buildStamp, spotCount, uploadsDir, appDir }
           etat: 'absent',
           constat: 'EMAIL_SERVER absente : aucun lien de connexion ne peut partir.',
           remede:
-            'Définissez EMAIL_SERVER=smtp://UTILISATEUR:MOTDEPASSE@smtp.hostinger.com:587 et EMAIL_FROM.',
+            'Définissez EMAIL_SERVER=smtp://‹adresse-complète›:‹mot-de-passe›@smtp.hostinger.com:587 et EMAIL_FROM.',
         }
       : !emailFrom
         ? {

@@ -5,6 +5,7 @@ import { Section } from '@/components/ui/Section';
 import { SPOTS } from '@/data/spots';
 import { estProprietaire } from '@/lib/auth/proprietaire';
 import { BUILD_STAMP } from '@/lib/build-stamp';
+import { essaiBase } from '@/lib/diagnostic/essai-base';
 import { diagnostiquer, verdictGlobal, type Etat, type Point } from '@/lib/diagnostic/etat';
 import { etatMigrations } from '@/lib/diagnostic/migrations';
 import { uploadsDir } from '@/lib/photo/storage';
@@ -81,6 +82,7 @@ export default async function Page() {
     appDir: process.cwd(),
   });
 
+  points.push(await essaiBase(process.env.DATABASE_URL));
   points.push(await etatMigrations());
 
   const rang = (etat: Etat) => (etat === 'absent' ? 0 : etat === 'attention' ? 1 : 2);
