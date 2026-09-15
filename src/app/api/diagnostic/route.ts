@@ -51,6 +51,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     env: process.env,
     buildStamp: BUILD_STAMP,
     spotCount: SPOTS.length,
+    spotSlugs: SPOTS.map((spot) => spot.slug),
     uploadsDir: uploadsDir(),
     appDir: process.cwd(),
   });

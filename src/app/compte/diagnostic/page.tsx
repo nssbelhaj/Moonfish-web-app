@@ -79,6 +79,7 @@ export default async function Page() {
     env: process.env,
     buildStamp: BUILD_STAMP,
     spotCount: SPOTS.length,
+    spotSlugs: SPOTS.map((spot) => spot.slug),
     uploadsDir: uploadsDir(),
     appDir: process.cwd(),
   });

@@ -54,7 +54,7 @@ export async function register(): Promise<void> {
     { authHostWarning, smtpWarning },
     { storageWarning },
     { siteUrlWarning },
-    { tideBudgetWarning },
+    { tideBudgetWarning, tideSpotsWarning },
     { SPOTS },
   ] = await Promise.all([
     import('@/lib/auth/config'),
@@ -70,6 +70,7 @@ export async function register(): Promise<void> {
     smtpWarning(),
     storageWarning(),
     tideBudgetWarning(process.env, SPOTS.length),
+    tideSpotsWarning(process.env, SPOTS.map((spot) => spot.slug)),
   ].filter(
     (message): message is string => message !== null,
   );

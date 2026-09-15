@@ -38,13 +38,62 @@ export class SelectiveTideProvider implements TideProvider {
   }
 }
 
-/** Liste de slugs lue dans `TIDE_REAL_SPOTS`. Vide = aucune restriction. */
+/**
+ * Liste de slugs lue dans `TIDE_REAL_SPOTS`. Vide = aucune restriction.
+ *
+ * ─── Tolérante, parce que la valeur est recopiée à la main ────────────────
+ *
+ * Sur le site en ligne, la clé Stormglass était posée, le fournisseur
+ * déclaré, et pourtant AUCUN des quarante-deux spots ne recevait de marée
+ * réelle — sans le voyant « Interrompu » qui signale une panne. C'est la
+ * signature d'une liste qui ne correspond à aucun spot : des guillemets
+ * autour de la valeur, un point-virgule pour séparer, une majuscule, le nom
+ * de la variable recopié avec sa valeur. Chacun de ces cas donne une liste
+ * non vide dont aucun élément n'est un slug, et le site l'applique sans un
+ * mot. On accepte donc ce qu'une personne tape, et le diagnostic nomme ce
+ * qui ne correspond toujours pas.
+ */
 export function parseAllowedSpots(raw: string | undefined): string[] {
   if (!raw) return [];
-  return raw
-    .split(',')
-    .map((slug) => slug.trim())
+  const sansPrefixe = raw.trim().replace(/^TIDE_REAL_SPOTS\s*=\s*/i, '');
+  return sansPrefixe
+    .split(/[,;\s]+/)
+    .map((slug) => slug.replace(/^["'`]+|["'`]+$/g, '').trim().toLowerCase())
     .filter((slug) => slug.length > 0);
+}
+
+/**
+ * Les entrées de `TIDE_REAL_SPOTS` qui ne désignent aucun spot du catalogue.
+ * Une liste dont RIEN ne correspond laisse toutes les marées simulées, sans
+ * panne à signaler : il faut le dire à voix haute.
+ */
+export function unknownAllowedSpots(
+  raw: string | undefined,
+  catalogue: readonly string[],
+): { demandes: string[]; inconnus: string[] } {
+  const demandes = parseAllowedSpots(raw);
+  const connus = new Set(catalogue);
+  return { demandes, inconnus: demandes.filter((slug) => !connus.has(slug)) };
+}
+
+/** Avertissement de démarrage : la liste ne désigne rien, ou pas tout. */
+export function tideSpotsWarning(
+  env: Readonly<Record<string, string | undefined>> = process.env,
+  catalogue: readonly string[],
+): string | null {
+  if (!env['STORMGLASS_API_KEY']?.trim()) return null;
+  const { demandes, inconnus } = unknownAllowedSpots(env['TIDE_REAL_SPOTS'], catalogue);
+  if (demandes.length === 0 || inconnus.length === 0) return null;
+
+  const tous = inconnus.length === demandes.length;
+  return (
+    `TIDE_REAL_SPOTS ${tous ? 'ne désigne AUCUN spot du catalogue' : 'contient des noms inconnus'} : ` +
+    `${inconnus.map((s) => `« ${s} »`).join(', ')}. ` +
+    (tous
+      ? 'Toutes les marées restent simulées, sans qu’aucune panne soit signalée. '
+      : '') +
+    `Les noms attendus sont les slugs des adresses de spot, par exemple ${catalogue.slice(0, 3).join(', ')}.`
+  );
 }
 
 /**

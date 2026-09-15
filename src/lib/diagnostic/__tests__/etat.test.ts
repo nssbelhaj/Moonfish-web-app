@@ -16,6 +16,7 @@ import { diagnostiquer, verdictGlobal, type Environnement } from '../etat';
 */
 
 const CONTEXTE = {
+  spotSlugs: ['pen-hat', 'la-torche', 'etretat', 'taghazout'],
   buildStamp: '2026-09-11T08:00:00Z',
   spotCount: 42,
   uploadsDir: '/var/photos',
@@ -301,5 +302,34 @@ describe('les textes d’exemple pris pour des valeurs', () => {
 
     expect(rangGabarit).toBeGreaterThanOrEqual(0);
     expect(rangGabarit).toBeLessThan(rangBase);
+  });
+});
+
+
+describe('TIDE_REAL_SPOTS qui ne désigne rien', () => {
+  /*
+    Vu en ligne : clé posée, fournisseur déclaré, et pas un seul spot en
+    marée réelle — sans voyant de panne. La liste ne correspondait à aucun
+    spot, et le site l'appliquait sans un mot.
+  */
+  it('est un défaut franc, qui nomme les entrées fautives', () => {
+    const points = diagnostiquer({ ...CONTEXTE, env: { ...COMPLET, TIDE_REAL_SPOTS: 'Pen Hat, Étretat' } });
+    const marees = points.find((p) => p.sujet === 'Marées');
+    expect(marees?.etat).toBe('absent');
+    expect(marees?.constat).toContain('« pen »');
+    expect(marees?.constat).toContain('« étretat »');
+    expect(marees?.remede).toContain('pen-hat');
+  });
+
+  it('signale les noms inconnus quand certains sont bons', () => {
+    const points = diagnostiquer({ ...CONTEXTE, env: { ...COMPLET, TIDE_REAL_SPOTS: 'pen-hat,plage-inconnue' } });
+    const marees = points.find((p) => p.sujet === 'Marées');
+    expect(marees?.etat).toBe('attention');
+    expect(marees?.constat).toContain('« plage-inconnue »');
+  });
+
+  it('accepte guillemets, points-virgules et majuscules sans broncher', () => {
+    const points = diagnostiquer({ ...CONTEXTE, env: { ...COMPLET, TIDE_REAL_SPOTS: '"Pen-Hat; la-torche"' } });
+    expect(points.find((p) => p.sujet === 'Marées')?.etat).toBe('ok');
   });
 });

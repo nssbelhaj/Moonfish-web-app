@@ -1,7 +1,7 @@
 import { lireConfigBase } from '@/lib/db/config';
 import { smtpWarning } from '@/lib/auth/config';
 import { partiesGabarit, ressembleAUnGabarit } from '@/lib/diagnostic/gabarits';
-import { parseAllowedSpots } from '@/lib/providers/selective-tide';
+import { parseAllowedSpots, unknownAllowedSpots } from '@/lib/providers/selective-tide';
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
@@ -73,6 +73,8 @@ export interface Contexte {
    * exception.
    */
   buildStamp: string;
+  /** Slugs du catalogue, pour vérifier que `TIDE_REAL_SPOTS` désigne des spots qui existent. */
+  spotSlugs: readonly string[];
   /** Nombre de spots du catalogue, pour le calcul de quota. */
   spotCount: number;
   /** Répertoire réellement utilisé pour les photos. */
@@ -81,7 +83,7 @@ export interface Contexte {
   appDir: string;
 }
 
-export function diagnostiquer({ env, buildStamp, spotCount, uploadsDir, appDir }: Contexte): Point[] {
+export function diagnostiquer({ env, buildStamp, spotCount, spotSlugs, uploadsDir, appDir }: Contexte): Point[] {
   const points: Point[] = [];
 
   /*
@@ -290,6 +292,7 @@ export function diagnostiquer({ env, buildStamp, spotCount, uploadsDir, appDir }
   const cle = presence(env, 'STORMGLASS_API_KEY');
   const force = env['TIDE_PROVIDER'] === 'mock';
   const bornes = parseAllowedSpots(env['TIDE_REAL_SPOTS']);
+  const { inconnus } = unknownAllowedSpots(env['TIDE_REAL_SPOTS'], spotSlugs);
 
   points.push(
     force
@@ -308,6 +311,21 @@ export function diagnostiquer({ env, buildStamp, spotCount, uploadsDir, appDir }
             remede:
               'Définissez STORMGLASS_API_KEY et TIDE_REAL_SPOTS, puis RECONSTRUISEZ : les marées sont lues au pré-rendu, pas à la visite.',
           }
+        : bornes.length > 0 && inconnus.length === bornes.length
+          ? {
+              sujet: 'Marées',
+              etat: 'absent',
+              constat: `La clé est posée, mais TIDE_REAL_SPOTS ne désigne AUCUN spot du catalogue : ${inconnus.map((b) => `« ${b} »`).join(', ')}. Toutes les marées restent donc simulées, et aucune panne n’est signalée — c’est exactement ce que le site en ligne montre.`,
+              remede:
+                `Les noms attendus sont les slugs des adresses de spot, sans guillemets, séparés par des virgules — par exemple TIDE_REAL_SPOTS=${spotSlugs.slice(0, 3).join(',')}. Puis reconstruisez.`,
+            }
+          : inconnus.length > 0
+            ? {
+                sujet: 'Marées',
+                etat: 'attention',
+                constat: `TIDE_REAL_SPOTS contient ${inconnus.length} nom(s) qui ne correspondent à aucun spot : ${inconnus.map((b) => `« ${b} »`).join(', ')}. Les ${bornes.length - inconnus.length} autre(s) reçoivent des marées réelles.`,
+                remede: `Corrigez ces noms : les slugs valides sont ceux des adresses de spot, par exemple ${spotSlugs.slice(0, 3).join(', ')}.`,
+              }
         : bornes.length === 0 && spotCount > 8
           ? {
               sujet: 'Marées',

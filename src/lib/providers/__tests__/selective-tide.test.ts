@@ -6,6 +6,7 @@ import {
   SelectiveTideProvider,
   parseAllowedSpots,
   tideBudgetWarning,
+  unknownAllowedSpots,
 } from '../selective-tide';
 import type { DateRange, SourceMeta, Sourced, TideProvider } from '../types';
 import type { Spot, TideEvent } from '@/data/schemas';
@@ -39,6 +40,20 @@ describe('parseAllowedSpots', () => {
 
   it('tolère les espaces autour des slugs', () => {
     expect(parseAllowedSpots(' pen-hat , la-torche ')).toStrictEqual(['pen-hat', 'la-torche']);
+  });
+
+  it('accepte ce qu’une personne tape : guillemets, points-virgules, majuscules, nom de la variable', () => {
+    expect(parseAllowedSpots('"pen-hat,la-torche"')).toStrictEqual(['pen-hat', 'la-torche']);
+    expect(parseAllowedSpots("'pen-hat'; 'la-torche'")).toStrictEqual(['pen-hat', 'la-torche']);
+    expect(parseAllowedSpots('Pen-Hat La-Torche')).toStrictEqual(['pen-hat', 'la-torche']);
+    expect(parseAllowedSpots('TIDE_REAL_SPOTS=pen-hat,la-torche')).toStrictEqual(['pen-hat', 'la-torche']);
+  });
+
+  it('nomme ce qui ne correspond à aucun spot', () => {
+    expect(unknownAllowedSpots('pen-hat,plage-x', ['pen-hat'])).toStrictEqual({
+      demandes: ['pen-hat', 'plage-x'],
+      inconnus: ['plage-x'],
+    });
   });
 });
 
