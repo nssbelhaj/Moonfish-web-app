@@ -109,6 +109,39 @@ export const connexionSchema = z.object({
 
 export type ConnexionInput = z.infer<typeof connexionSchema>;
 
+/**
+ * Profil à compléter après une connexion SANS formulaire d'inscription — par
+ * Google ou par lien courriel.
+ *
+ * L'inscription par mot de passe demande l'âge et le consentement ; ces deux
+ * chemins ne passaient pas par là et ouvraient un compte sans l'un ni
+ * l'autre. Le même seuil s'applique à tout le monde, quel que soit le bouton.
+ */
+export const profilInitialSchema = z
+  .object({
+    displayName: z
+      .string({ required_error: 'Choisissez un nom affiché.' })
+      .trim()
+      .min(2, 'Nom affiché trop court.')
+      .max(40, 'Nom affiché trop long.'),
+    birthDate: dateDeNaissance,
+    consentement: z.literal('oui', {
+      errorMap: () => ({
+        message: 'Il faut accepter la politique de confidentialité pour créer un compte.',
+      }),
+    }),
+  })
+  .refine((v) => ageA(v.birthDate) >= AGE_MINIMUM, {
+    message: `L’inscription est réservée aux ${AGE_MINIMUM} ans et plus.`,
+    path: ['birthDate'],
+  })
+  .refine((v) => ageA(v.birthDate) < 120, {
+    message: 'Date de naissance invalide.',
+    path: ['birthDate'],
+  });
+
+export type ProfilInitialInput = z.infer<typeof profilInitialSchema>;
+
 export const motDePasseOublieSchema = z.object({ email });
 
 export const nouveauMotDePasseSchema = z

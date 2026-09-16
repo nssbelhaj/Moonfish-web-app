@@ -1,20 +1,29 @@
 import NextAuth from 'next-auth';
+import Google from 'next-auth/providers/google';
 import Nodemailer from 'next-auth/providers/nodemailer';
 import type { Provider } from 'next-auth/providers';
 
-import { accountsEnabled, mailEnabled, smtpServer } from '@/lib/auth/config';
+import { accountsEnabled, googleEnabled, mailEnabled, smtpServer } from '@/lib/auth/config';
 import { SITE_NAME, verificationEmail } from '@/lib/auth/email-template';
 import { MysqlAdapter } from '@/lib/auth/mysql-adapter';
 
 export { accountsEnabled, mailEnabled };
 
 /**
- * Authentification : un lien reçu par courriel, et rien d'autre.
+ * Authentification par Auth.js : le lien reçu par courriel, et Google.
  *
- * Pas de mot de passe, volontairement. Ce que nous ne stockons pas ne peut pas
- * fuir, et un site de pêche n'a aucune raison de détenir un secret qu'une
- * personne réutilise peut-être ailleurs. Pas de fournisseur externe non plus :
- * « se connecter avec Google » ferait savoir à Google que vous pêchez.
+ * Le mot de passe, lui, n'emprunte pas ces routes : il vit dans
+ * `lib/auth/actions-compte.ts`, avec sa propre table de sessions — Auth.js v5
+ * refuse le fournisseur « identifiants » avec des sessions en base.
+ *
+ * ─── Google, et ce qu'on a accepté en l'ajoutant ─────────────────────────
+ *
+ * La première version l'écartait : « se connecter avec Google ferait savoir
+ * à Google que vous pêchez ». C'est resté vrai, et c'est écrit sur la page de
+ * confidentialité — mais borné : Google n'est joint qu'au CLIC sur le bouton,
+ * jamais au chargement d'une page, et il apprend qu'une session s'ouvre, pas
+ * quel spot on regarde. Qui ne veut pas de ce lien garde l'adresse et le mot
+ * de passe. Le bouton n'existe que si les identifiants OAuth sont posés.
  *
  * Les sessions sont EN BASE, pas dans un jeton signé. Conséquence qui compte :
  * une déconnexion ou une suppression de compte prend effet immédiatement,
@@ -41,7 +50,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     COMPILAIT PLUS — « Failed to collect page data » — alors que le site est
     précisément conçu pour fonctionner sans comptes, en le disant.
   */
-  providers: mailEnabled()
+  providers: [
+    /*
+      Google déclare `allowDangerousEmailAccountLinking`, et le mot « dangerous »
+      mérite d'être expliqué plutôt que copié. Le danger visé : un fournisseur
+      qui ne VÉRIFIE PAS les adresses laisserait quelqu'un créer chez lui un
+      compte avec l'adresse d'autrui, puis se connecter ici à sa place. Google
+      vérifie les siennes. Sans ce réglage, une personne inscrite ici par mot
+      de passe qui clique « Continuer avec Google » — même adresse — serait
+      REFUSÉE (« OAuthAccountNotLinked ») au lieu de retrouver son compte :
+      exactement l'inverse de ce qu'elle attend.
+    */
+    ...(googleEnabled() ? [Google({ allowDangerousEmailAccountLinking: true })] : []),
+    ...(mailEnabled()
     ? [
         Nodemailer({
           server: smtpServer() ?? '',
@@ -77,7 +98,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               },
         }) as Provider,
       ]
-    : [],
+    : []),
+  ],
 
   pages: {
     signIn: '/compte',

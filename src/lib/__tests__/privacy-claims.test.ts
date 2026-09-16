@@ -159,15 +159,21 @@ describe('« aucune requête vers un tiers depuis votre navigateur »', () => {
       SERVEUR : ni Stormglass ni Open-Meteo ne voient l'adresse IP du visiteur,
       et ne peuvent donc pas savoir quel spot il consulte.
 
-      Depuis le passage à MySQL, l'hébergeur est le SEUL tiers que le navigateur
-      joigne — la base, les photos et les courriels sont chez lui, et tout passe
-      par notre domaine. Si un fournisseur de données basculait côté client, sa
-      ligne devrait changer sur la page AVANT le code.
+      L'hébergeur est joint par le navigateur — la base, les photos et les
+      courriels sont chez lui, tout passe par notre domaine. Google l'est
+      aussi, mais SEULEMENT au clic sur « Continuer avec Google », et la page
+      le dit à cet endroit précis. Si un fournisseur de données basculait
+      côté client, sa ligne devrait changer sur la page AVANT le code.
     */
     const browserFacing = PROCESSORS.filter((processor) => processor.browserContact);
     expect(browserFacing.map((processor) => processor.name)).toStrictEqual([
       'Hostinger International Ltd',
+      'Google LLC',
     ]);
+
+    const google = PROCESSORS.find((processor) => processor.name === 'Google LLC');
+    expect(google?.scope).toBe('google');
+    expect(google?.role).toContain('uniquement si vous choisissez');
   });
 });
 

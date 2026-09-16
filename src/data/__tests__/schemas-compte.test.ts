@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { AGE_MINIMUM, ageA, connexionSchema, inscriptionSchema } from '../schemas-compte';
+import {
+  AGE_MINIMUM,
+  ageA,
+  connexionSchema,
+  inscriptionSchema,
+  profilInitialSchema,
+} from '../schemas-compte';
 
 const AUJOURDHUI = new Date(Date.UTC(2026, 8, 10)); // 10 septembre 2026
 
@@ -111,5 +117,25 @@ describe('la connexion', () => {
     // Exiger 10 caractères à la connexion révélerait la règle appliquée à
     // l'inscription, et gênerait un ancien compte au mot de passe plus court.
     expect(connexionSchema.safeParse({ email: 'a@b.fr', password: 'court' }).success).toBe(true);
+  });
+});
+
+describe('profilInitialSchema — le profil complété après Google ou le lien courriel', () => {
+  it('applique le même seuil d’âge que l’inscription par mot de passe', () => {
+    const jeune = profilInitialSchema.safeParse({ displayName: 'Nadia', birthDate: '2020-01-01', consentement: 'oui' });
+    expect(jeune.success).toBe(false);
+    const adulte = profilInitialSchema.safeParse({ displayName: 'Nadia', birthDate: '1990-04-12', consentement: 'oui' });
+    expect(adulte.success).toBe(true);
+  });
+
+  it('exige le consentement, coché et non implicite', () => {
+    const sans = profilInitialSchema.safeParse({ displayName: 'Nadia', birthDate: '1990-04-12' });
+    expect(sans.success).toBe(false);
+    if (!sans.success) expect(sans.error.issues[0]?.message).toContain('politique de confidentialité');
+  });
+
+  it('accepte sa propre sortie', () => {
+    const une = profilInitialSchema.parse({ displayName: '  Nadia ', birthDate: '1990-04-12', consentement: 'oui' });
+    expect(profilInitialSchema.parse(une)).toStrictEqual(une);
   });
 });

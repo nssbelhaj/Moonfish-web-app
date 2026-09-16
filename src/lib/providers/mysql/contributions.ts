@@ -301,7 +301,11 @@ export class MysqlContributionsRepository implements ContributionsRepository {
     }
   }
 
-  async createProfile(userId: string, displayName: string): Promise<ContributionResult<Profile>> {
+  async createProfile(
+    userId: string,
+    displayName: string,
+    complement?: { birthDate: string },
+  ): Promise<ContributionResult<Profile>> {
     const parsed = displayNameSchema.safeParse(displayName);
     if (!parsed.success) {
       return failure('invalid', parsed.error.issues[0]?.message ?? 'Nom affiché invalide.');
@@ -309,8 +313,8 @@ export class MysqlContributionsRepository implements ContributionsRepository {
 
     try {
       await execute(
-        'insert into profiles (user_id, display_name, consent_version) values (?, ?, ?)',
-        [userId, parsed.data, CONSENT_VERSION],
+        'insert into profiles (user_id, display_name, birth_date, consent_version) values (?, ?, ?, ?)',
+        [userId, parsed.data, complement?.birthDate ?? null, CONSENT_VERSION],
       );
 
       const profile = await this.getProfile(userId);

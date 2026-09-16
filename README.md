@@ -42,7 +42,19 @@ Node 20 ou plus. Aucune variable d'environnement n'est requise pour démarrer.
 | `AUTH_SECRET` | avec les comptes | — | Signe les jetons d'Auth.js. `openssl rand -base64 32`. |
 | `AUTH_URL` | **avec les comptes, obligatoire** | — | Domaine public. Sans elle, Auth.js refuse CHAQUE requête de connexion (`UntrustedHost`) hors Vercel et hors développement : le formulaire s'affiche, la demande sort en 500, aucun courriel ne part. Reproduit, et signalé au démarrage. |
 | `UPLOADS_DIR` | avec les comptes | `var/uploads` | Photos de prises. **Hors du répertoire de l'application** : un déploiement le remplace et les photos disparaîtraient. Le code avertit au démarrage si le chemin est à l'intérieur. |
+| `AUTH_GOOGLE_ID` | non | — | Identifiant du client OAuth Google. Avec `AUTH_GOOGLE_SECRET`, active « Continuer avec Google ». Voir *Connexion Google* ci-dessous. |
+| `AUTH_GOOGLE_SECRET` | non | — | Secret du même client. L'un sans l'autre : le bouton n'apparaît pas, et le démarrage le dit. |
 | `CRON_SECRET` | non | — | Ferme `/api/entretien` au public. Vercel l'envoie automatiquement à ses appels planifiés dès que la variable existe ; sur Hostinger, c'est la tâche cron qui porte l'en-tête. |
+
+### Connexion Google
+
+Facultative. Elle s'ajoute à l'adresse + mot de passe, elle ne le remplace pas.
+
+1. Console Google Cloud → *API et services* → *Identifiants* → *Créer des identifiants* → *ID client OAuth*, type **Application Web**.
+2. *URI de redirection autorisés* : `https://lunamarea.fr/api/auth/callback/google` — exactement, avec le domaine public du site.
+3. Copiez l'ID client dans `AUTH_GOOGLE_ID` et le secret dans `AUTH_GOOGLE_SECRET`, chez l'hébergeur. Redéployez.
+
+Ce que ça change pour la personne : au clic, Google apprend qu'elle ouvre une session ici et nous transmet son adresse et son nom ; rien ne part vers Google avant ce clic, et jamais quel spot elle regarde. Une adresse déjà inscrite par mot de passe retrouve son compte — Google vérifie ses adresses, le rattachement est sûr. Le profil (nom affiché, date de naissance, consentement) est demandé à la première venue, comme pour le lien par courriel.
 
 ## Scripts
 

@@ -15,11 +15,18 @@ import { utilisateurDeSession } from '@/lib/providers/mysql/comptes';
  * La session est lue EN BASE : elle ne peut pas être fabriquée côté client, et
  * une suppression de compte la rend immédiatement caduque.
  */
-export async function currentUser(): Promise<{ id: string; email: string | null } | null> {
+export interface Utilisateur {
+  id: string;
+  email: string | null;
+  /** Nom transmis par Google, `null` ailleurs. Sert à PROPOSER un nom affiché, jamais à l'imposer. */
+  name: string | null;
+}
+
+export async function currentUser(): Promise<Utilisateur | null> {
   try {
     const session = await auth();
     const user = session?.user;
-    if (user?.id) return { id: user.id, email: user.email ?? null };
+    if (user?.id) return { id: user.id, email: user.email ?? null, name: user.name ?? null };
   } catch (error) {
     console.error('[auth] session illisible par la bibliothèque', error);
   }
@@ -59,14 +66,15 @@ export async function currentUser(): Promise<{ id: string; email: string | null 
  * La session reste vérifiée comme avant : elle doit exister en base et ne pas
  * être expirée. Un jeton inventé ne donne rien.
  */
-async function sessionDirecte(): Promise<{ id: string; email: string | null } | null> {
+async function sessionDirecte(): Promise<Utilisateur | null> {
   if (!databaseEnabled()) return null;
 
   try {
     const jeton = (await cookies()).get(await nomDuCookie())?.value;
     if (!jeton) return null;
 
-    return await utilisateurDeSession(jeton);
+    const utilisateur = await utilisateurDeSession(jeton);
+    return utilisateur === null ? null : { ...utilisateur, name: null };
   } catch (error) {
     // Là, c'est une vraie panne : la base ne répond pas.
     console.error('[auth] lecture directe de session impossible', error);

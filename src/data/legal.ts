@@ -172,7 +172,7 @@ export function anonymityStatement(): string | null {
  * FILTRE sur ce champ plutôt que de tout afficher : décrire des comptes sur un
  * site qui n'en a pas serait aussi faux que taire ceux qui existent.
  */
-export type Scope = 'always' | 'accounts';
+export type Scope = 'always' | 'accounts' | 'google';
 
 export interface Processor {
   readonly name: string;
@@ -191,6 +191,14 @@ export const PROCESSORS: readonly Processor[] = [
     location: 'Union européenne',
     browserContact: true,
     scope: 'always',
+  },
+  {
+    name: 'Google LLC',
+    role: 'Connexion avec un compte Google — uniquement si vous choisissez ce bouton',
+    data: 'Au clic, Google apprend que vous ouvrez une session sur ce site et nous transmet votre adresse e-mail et votre nom. Nous ne lui envoyons rien d’autre, et aucune requête ne part vers Google en dehors de ce clic',
+    location: 'États-Unis — transfert encadré par le Data Privacy Framework UE–États-Unis',
+    browserContact: true,
+    scope: 'google',
   },
   {
     name: 'Stormglass AB',

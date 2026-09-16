@@ -2,6 +2,8 @@
 
 import { AuthError } from 'next-auth';
 import { revalidatePath } from 'next/cache';
+
+import { profilInitialSchema } from '@/data/schemas-compte';
 import { redirect } from 'next/navigation';
 
 import { signIn, signOut as authSignOut } from '@/auth';
@@ -206,10 +208,20 @@ export async function createProfile(
   const trop = await budgetEcriture(user.id);
   if (trop) return trop;
 
-  const result = await contributions.createProfile(
-    user.id,
-    String(formData.get('display_name') ?? ''),
-  );
+  // Même seuil d'âge et même consentement que l'inscription par mot de
+  // passe : ce chemin — Google, lien courriel — n'y passait pas.
+  const analyse = profilInitialSchema.safeParse({
+    displayName: formData.get('display_name'),
+    birthDate: formData.get('birth_date'),
+    consentement: formData.get('consentement'),
+  });
+  if (!analyse.success) {
+    return { ok: false, message: analyse.error.issues[0]?.message ?? 'Profil incomplet.' };
+  }
+
+  const result = await contributions.createProfile(user.id, analyse.data.displayName, {
+    birthDate: analyse.data.birthDate,
+  });
 
   if (!result.ok) return { ok: false, message: result.message };
 

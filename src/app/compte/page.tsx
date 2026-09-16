@@ -16,7 +16,8 @@ import { contributions, spots as spotRepository } from '@/lib/providers';
 import { deleteCatch, deleteOuting, deleteReview, signOut } from '@/lib/auth/actions';
 import { absoluteUrl, spotPath } from '@/lib/routes';
 import { currentUser } from '@/lib/auth/session';
-import { magicLinkEnabled } from '@/lib/auth/config';
+import { googleEnabled, magicLinkEnabled } from '@/lib/auth/config';
+import { connecterAvecGoogle } from '@/lib/auth/actions-compte';
 import { estProprietaire } from '@/lib/auth/proprietaire';
 import { formatScore, tierForOrNull } from '@/lib/score-display';
 import { photoUrl } from '@/lib/photo/url';
@@ -40,6 +41,24 @@ const ERRORS: Record<string, string> = {
   'lien-expire':
     'Ce lien n’est plus valable : il a expiré, il a déjà servi, ou il a été ouvert dans un autre navigateur. Demandez-en un nouveau.',
   'comptes-fermes': 'Les comptes ne sont pas ouverts sur ce déploiement.',
+};
+
+/**
+ * Les erreurs d'Auth.js arrivent sous `?error=`, avec ses codes à lui. On ne
+ * les affiche jamais tels quels : « OAuthCallbackError » ne dit rien à
+ * personne, et « Configuration » désigne un problème qui n'est pas celui de
+ * la personne devant l'écran.
+ */
+const ERREURS_AUTHJS: Record<string, string> = {
+  OAuthSignin: 'La connexion avec Google n’a pas pu démarrer. Réessayez, ou utilisez votre adresse et un mot de passe.',
+  OAuthCallbackError: 'Google n’a pas confirmé la connexion. Réessayez, ou utilisez votre adresse et un mot de passe.',
+  OAuthCallback: 'Google n’a pas confirmé la connexion. Réessayez, ou utilisez votre adresse et un mot de passe.',
+  Callback: 'La connexion n’a pas abouti. Réessayez.',
+  AccessDenied: 'Google a refusé l’accès, ou vous l’avez annulé. Rien n’a été créé.',
+  OAuthAccountNotLinked:
+    'Cette adresse est déjà utilisée par un compte créé autrement. Connectez-vous avec votre mot de passe.',
+  Configuration:
+    'La connexion Google n’est pas correctement configurée sur ce site. Ce n’est pas de votre fait : utilisez votre adresse et un mot de passe.',
 };
 
 const TIME_ZONE = 'Europe/Paris';
@@ -74,6 +93,7 @@ export default async function ComptePage({
 }) {
   const params = await searchParams;
   const errorKey = typeof params.erreur === 'string' ? params.erreur : null;
+  const erreurAuthjs = typeof params.error === 'string' ? params.error : null;
   const justDeleted = params.efface === '1';
 
   const user = await currentUser();
@@ -170,6 +190,12 @@ export default async function ComptePage({
           </p>
         )}
 
+        {erreurAuthjs && (
+          <p role="alert" className="demo-frame mt-4 max-w-prose p-4 text-read text-fg">
+            {ERREURS_AUTHJS[erreurAuthjs] ?? 'La connexion n’a pas abouti. Réessayez.'}
+          </p>
+        )}
+
         {!contributions.available ? (
           <section className="mt-6 max-w-prose">
             <p className="demo-frame p-4 text-read text-fg-muted">
@@ -196,6 +222,31 @@ export default async function ComptePage({
               personne à le remplir, et la page devient un mur de rectangles.
               Vingt-huit rem cadrent la ligne de saisie sans la serrer.
             */}
+            {googleEnabled() && (
+              /*
+                Un seul bouton, au-dessus des deux onglets : il sert autant à
+                se connecter qu'à créer un compte, Google ne fait pas la
+                différence. Le logo est un SVG en ligne, en monochrome : aucune
+                requête vers Google avant le clic, et aucun littéral de couleur —
+                la règle du site vaut aussi pour les marques des autres.
+              */
+              <form action={connecterAvecGoogle} className="mt-6 w-full max-w-[28rem]">
+                <button type="submit" className="bouton-google">
+                  <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+                    <path fill="currentColor" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.8-6.8C35.6 2.4 30.2 0 24 0 14.6 0 6.5 5.4 2.6 13.3l7.9 6.1C12.4 13.7 17.7 9.5 24 9.5z" />
+                    <path fill="currentColor" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.5-4.1 7-10.2 7-17.6z" />
+                    <path fill="currentColor" d="M10.5 28.6A14.5 14.5 0 0 1 9.7 24c0-1.6.3-3.2.8-4.6l-7.9-6.1A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.7l7.9-6.1z" />
+                    <path fill="currentColor" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.2-13.5-9.9l-7.9 6.1C6.5 42.6 14.6 48 24 48z" />
+                  </svg>
+                  Continuer avec Google
+                </button>
+                <p className="mt-2 text-meta text-fg-muted">
+                  Google saura que vous ouvrez une session ici — pas ce que vous y consultez. Rien ne
+                  part vers Google avant ce clic.
+                </p>
+              </form>
+            )}
+
             <div className="onglets-compte mt-6 w-full max-w-[28rem]">
               <nav className="segments-compte" aria-label="Connexion ou inscription">
                 <a href="#connexion-panneau" className="onglet-compte">
@@ -263,11 +314,14 @@ export default async function ComptePage({
                 </h2>
                 <p className="mt-2 text-read text-fg-muted">
                   Dernière étape avant de pouvoir contribuer. Ce nom est la seule chose que les
-                  autres verront : votre adresse e-mail n’est jamais affichée. Les favoris et les
-                  sorties, eux, n’ont pas besoin de nom — ils ne sont visibles que de vous.
+                  autres verront : votre adresse e-mail n’est jamais affichée. La date de naissance
+                  ne sert qu’à vérifier l’âge, et n’est montrée à personne.
                 </p>
                 <div className="surface mt-4 p-4">
-                  <ProfileForm mode="create" />
+                  <ProfileForm
+                    mode="create"
+                    {...(user.name ? { currentName: user.name.split(/\s+/)[0] ?? '' } : {})}
+                  />
                 </div>
               </section>
             ) : (

@@ -2,6 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 
+import { signIn } from '@/auth';
+
 import { CONSENT_VERSION } from '@/lib/auth/consent';
 import {
   connexionSchema,
@@ -11,7 +13,7 @@ import {
   preferencesSchema,
   profilSchema,
 } from '@/data/schemas-compte';
-import { accountsEnabled, magicLinkEnabled } from '@/lib/auth/config';
+import { accountsEnabled, googleEnabled, magicLinkEnabled } from '@/lib/auth/config';
 import { hacher, verifier } from '@/lib/auth/password';
 import { piegeDeclenche } from '@/lib/auth/piege';
 import { fermerSession, ouvrirSession } from '@/lib/auth/session-cookie';
@@ -437,4 +439,18 @@ export async function supprimerAvatar(): Promise<void> {
   if (ancien) await deletePhoto(ancien).catch(() => undefined);
 
   revalidatePath('/compte');
+}
+
+/**
+ * « Continuer avec Google » : on confie la suite à Auth.js.
+ *
+ * Rien n'est lu ni écrit ici ; Auth.js redirige vers Google, reçoit le
+ * retour sur `/api/auth/callback/google`, crée ou retrouve le compte par
+ * l'adresse, ouvre une session en base, et revient sur `/compte`. Si le
+ * profil n'existe pas encore, la page demande le nom affiché, la date de
+ * naissance et le consentement — comme pour le lien par courriel.
+ */
+export async function connecterAvecGoogle(): Promise<void> {
+  if (!googleEnabled()) return;
+  await signIn('google', { redirectTo: '/compte' });
 }

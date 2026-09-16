@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { LegalDraftNotice, LegalValue } from '@/components/legal/LegalValue';
 import { CLIENT_STORAGE, CNIL, LEGAL_UPDATED, PROCESSORS, PUBLISHER } from '@/data/legal';
 import { absoluteUrl } from '@/lib/routes';
-import { accountsEnabled } from '@/lib/auth/config';
+import { googleEnabled, accountsEnabled } from '@/lib/auth/config';
 import { formatDateLong } from '@/lib/time';
 
 export const metadata: Metadata = {
@@ -100,9 +100,12 @@ export default function ConfidentialitePage() {
     juste pour aucun, que ce site refuse ailleurs.
   */
   const accounts = accountsEnabled();
+  const google = googleEnabled();
   const treatments = accounts ? [...ALWAYS_TREATMENTS, ...ACCOUNT_TREATMENTS] : ALWAYS_TREATMENTS;
   const storage = CLIENT_STORAGE.filter((entry) => accounts || entry.scope === 'always');
-  const processors = PROCESSORS.filter((entry) => accounts || entry.scope === 'always');
+  const processors = PROCESSORS.filter(
+    (entry) => entry.scope === 'always' || (accounts && entry.scope === 'accounts') || (google && entry.scope === 'google'),
+  );
 
   return (
     <div className="bg-page">
@@ -273,7 +276,8 @@ export default function ConfidentialitePage() {
             voient donc votre adresse IP, et ne peuvent pas savoir quel spot vous consultez. Les
             polices de caractères sont hébergées avec le site, pas chargées depuis un service
             extérieur : en dehors de l’hébergeur, aucune requête ne quitte votre navigateur vers un
-            tiers. L’hébergement se faisant aux États-Unis, ce transfert s’appuie sur les clauses
+            tiers{google ? ' — à une exception près, que vous déclenchez vous-même : le bouton « Continuer avec Google », qui joint Google au moment où vous cliquez, et jamais avant' : ''}.
+            L’hébergement se faisant aux États-Unis, ce transfert s’appuie sur les clauses
             contractuelles types de la Commission européenne.
           </p>
         </section>
@@ -285,7 +289,7 @@ export default function ConfidentialitePage() {
           <ul className="mt-3 space-y-2">
             {[
               ...(accounts
-                ? ['Aucun mot de passe : la connexion se fait par un lien envoyé par courriel.']
+                ? ['Aucun mot de passe lisible : il est haché avant d’être enregistré, et nous ne pouvons pas le retrouver — seulement le remplacer.']
                 : ['Aucun compte utilisateur : il n’y a rien à créer, rien à connecter.']),
               'Aucune mesure d’audience, aucun outil d’analyse, aucun pixel de suivi.',
               'Aucune publicité, aucun lien rémunéré, aucun revendeur de données.',

@@ -288,6 +288,33 @@ export function diagnostiquer({ env, buildStamp, spotCount, spotSlugs, uploadsDi
         : 'Configurez EMAIL_SERVER et EMAIL_FROM pour rendre la récupération possible.',
   });
 
+  // ── 3 bis. Google : facultatif, mais à moitié configuré c'est invisible ──
+  const googleId = presence(env, 'AUTH_GOOGLE_ID');
+  const googleSecret = presence(env, 'AUTH_GOOGLE_SECRET');
+  points.push(
+    googleId && googleSecret
+      ? {
+          sujet: 'Connexion Google',
+          etat: 'ok',
+          constat: 'Activée : le bouton « Continuer avec Google » est proposé sur la page de compte.',
+          remede: null,
+        }
+      : !googleId && !googleSecret
+        ? {
+            sujet: 'Connexion Google',
+            etat: 'ok',
+            constat: 'Non activée — c’est facultatif. Les comptes fonctionnent par adresse et mot de passe.',
+            remede: null,
+          }
+        : {
+            sujet: 'Connexion Google',
+            etat: 'attention',
+            constat: `${googleId ? 'AUTH_GOOGLE_ID' : 'AUTH_GOOGLE_SECRET'} est définie mais pas ${googleId ? 'AUTH_GOOGLE_SECRET' : 'AUTH_GOOGLE_ID'} : le bouton n’apparaît pas, sans message.`,
+            remede:
+              'Les deux valeurs viennent du même client OAuth (console Google Cloud → Identifiants). Posez la manquante, puis redéployez. L’URI de redirection autorisée doit être https://lunamarea.fr/api/auth/callback/google.',
+          },
+  );
+
   // ── 4. Les marées : la question qui revient ─────────────────────────────
   const cle = presence(env, 'STORMGLASS_API_KEY');
   const force = env['TIDE_PROVIDER'] === 'mock';

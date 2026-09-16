@@ -194,4 +194,36 @@ export function authHostWarning(): string | null {
   );
 }
 
+/**
+ * La connexion avec un compte Google est-elle proposée ?
+ *
+ * Elle l'est dès que les deux identifiants du client OAuth sont posés — ce
+ * sont les noms qu'Auth.js lit lui-même, on ne les renomme pas. Et seulement
+ * là où une base existe : sans elle, il n'y a aucun compte à ouvrir.
+ *
+ * Ce que Google apprend, et ce qu'il n'apprend pas : au clic sur le bouton,
+ * Google sait qu'une personne ouvre une session sur ce site, et nous
+ * transmet son adresse et son nom. En dehors de ce clic, le site ne fait
+ * aucune requête vers Google — ni police, ni script, ni mesure. Google ne
+ * voit donc pas quels spots on consulte.
+ */
+export function googleEnabled(env: Readonly<Record<string, string | undefined>> = process.env): boolean {
+  return (
+    databaseEnabled() &&
+    (env['AUTH_GOOGLE_ID']?.trim() ?? '').length > 0 &&
+    (env['AUTH_GOOGLE_SECRET']?.trim() ?? '').length > 0
+  );
+}
+
+/** Un identifiant sans son secret, ou l'inverse : le bouton n'apparaîtra pas, sans un mot. */
+export function googleWarning(env: Readonly<Record<string, string | undefined>> = process.env): string | null {
+  const id = (env['AUTH_GOOGLE_ID']?.trim() ?? '').length > 0;
+  const secret = (env['AUTH_GOOGLE_SECRET']?.trim() ?? '').length > 0;
+  if (id === secret) return null;
+  return (
+    `${id ? 'AUTH_GOOGLE_SECRET' : 'AUTH_GOOGLE_ID'} manque alors que ${id ? 'AUTH_GOOGLE_ID' : 'AUTH_GOOGLE_SECRET'} est définie : ` +
+    'la connexion Google reste désactivée. Les deux viennent du même client OAuth, dans la console Google Cloud.'
+  );
+}
+
 export { smtpServer };

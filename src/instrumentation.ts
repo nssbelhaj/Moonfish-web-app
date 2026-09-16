@@ -51,7 +51,7 @@ export async function register(): Promise<void> {
   }
 
   const [
-    { authHostWarning, smtpWarning },
+    { authHostWarning, googleWarning, smtpWarning },
     { storageWarning },
     { siteUrlWarning },
     { tideBudgetWarning, tideSpotsWarning },
@@ -68,6 +68,7 @@ export async function register(): Promise<void> {
     siteUrlWarning(),
     authHostWarning(),
     smtpWarning(),
+    googleWarning(),
     storageWarning(),
     tideBudgetWarning(process.env, SPOTS.length),
     tideSpotsWarning(process.env, SPOTS.map((spot) => spot.slug)),

@@ -333,3 +333,29 @@ describe('TIDE_REAL_SPOTS qui ne désigne rien', () => {
     expect(points.find((p) => p.sujet === 'Marées')?.etat).toBe('ok');
   });
 });
+
+describe('la connexion Google dans le diagnostic', () => {
+  it('est « ok » absente : c’est facultatif, pas un défaut', () => {
+    const point = diagnostiquer({ ...CONTEXTE, env: COMPLET }).find((p) => p.sujet === 'Connexion Google');
+    expect(point?.etat).toBe('ok');
+    expect(point?.constat).toContain('facultatif');
+  });
+
+  it('avertit quand une moitié manque, et donne l’URI de redirection', () => {
+    const point = diagnostiquer({ ...CONTEXTE, env: { ...COMPLET, AUTH_GOOGLE_ID: 'un-id' } }).find(
+      (p) => p.sujet === 'Connexion Google',
+    );
+    expect(point?.etat).toBe('attention');
+    expect(point?.constat).toContain('AUTH_GOOGLE_SECRET');
+    expect(point?.remede).toContain('/api/auth/callback/google');
+  });
+
+  it('est activée avec les deux, sans jamais écrire le secret', () => {
+    const sortie = diagnostiquer({
+      ...CONTEXTE,
+      env: { ...COMPLET, AUTH_GOOGLE_ID: 'un-id', AUTH_GOOGLE_SECRET: 'SecretGoogleTresSecret' },
+    });
+    expect(sortie.find((p) => p.sujet === 'Connexion Google')?.etat).toBe('ok');
+    expect(JSON.stringify(sortie)).not.toContain('SecretGoogleTresSecret');
+  });
+});

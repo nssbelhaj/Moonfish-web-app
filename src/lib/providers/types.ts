@@ -179,7 +179,12 @@ export interface ContributionsRepository {
   listForUser(userId: string): Promise<{ reviews: SpotReview[]; catches: Catch[] }>;
 
   getProfile(userId: string): Promise<Profile | null>;
-  createProfile(userId: string, displayName: string): Promise<ContributionResult<Profile>>;
+  createProfile(
+    userId: string,
+    displayName: string,
+    /** Ce que le formulaire d'inscription a déjà collecté ailleurs ; ici, pour Google et le lien courriel. */
+    complement?: { birthDate: string },
+  ): Promise<ContributionResult<Profile>>;
   renameProfile(userId: string, displayName: string): Promise<ContributionResult<Profile>>;
 
   saveReview(input: SpotReviewInput, author: Author): Promise<ContributionResult<SpotReview>>;
