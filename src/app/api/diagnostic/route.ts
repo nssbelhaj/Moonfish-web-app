@@ -89,7 +89,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       // Les points en défaut d'abord : c'est ce qu'on vient chercher.
       points: [...points].sort((a, b) => rang(a.etat) - rang(b.etat)),
     },
-    { headers: { 'cache-control': 'no-store' } },
+    {
+      headers: {
+        'cache-control': 'no-store',
+        // Le charset est DÉCLARÉ : sans lui, un navigateur ou un terminal
+        // devine, et « réglages » devient « rÃ©glages » dans ce qu'on colle.
+        'content-type': 'application/json; charset=utf-8',
+      },
+    },
   );
 }
 
