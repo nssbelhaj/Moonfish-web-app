@@ -257,6 +257,15 @@ export const CLIENT_STORAGE: readonly ClientStorageEntry[] = [
     scope: 'always',
   },
   {
+    key: 'luna-marea:rechargement-apres-erreur',
+    kind: 'sessionStorage',
+    purpose:
+      'Se souvenir qu’une page a déjà été rechargée après une erreur d’affichage, pour ne pas la recharger en boucle. Une seule valeur, « 1 », et rien sur vous.',
+    retention: 'Jusqu’à la fermeture de l’onglet.',
+    consentRequired: false,
+    scope: 'always',
+  },
+  {
     key: 'authjs.session-token',
     kind: 'cookie',
     purpose:
@@ -304,6 +313,12 @@ export const CLIENT_STORAGE_WRITE_SITES: readonly StorageWriteSite[] = [
     writes: 1,
     entry: 'luna-marea:carte:vue',
     why: 'Mémorise le dernier cadrage de la carte.',
+  },
+  {
+    file: 'src/app/global-error.tsx',
+    writes: 1,
+    entry: 'luna-marea:rechargement-apres-erreur',
+    why: 'Empêche le rechargement automatique de boucler.',
   },
 ];
 

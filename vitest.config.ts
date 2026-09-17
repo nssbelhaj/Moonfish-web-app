@@ -17,7 +17,25 @@ export default defineConfig({
      * le chemin nominal. Le fournisseur Open-Meteo est exercé séparément, avec
      * un `fetch` injecté.
      */
-    env: { WEATHER_PROVIDER: 'mock' },
+    env: {
+      WEATHER_PROVIDER: 'mock',
+      /*
+        ─── Les marées aussi, et la clé est NEUTRALISÉE ──────────────────
+        Seule la météo était forcée. Les marées, elles, partaient chez
+        Stormglass dès qu'une `STORMGLASS_API_KEY` traînait dans
+        l'environnement — ce qui est le cas sur toute machine où l'on
+        développe la vraie configuration. Mesuré : une exécution de la suite
+        consommait trois appels sur les dix du palier gratuit, et faisait
+        donc RETOMBER le site en marées simulées pour la journée.
+
+        La suite se disait « hermétique, aucun accès réseau » ; elle l'était
+        pour la météo seulement. Vider la clé rend l'affirmation vraie quelle
+        que soit la machine, au lieu de dépendre de ce que le développeur a
+        dans son shell.
+      */
+      TIDE_PROVIDER: 'mock',
+      STORMGLASS_API_KEY: '',
+    },
 
     /**
      * Un fichier à la fois.

@@ -1106,3 +1106,107 @@
   line-height: 1.55;
   color: var(--fg-muted);
 }
+
+/*
+  Étiquette de visibilité d'une prise : un bouton qui DIT son état et le
+  change au clic. « Publiée » est plein, « Privée » est discret — l'état
+  public doit se repérer en balayant la liste, c'est celui qui a des
+  conséquences pour les autres.
+*/
+.etiquette-visibilite {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--fg-muted);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.etiquette-visibilite:hover {
+  background: var(--surface-2);
+  color: var(--fg);
+}
+
+.etiquette-visibilite[data-publique] {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--fg-on-accent);
+  font-weight: 600;
+}
+
+.etiquette-visibilite[data-publique]:hover {
+  background: var(--accent);
+  color: var(--fg-on-accent);
+  opacity: 0.88;
+}
+
+/*
+  Tableau de bord du carnet.
+
+  Une grille qui va de deux colonnes sur téléphone à six sur grand écran, et
+  des cases de hauteur égale : un chiffre court à côté d'un nom de spot long
+  ne doit pas décaler la ligne. `grid-auto-rows: 1fr` s'en charge, ce qu'un
+  empilement de marges ne ferait pas.
+*/
+.tableau-bord {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+  gap: 8px;
+  margin: 0;
+}
+
+@media (min-width: 640px) {
+  .tableau-bord {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .tableau-bord {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .tableau-bord {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+.tableau-case {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--card);
+}
+
+.tableau-terme {
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--fg-muted);
+}
+
+.tableau-valeur {
+  /* Le chiffre prend la place restante et reste calé en haut de ce qu'il
+     laisse : deux cases voisines alignent donc leur détail, en bas. */
+  margin: 6px 0 0;
+  flex: 1;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--fg);
+  overflow-wrap: anywhere;
+}
+
+.tableau-detail {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--fg-muted);
+}

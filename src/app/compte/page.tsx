@@ -356,6 +356,8 @@ export default async function ComptePage({
                       carnet={carnet}
                       catches={mine.catches}
                       reviews={mine.reviews}
+                      outings={upcoming}
+                      favoris={favorites.length}
                       nameOf={nameOf}
                       spotChoices={spotChoices}
                       especesConnues={especesConnues}

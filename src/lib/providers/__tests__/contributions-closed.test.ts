@@ -57,6 +57,7 @@ describe('contributions, comptes fermés', () => {
           caughtAt: '2026-09-01T16:30:00.000Z',
           note: null,
           photoPath: null,
+          visibility: 'privee',
         },
         { userId: ANY_USER, displayName: 'Pêcheur' },
       ),

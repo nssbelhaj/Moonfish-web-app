@@ -153,6 +153,27 @@ export function CatchForm({
         <span className="text-body text-fg">Poisson remis à l’eau</span>
       </label>
 
+      {/*
+        Publier est un GESTE, pas une conséquence : la case part décochée, et
+        une prise non publiée ne quitte jamais votre carnet. Le choix est ici,
+        au moment de la déclaration, et se change ensuite depuis le carnet.
+      */}
+      <label className="mt-3 flex max-w-prose items-start gap-3">
+        <input
+          type="checkbox"
+          name="visibility"
+          value="publique"
+          className="mt-1 h-5 w-5 shrink-0 rounded-[4px] border border-edge-strong"
+        />
+        <span className="text-body text-fg">
+          Publier sur la page du spot
+          <span className="mt-0.5 block text-meta text-fg-muted">
+            Sous votre nom affiché, avec la photo si vous en joignez une. Sans cette case, la prise
+            reste dans votre carnet et vous seul la voyez.
+          </span>
+        </span>
+      </label>
+
       <Field
         label="Note (facultatif)"
         hint="Montage, moment de la marée, ce qui a fonctionné."

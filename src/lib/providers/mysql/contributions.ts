@@ -18,6 +18,7 @@ import {
   type Profile,
   type SpotReview,
   type SpotReviewInput,
+  type Visibility,
 } from '@/data/schemas';
 import { CONSENT_VERSION } from '@/lib/auth/consent';
 import { execute, query, queryOne, toIso, toMysqlDateTime } from '@/lib/db/mysql';
@@ -84,6 +85,7 @@ interface CatchRow {
   caught_at: string;
   note: string | null;
   photo_path: string | null;
+  visibility: string;
   created_at: string;
 }
 
@@ -171,6 +173,7 @@ function toCatch(row: CatchRow): Catch {
     caughtAt: toIso(row.caught_at),
     note: row.note,
     photoPath: row.photo_path,
+    visibility: row.visibility,
     createdAt: toIso(row.created_at),
   });
 }
@@ -248,8 +251,17 @@ export class MysqlContributionsRepository implements ContributionsRepository {
           'select * from spot_reviews where spot_slug = ? order by created_at desc limit ?',
           [spotSlug, PAGE_SIZE],
         ),
+        /*
+          `visibility = 'publique'` est dans la REQUÊTE, pas dans un filtre
+          appliqué après coup en JavaScript. Une prise privée ne doit pas
+          voyager jusqu'au rendu pour y être écartée : ce qui ne quitte pas la
+          base ne peut pas fuir par un composant distrait, un export ou une
+          future API.
+        */
         query<CatchRow>(
-          'select * from catches where spot_slug = ? order by caught_at desc limit ?',
+          `select * from catches
+             where spot_slug = ? and visibility = 'publique'
+             order by caught_at desc limit ?`,
           [spotSlug, PAGE_SIZE],
         ),
       ]);
@@ -429,8 +441,8 @@ export class MysqlContributionsRepository implements ContributionsRepository {
     try {
       await execute(
         `insert into catches
-           (id, spot_slug, user_id, author_name, species, length_cm, weight_g, released, caught_at, note, photo_path)
-         values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           (id, spot_slug, user_id, author_name, species, length_cm, weight_g, released, caught_at, note, photo_path, visibility)
+         values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           id,
           parsed.data.spotSlug,
@@ -443,6 +455,7 @@ export class MysqlContributionsRepository implements ContributionsRepository {
           toMysqlDateTime(parsed.data.caughtAt),
           parsed.data.note,
           parsed.data.photoPath ?? null,
+          parsed.data.visibility,
         ],
       );
 
@@ -452,6 +465,32 @@ export class MysqlContributionsRepository implements ContributionsRepository {
         : storageFailure('déclaration d’une prise', 'prise introuvable après écriture');
     } catch (error) {
       return storageFailure('déclaration d’une prise', error);
+    }
+  }
+
+  /**
+   * Rend une prise publique, ou la reprend.
+   *
+   * `user_id = ?` dans le WHERE, et ce n'est pas une commodité : MySQL ne
+   * connaît pas la sécurité au niveau des lignes, donc la seule chose qui
+   * empêche quelqu'un de publier la prise d'un autre est cette clause. La
+   * signature force l'appelant à dire au nom de qui il agit.
+   */
+  async setCatchVisibility(
+    catchId: string,
+    userId: string,
+    visibility: Visibility,
+  ): Promise<ContributionResult<null>> {
+    try {
+      const touchees = await execute(
+        'update catches set visibility = ? where id = ? and user_id = ?',
+        [visibility, catchId, userId],
+      );
+      return touchees === 0
+        ? failure('invalid', 'Cette prise n’existe pas, ou elle n’est pas la vôtre.')
+        : { ok: true, data: null };
+    } catch (error) {
+      return storageFailure('changement de visibilité', error);
     }
   }
 

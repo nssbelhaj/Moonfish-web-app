@@ -3,6 +3,7 @@
 import { AuthError } from 'next-auth';
 import { revalidatePath } from 'next/cache';
 
+import { visibilitySchema } from '@/data/schemas';
 import { profilInitialSchema } from '@/data/schemas-compte';
 import { redirect } from 'next/navigation';
 
@@ -372,6 +373,15 @@ export async function addCatch(
     caughtAt,
     note: formData.get('note') ?? '',
     photoPath: (formData.get('photo_path') as string | null) || null,
+    /*
+      Une case décochée n'est PAS envoyée par le navigateur : `get` rend
+      alors `null`, et le défaut du schéma — « privée » — s'applique. C'est
+      exactement le comportement voulu, mais il faut encore lire le champ
+      pour que la case COCHÉE serve à quelque chose. Oubli mesuré au
+      navigateur : la case était bien là, cochée, et toutes les prises
+      arrivaient privées.
+    */
+    visibility: formData.get('visibility') ?? undefined,
   });
 
   if (!parsed.success) {
@@ -392,6 +402,32 @@ export async function addCatch(
   revalidatePath('/compte');
 
   return { ok: true, message: 'Prise enregistrée.' };
+}
+
+/**
+ * Publier une prise, ou la reprendre.
+ *
+ * Un formulaire par prise, avec la visibilité VOULUE en champ caché — pas une
+ * bascule qui lirait l'état courant côté serveur. Deux onglets ouverts sur le
+ * même carnet inverseraient sinon le réglage l'un après l'autre, et le
+ * dernier clic ne dirait plus ce qu'il affiche.
+ */
+export async function setCatchVisibility(formData: FormData): Promise<void> {
+  const user = await currentUser();
+  if (!user) return;
+
+  const voulue = visibilitySchema.safeParse(formData.get('visibility'));
+  if (!voulue.success) return;
+
+  await contributions.setCatchVisibility(
+    String(formData.get('catch_id') ?? ''),
+    user.id,
+    voulue.data,
+  );
+
+  const path = await spotSpeciesPath(formData);
+  if (path) revalidatePath(path);
+  revalidatePath('/compte');
 }
 
 export async function deleteCatch(formData: FormData): Promise<void> {

@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import type { CatchInput } from '@/data/schemas';
 import { mkdtemp } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import os from 'node:os';
@@ -148,7 +149,14 @@ describeDb('contributions dans MySQL', () => {
       caughtAt: '2026-09-01T16:30:00.000Z',
       note: 'Montée de marée',
       photoPath: null,
-    };
+      /*
+        PUBLIQUE, et c'est le sujet : ces tests vérifient ce que `forSpot`
+        rend, donc ce que la page d'un spot montre. Une prise privée n'y
+        figure pas — c'est précisément la garantie que
+        `visibilite.integration.test.ts` mesure de son côté.
+      */
+      visibility: 'publique',
+    } as const satisfies CatchInput;
 
     it('conserve l’instant de la prise SANS dérive de fuseau', async () => {
       // Le piège classique : MySQL rend un « datetime » sans fuseau. Une
@@ -253,6 +261,7 @@ describeDb('contributions dans MySQL', () => {
           caughtAt: '2026-09-01T16:30:00.000Z',
           note: null,
           photoPath: photo.path,
+          visibility: 'privee' as const,
         },
         ALICE,
       );
@@ -323,6 +332,9 @@ describeDb('contributions dans MySQL', () => {
           caughtAt: '2026-09-01T16:30:00.000Z',
           note: null,
           photoPath: null,
+          // Publique : ce test lit la page du spot pour vérifier que la
+          // chaîne hostile y ressort TELLE QUELLE, comme du texte.
+          visibility: 'publique',
         },
         ALICE,
       );

@@ -276,6 +276,15 @@ export const spotReviewInputSchema = z.object({
 
 export type SpotReviewInput = z.infer<typeof spotReviewInputSchema>;
 
+/**
+ * Qui voit une prise.
+ *
+ * `privee` est le défaut, partout : à la saisie, en base, et pour les lignes
+ * antérieures au choix. Publier est un geste, pas une conséquence.
+ */
+export const visibilitySchema = z.enum(['privee', 'publique']);
+export type Visibility = z.infer<typeof visibilitySchema>;
+
 export const catchSchema = z.object({
   id: z.string().uuid(),
   spotSlug: z.string(),
@@ -289,6 +298,7 @@ export const catchSchema = z.object({
   note: z.string().nullable(),
   /** Chemin dans le seau de stockage, jamais une URL : elle se construit au rendu. */
   photoPath: z.string().nullable(),
+  visibility: visibilitySchema,
   createdAt: isoDateTime,
 });
 
@@ -307,6 +317,10 @@ export const catchInputSchema = z.object({
   caughtAt: isoDateTime,
   note: optionalText(600, 'Note trop longue (600 caractères au maximum).'),
   photoPath: z.string().max(300).nullable().optional().default(null),
+  // Une case NON cochée vaut « privée » : c'est le défaut du formulaire, et
+  // c'est aussi ce que rend l'absence du champ quand le navigateur n'envoie
+  // pas les cases décochées.
+  visibility: visibilitySchema.default('privee'),
 });
 
 export type CatchInput = z.infer<typeof catchInputSchema>;

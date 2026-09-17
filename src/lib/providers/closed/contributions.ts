@@ -1,4 +1,4 @@
-import type { CatchInput, OutingInput, SpotReviewInput } from '@/data/schemas';
+import type { CatchInput, OutingInput, SpotReviewInput, Visibility } from '@/data/schemas';
 import type {
   AccountExport,
   Author,
@@ -71,6 +71,14 @@ export class ClosedContributionsRepository implements ContributionsRepository {
   }
 
   async deleteCatch(_catchId: string, _userId: string): Promise<ContributionResult<null>> {
+    return closed();
+  }
+
+  async setCatchVisibility(
+    _catchId: string,
+    _userId: string,
+    _visibility: Visibility,
+  ): Promise<ContributionResult<null>> {
     return closed();
   }
 

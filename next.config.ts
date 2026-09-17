@@ -20,6 +20,22 @@ const BUILD_STAMP = process.env.LUNA_BUILD ?? 'inconnue';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+
+  /*
+    Identifiant de déploiement.
+
+    Next l'ajoute à chaque requête d'asset ; quand un onglet ouvert pendant
+    une mise en ligne demande un morceau de JavaScript avec l'identifiant de
+    la version PRÉCÉDENTE, le serveur peut le reconnaître au lieu de rendre un
+    404 muet. C'est la moitié serveur du filet posé dans `app/global-error.tsx`,
+    après qu'une page de spot a affiché « Application error » en pleine
+    construction.
+
+    Il vaut l'horodatage de construction, donc il change à chaque build sans
+    qu'on ait à y penser — et « inconnue » ne serait pas un identifiant utile,
+    d'où le repli sur `undefined`, qui désactive proprement le mécanisme.
+  */
+  ...(BUILD_STAMP === 'inconnue' ? {} : { deploymentId: BUILD_STAMP }),
   poweredByHeader: false,
   typescript: { ignoreBuildErrors: false },
   eslint: { ignoreDuringBuilds: false },

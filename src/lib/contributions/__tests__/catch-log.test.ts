@@ -15,6 +15,7 @@ function prise(partial: Partial<Catch> & { caughtAt: string }): Catch {
     released: false,
     note: null,
     photoPath: null,
+    visibility: 'privee',
     createdAt: partial.caughtAt,
     ...partial,
   };

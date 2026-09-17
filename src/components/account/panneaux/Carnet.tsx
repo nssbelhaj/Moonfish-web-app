@@ -1,8 +1,9 @@
 import Image from 'next/image';
 
 import { CatchForm, type SpotChoice } from '@/components/contributions/CatchForm';
-import type { Catch, SpotReview } from '@/data/schemas';
-import { deleteCatch, deleteReview } from '@/lib/auth/actions';
+import { TableauDeBord } from '@/components/account/panneaux/Tableau';
+import type { Catch, Outing, SpotReview } from '@/data/schemas';
+import { deleteCatch, deleteReview, setCatchVisibility } from '@/lib/auth/actions';
 import { formatMeasures, formatMonth, type CatchLogSummary } from '@/lib/contributions/catch-log';
 import { Vide } from '@/components/account/Vide';
 import { photoUrl } from '@/lib/photo/url';
@@ -21,6 +22,8 @@ export function PanneauCarnet({
   carnet,
   catches,
   reviews,
+  outings,
+  favoris,
   nameOf,
   spotChoices,
   especesConnues,
@@ -28,6 +31,8 @@ export function PanneauCarnet({
   carnet: CatchLogSummary;
   catches: readonly Catch[];
   reviews: readonly SpotReview[];
+  outings: readonly Outing[];
+  favoris: number;
   nameOf: (slug: string) => string;
   spotChoices: readonly SpotChoice[];
   especesConnues: readonly string[];
@@ -75,44 +80,16 @@ export function PanneauCarnet({
           </div>
         ) : (
           <>
-            <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {[
-                /*
-                  Ni « Prises » ni « Espèces » ici : l'en-tête du compte les
-                  porte déjà, à trois centimètres au-dessus. Ces quatre-là
-                  disent ce que l'en-tête ne dit pas.
-                */
-                {
-                  term: 'Relâchées',
-                  value: carnet.releaseRate === null ? '—' : `${Math.round(carnet.releaseRate * 100)} %`,
-                },
-                {
-                  term: 'Plus longue',
-                  value: carnet.longest?.lengthCm ? `${carnet.longest.lengthCm} cm` : '—',
-                },
-                {
-                  term: 'Plus lourde',
-                  value: (() => {
-                    const g = Math.max(0, ...carnet.bySpecies.map((e) => e.bestWeightG ?? 0));
-                    return g === 0 ? '—' : formatMeasures(null, g) ?? '—';
-                  })(),
-                },
-                {
-                  term: 'Meilleur mois',
-                  value: (() => {
-                    const meilleur = [...carnet.byMonth].sort((a, b) => b.count - a.count)[0];
-                    return meilleur === undefined || meilleur.count === 0 ? '—' : formatMonth(meilleur.month);
-                  })(),
-                },
-              ].map(({ term, value }) => (
-                <div key={term} className="fiche !p-3">
-                  <dt className="text-meta text-fg-muted">{term}</dt>
-                  <dd className="mt-1 text-[20px] font-bold nums text-fg" data-numeric="">
-                    {value}
-                  </dd>
-                </div>
-              ))}
-            </dl>
+            <div className="mt-6">
+              <TableauDeBord
+                carnet={carnet}
+                catches={mine.catches}
+                reviews={mine.reviews}
+                outings={outings}
+                favoris={favoris}
+                nameOf={nameOf}
+              />
+            </div>
 
             <div className="mt-6 grid gap-6 lg:grid-cols-3">
               <div>
@@ -179,19 +156,30 @@ export function PanneauCarnet({
 
                 return (
                 <li key={entry.id} className="fiche">
-                  <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                    <span className="text-body font-600 text-fg">
-                      {entry.species}
-                      {formatMeasures(entry.lengthCm, entry.weightG) !== null && (
-                        <span className="nums font-400 text-fg-muted">
-                          {' '}
-                          · {formatMeasures(entry.lengthCm, entry.weightG)}
-                        </span>
-                      )}
-                      {entry.released && <span className="font-400 text-fg-muted"> · relâché</span>}
-                    </span>
-                    <span className="text-body text-fg-muted">{nameOf(entry.spotSlug)}</span>
+                  {/*
+                    Deux lignes, pas une.
+
+                    L'espèce, les mesures et le spot tenaient sur une seule
+                    ligne en `justify-between`, séparés par des points
+                    médians : « Maquereau · 52 cm · 1,80 kg » d'un côté, le
+                    nom du spot de l'autre. Dès que l'un des deux s'allongeait,
+                    la ligne se cassait et le nom du spot partait seul à
+                    droite, sous le reste. Les mesures ont maintenant leur
+                    ligne, cadrée à gauche et en chiffres tabulaires : deux
+                    prises l'une sous l'autre alignent leurs unités.
+                  */}
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="min-w-0 truncate text-body font-600 text-fg">{entry.species}</span>
+                    <span className="shrink-0 text-meta text-fg-muted">{nameOf(entry.spotSlug)}</span>
                   </div>
+
+                  <p className="mt-1 text-body text-fg-muted">
+                    <span className="nums" data-numeric="">
+                      {formatMeasures(entry.lengthCm, entry.weightG) ?? 'sans mesure'}
+                    </span>
+                    {entry.released && <span> · relâché</span>}
+                  </p>
+
                   {vignette !== null && (
                     <Image
                       src={vignette}
@@ -203,8 +191,35 @@ export function PanneauCarnet({
                     />
                   )}
                   {entry.note && <p className="mt-2 max-w-prose text-body text-fg">{entry.note}</p>}
+
                   <div className="card-source mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <span className="nums">{formatDateTime(new Date(entry.caughtAt), TIME_ZONE)}</span>
+                    <span className="nums" data-numeric="">
+                      {formatDateTime(new Date(entry.caughtAt), TIME_ZONE)}
+                    </span>
+
+                    {/*
+                      La visibilité VOULUE part en champ caché, jamais une
+                      bascule qui relirait l'état courant : deux onglets sur le
+                      même carnet s'inverseraient l'un l'autre.
+                    */}
+                    <form action={setCatchVisibility}>
+                      <input type="hidden" name="catch_id" value={entry.id} />
+                      <input type="hidden" name="spot_slug" value={entry.spotSlug} />
+                      <input
+                        type="hidden"
+                        name="visibility"
+                        value={entry.visibility === 'publique' ? 'privee' : 'publique'}
+                      />
+                      <button type="submit" className="etiquette-visibilite" data-publique={entry.visibility === 'publique' ? '' : undefined}>
+                        {entry.visibility === 'publique' ? 'Publiée' : 'Privée'}
+                        <span className="sr-only">
+                          {entry.visibility === 'publique'
+                            ? ' — la retirer de la page du spot'
+                            : ' — la publier sur la page du spot'}
+                        </span>
+                      </button>
+                    </form>
+
                     <form action={deleteCatch}>
                       <input type="hidden" name="catch_id" value={entry.id} />
                       <input type="hidden" name="spot_slug" value={entry.spotSlug} />

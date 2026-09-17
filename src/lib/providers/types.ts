@@ -11,6 +11,7 @@ import type {
   SpotReviewInput,
   TideEvent,
   WaitlistEntry,
+  Visibility,
   WaitlistInput,
 } from '@/data/schemas';
 
@@ -199,6 +200,13 @@ export interface ContributionsRepository {
   */
   deleteReview(reviewId: string, userId: string): Promise<ContributionResult<null>>;
   deleteCatch(catchId: string, userId: string): Promise<ContributionResult<null>>;
+
+  /** Publier une prise, ou la reprendre. Le propriétaire est exigé, comme pour les suppressions. */
+  setCatchVisibility(
+    catchId: string,
+    userId: string,
+    visibility: Visibility,
+  ): Promise<ContributionResult<null>>;
 
   /* ── Favoris ─────────────────────────────────────────────────────────── */
 
