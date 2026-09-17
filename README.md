@@ -740,18 +740,46 @@ idempotents, et trois tests le vérifient.
 
 ### Authentification
 
-Un lien reçu par courriel, pas de mot de passe : ce que nous ne stockons pas ne
-peut pas fuir. Aucun fournisseur externe non plus — « se connecter avec
-Google » ferait savoir à Google que vous pêchez.
+**Cette section a longtemps décrit un état dépassé du code**, et le décalage a
+duré assez pour mériter d'être signalé plutôt que corrigé en silence : elle
+affirmait « un lien reçu par courriel, pas de mot de passe » et « aucun
+fournisseur externe », alors que l'inscription par mot de passe
+(`0004_mot_de_passe_et_identite.sql`, `src/lib/auth/password.ts`) et la
+connexion Google existaient déjà. Une documentation fausse sur
+l'authentification est le genre de chose qui coûte une journée à qui la lit.
 
-Auth.js gère le flux ; l'adaptateur MySQL est écrit à la main
-(`src/lib/auth/mysql-adapter.ts`) plutôt que tiré d'un ORM, parce qu'il ne fait
-que traduire une quinzaine d'appels en autant de requêtes de trois lignes.
+Trois chemins mènent à une session, et ils aboutissent tous à la même ligne
+dans la même table :
+
+| Chemin | Ce qu'il demande |
+| --- | --- |
+| **Adresse + mot de passe** ← le principal | `inscriptionSchema` : prénom, nom, date de naissance (15 ans révolus), consentement |
+| **Lien par courriel** | un serveur d'envoi configuré ; le profil est complété à la première venue |
+| **Google** | `AUTH_GOOGLE_ID` et `AUTH_GOOGLE_SECRET` ; s'ajoute aux deux autres, ne les remplace pas |
+
+Les mots de passe sont dérivés par **scrypt** (`node:crypto`, aucun module
+natif à compiler), avec les paramètres stockés dans l'empreinte pour pouvoir
+les durcir sans déconnecter personne.
+
+Auth.js gère le flux du lien par courriel ; l'adaptateur MySQL est écrit à la
+main (`src/lib/auth/mysql-adapter.ts`) plutôt que tiré d'un ORM, parce qu'il ne
+fait que traduire une quinzaine d'appels en autant de requêtes de trois lignes.
 
 Les sessions vivent **en base**, pas dans un jeton signé. Conséquence qui
 compte : une déconnexion ou une suppression de compte prend effet
 immédiatement, alors qu'un jeton auto-porté reste valable jusqu'à son
-expiration — y compris après un « supprimez mes données ».
+expiration — y compris après un « supprimez mes données ». C'est aussi ce qui
+permet à l'API mobile de n'être qu'un second TRANSPORT du même jeton, et pas
+un second système d'authentification.
+
+**La vérification est écrite une seule fois.** `src/lib/auth/identification.ts`
+porte `verifierIdentifiants` et `creerCompte` ; le formulaire du site et la
+route JSON de l'application les appellent tous les deux. Elles vivaient
+auparavant dans `actions-compte.ts`, mêlées à la lecture d'un `FormData` et à
+la pose d'un cookie, ce qui aurait obligé l'API à les recopier. Une connexion
+recopiée finit par diverger, et la divergence ne se voit sur aucun écran : un
+verrou de compte appliqué d'un côté et pas de l'autre, une comparaison à temps
+constant oubliée sur un seul chemin.
 
 ### Photos : les métadonnées ne partent jamais
 
