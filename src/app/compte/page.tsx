@@ -1,27 +1,28 @@
 import type { Metadata } from 'next';
-import Image from 'next/image';
 import Link from 'next/link';
 
-import { DeleteAccountForm } from '@/components/account/DeleteAccountForm';
+import { EnteteCompte } from '@/components/account/EnteteCompte';
 import { ProfileForm } from '@/components/account/ProfileForm';
-import { AvatarForm, PreferencesForm, ProfilForm } from '@/components/account/ProfilForms';
+import { scoreOf } from '@/components/account/score';
+import { PanneauCarnet } from '@/components/account/panneaux/Carnet';
+import { PanneauDonnees } from '@/components/account/panneaux/Donnees';
+import { PanneauPreferences } from '@/components/account/panneaux/Preferences';
+import { PanneauProfil } from '@/components/account/panneaux/Profil';
+import { PanneauSorties } from '@/components/account/panneaux/Sorties';
+import type { SpotChoice } from '@/components/contributions/CatchForm';
 import { ConnexionForm, InscriptionForm } from '@/components/account/AuthForms';
-import { CatchForm, type SpotChoice } from '@/components/contributions/CatchForm';
 import { SignInForm } from '@/components/account/SignInForm';
 import { Button } from '@/components/ui/Button';
 import { SPECIES } from '@/data/species';
-import { formatMeasures, formatMonth, summarizeCatches } from '@/lib/contributions/catch-log';
+import { summarizeCatches } from '@/lib/contributions/catch-log';
+import { signOut } from '@/lib/auth/actions';
 import { getSpotForecast, getSpotSummary, type ForecastSlot } from '@/lib/forecast';
 import { contributions, spots as spotRepository } from '@/lib/providers';
-import { deleteCatch, deleteOuting, deleteReview, signOut } from '@/lib/auth/actions';
 import { absoluteUrl, spotPath } from '@/lib/routes';
 import { currentUser } from '@/lib/auth/session';
 import { googleEnabled, magicLinkEnabled } from '@/lib/auth/config';
 import { connecterAvecGoogle } from '@/lib/auth/actions-compte';
 import { estProprietaire } from '@/lib/auth/proprietaire';
-import { formatScore, tierForOrNull } from '@/lib/score-display';
-import { photoUrl } from '@/lib/photo/url';
-import { formatDateTime } from '@/lib/time';
 
 /** Une page de compte ne se met pas en cache : elle dépend de la session. */
 export const dynamic = 'force-dynamic';
@@ -61,19 +62,6 @@ const ERREURS_AUTHJS: Record<string, string> = {
     'La connexion Google n’est pas correctement configurée sur ce site. Ce n’est pas de votre fait : utilisez votre adresse et un mot de passe.',
 };
 
-const TIME_ZONE = 'Europe/Paris';
-
-/** Score et couleur d'un créneau, ou l'absence de données, en un seul objet. */
-function scoreOf(slot: ForecastSlot | null): { text: string; color: string; label: string } {
-  const value = slot?.score.value ?? null;
-  const danger = slot?.score.safety.level === 'danger';
-  const tier = tierForOrNull(value);
-  return {
-    text: formatScore(value),
-    color: danger ? 'var(--danger)' : (tier?.colorVar ?? 'var(--edge-strong)'),
-    label: danger ? 'Danger' : (tier?.label ?? 'Indispo.'),
-  };
-}
 
 function slotAt(days: { slots: ForecastSlot[] }[], instantMs: number): ForecastSlot | null {
   for (const day of days) {
@@ -175,7 +163,9 @@ export default async function ComptePage({
   return (
     <div className="bg-page">
       <div className="mx-auto w-full max-w-shell px-4 py-8 md:px-8 md:py-12">
-        <h1 className="font-serif text-h1 font-semibold">Votre compte</h1>
+        {(user === null || profile === null) && (
+          <h1 className="font-serif text-h1 font-semibold">Votre compte</h1>
+        )}
 
         {justDeleted && (
           <p role="status" className="surface mt-4 max-w-prose p-4 text-read text-fg">
@@ -302,22 +292,17 @@ export default async function ComptePage({
           </section>
         ) : (
           <>
-            <p className="mt-3 max-w-prose text-read text-fg-muted">
-              Connecté avec{' '}
-              <span className="nums text-fg">{user.email ?? 'une adresse vérifiée'}</span>.
-            </p>
-
             {profile === null ? (
               <section aria-labelledby="profil" className="mt-8 max-w-prose">
-                <h2 id="profil" className="font-serif text-h2 font-semibold">
+                <h2 id="profil" className="panneau-titre">
                   Choisissez un nom affiché
                 </h2>
-                <p className="mt-2 text-read text-fg-muted">
+                <p className="panneau-chapo">
                   Dernière étape avant de pouvoir contribuer. Ce nom est la seule chose que les
                   autres verront : votre adresse e-mail n’est jamais affichée. La date de naissance
                   ne sert qu’à vérifier l’âge, et n’est montrée à personne.
                 </p>
-                <div className="surface mt-4 p-4">
+                <div className="fiche mt-6">
                   <ProfileForm
                     mode="create"
                     {...(user.name ? { currentName: user.name.split(/\s+/)[0] ?? '' } : {})}
@@ -325,477 +310,78 @@ export default async function ComptePage({
                 </div>
               </section>
             ) : (
-              /*
-                Cinq onglets plutôt qu'une page qui déroule. Ils tiennent en CSS
-                pure : chaque onglet est un lien vers son panneau, et `:target`
-                fait le reste. Aucun JavaScript, donc rien à charger, et la
-                page reste entièrement lisible si le sélecteur `:has()` manque —
-                les panneaux s'affichent alors les uns sous les autres.
-              */
-              <div className="espace-compte mt-8">
-                <nav className="onglets-espace" aria-label="Sections de votre compte">
-                  <a href="#espace-profil" className="onglet-espace">
-                    Profil
-                  </a>
-                  <a href="#espace-carnet" className="onglet-espace">
-                    Carnet
-                  </a>
-                  <a href="#espace-sorties" className="onglet-espace">
-                    Sorties
-                  </a>
-                  <a href="#espace-preferences" className="onglet-espace">
-                    Préférences
-                  </a>
-                  <a href="#espace-donnees" className="onglet-espace">
-                    Données
-                  </a>
-                </nav>
+              <>
+                <EnteteCompte
+                  profil={profile}
+                  email={user.email}
+                  prises={carnet.total}
+                  especes={carnet.distinctSpecies}
+                  spots={carnet.bySpot.length}
+                  favoris={favorites.length}
+                  sorties={upcoming.length}
+                />
 
-                {/* ── Profil ─────────────────────────────────────────────── */}
-                <section id="espace-profil" className="panneau-espace mt-6" aria-labelledby="profil">
-                  <h2 id="profil" className="font-serif text-h2 font-semibold">
-                    Profil
-                  </h2>
-                  <p className="mt-2 max-w-prose text-read text-fg-muted">
-                    Vos contributions s’affichent sous{' '}
-                    <strong className="font-600 text-fg">{profile.displayName}</strong>. Compte
-                    créé le{' '}
-                    <span className="nums">
-                      {formatDateTime(new Date(profile.createdAt), TIME_ZONE)}
-                    </span>
-                    .
-                  </p>
+                {/*
+                  Cinq onglets plutôt qu'une page qui déroule. Ils tiennent en CSS
+                  pure : chaque onglet est un lien vers son panneau, et `:target`
+                  fait le reste. Aucun JavaScript, donc rien à charger, et la
+                  page reste entièrement lisible si le sélecteur `:has()` manque —
+                  les panneaux s'affichent alors les uns sous les autres.
+                */}
+                <div className="espace-compte mt-6">
+                  <nav className="onglets-espace" aria-label="Sections de votre compte">
+                    <a href="#espace-profil" className="onglet-espace">
+                      Profil
+                    </a>
+                    <a href="#espace-carnet" className="onglet-espace">
+                      Carnet
+                    </a>
+                    <a href="#espace-sorties" className="onglet-espace">
+                      Sorties
+                    </a>
+                    <a href="#espace-preferences" className="onglet-espace">
+                      Préférences
+                    </a>
+                    <a href="#espace-donnees" className="onglet-espace">
+                      Données
+                    </a>
+                  </nav>
 
-                  <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
-                    <div className="space-y-4">
-                      <div className="surface p-4">
-                        <h3 className="card-title">Photo</h3>
-                        <div className="mt-3">
-                          <AvatarForm
-                            avatarUrl={photoUrl(profile.avatarPath)}
-                            initiale={profile.displayName.slice(0, 1).toUpperCase()}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="surface p-4">
-                        <h3 className="card-title">Nom affiché</h3>
-                        <p className="mt-2 text-body text-fg-muted">
-                          Votre adresse e-mail, elle, n’est jamais affichée.
-                        </p>
-                        <div className="mt-3">
-                          <ProfileForm mode="rename" currentName={profile.displayName} />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="surface p-4 lg:p-6">
-                      <h3 className="card-title">Informations et localisation</h3>
-                      <p className="mt-2 max-w-prose text-body text-fg-muted">
-                        Rien n’est obligatoire ici, et rien n’est public : ces champs ne servent
-                        qu’à vous. La ville sert à retrouver vos spots proches ; elle n’est pas une
-                        position, et nous ne demandons jamais la vôtre.
-                      </p>
-                      <div className="mt-3">
-                        <ProfilForm profil={profile} />
-                      </div>
-                    </div>
-                  </div>
-                </section>
-
-                {/* ── Carnet de prises ───────────────────────────────────── */}
-                <section id="espace-carnet" className="panneau-espace mt-6" aria-label="Carnet de prises">
-                  {/* ── Carnet de prises ─────────────────────────────────────────── */}
-                  <section aria-labelledby="carnet" className="mt-10">
-                    <h2 id="carnet" className="font-serif text-h2 font-semibold">
-                      Carnet de prises
-                    </h2>
-                    <p className="mt-2 max-w-prose text-read text-fg-muted">
-                      Votre carnet, et rien d’autre : ce que vous déclarez ici apparaît aussi sur la
-                      page du spot, sous votre nom affiché. Une prise n’entre jamais dans le score —
-                      un témoignage n’est pas une mesure.
-                    </p>
-
-                    {/*
-                      Déclarer depuis le carnet, sans passer par la page du spot. C’est le
-                      geste du soir : on rentre, on note ce qu’on a pris. Ouvert d’emblée
-                      tant que le carnet est vide, replié ensuite pour que la liste reste
-                      la première chose qu’on voie.
-                    */}
-                    <details className="surface mt-4 max-w-prose p-4" open={carnet.total === 0}>
-                      <summary className="cursor-pointer text-body font-600 text-fg">
-                        Déclarer une prise
-                      </summary>
-                      <div className="mt-4">
-                        <CatchForm
-                          formId="carnet"
-                          spotChoices={spotChoices}
-                          speciesSuggestions={especesConnues}
-                        />
-                      </div>
-                    </details>
-
-                    {carnet.total === 0 ? (
-                      <p className="mt-4 max-w-prose text-read text-fg-muted">
-                        Rien encore. Déclarez une première prise ci-dessus, ou depuis l’onglet
-                        « Espèces » d’un spot : le carnet se remplit tout seul, déclaration après
-                        déclaration.
-                      </p>
-                    ) : (
-                      <>
-                        <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                          {[
-                            { term: 'Prises', value: String(carnet.total) },
-                            { term: 'Espèces', value: String(carnet.distinctSpecies) },
-                            {
-                              term: 'Relâchées',
-                              value: carnet.releaseRate === null ? '—' : `${Math.round(carnet.releaseRate * 100)} %`,
-                            },
-                            {
-                              term: 'Plus longue',
-                              value: carnet.longest?.lengthCm ? `${carnet.longest.lengthCm} cm` : '—',
-                            },
-                          ].map(({ term, value }) => (
-                            <div key={term} className="surface p-3">
-                              <dt className="text-meta text-fg-muted">{term}</dt>
-                              <dd className="mt-1 text-[22px] font-bold nums text-fg" data-numeric="">
-                                {value}
-                              </dd>
-                            </div>
-                          ))}
-                        </dl>
-
-                        <div className="mt-6 grid gap-6 lg:grid-cols-3">
-                          <div>
-                            <h3 className="card-title">Par espèce</h3>
-                            <ul className="mt-3 space-y-2">
-                              {carnet.bySpecies.slice(0, 8).map((s) => (
-                                <li key={s.species} className="flex items-baseline justify-between gap-3 border-b border-surface-2 pb-2 text-body">
-                                  <span className="text-fg">{s.species}</span>
-                                  <span className="nums text-fg-muted" data-numeric="">
-                                    {s.count}
-                                    {s.bestLengthCm !== null && ` · max ${s.bestLengthCm} cm`}
-                                  </span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-
-                          <div>
-                            <h3 className="card-title">Par spot</h3>
-                            <ul className="mt-3 space-y-2">
-                              {carnet.bySpot.slice(0, 8).map((s) => (
-                                <li key={s.spotSlug} className="flex items-baseline justify-between gap-3 border-b border-surface-2 pb-2 text-body">
-                                  <span className="text-fg">{nameOf(s.spotSlug)}</span>
-                                  <span className="nums text-fg-muted" data-numeric="">{s.count}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-
-                          <div>
-                            <h3 className="card-title">Douze derniers mois</h3>
-                            {/*
-                              Des barres proportionnelles au mois le plus fourni. Le
-                              chiffre est écrit à côté : la barre est un renfort, pas
-                              le porteur de l'information.
-                            */}
-                            <ul className="mt-3 space-y-1">
-                              {(() => {
-                                const max = Math.max(1, ...carnet.byMonth.map((m) => m.count));
-                                return carnet.byMonth.map((m) => (
-                                  <li key={m.month} className="grid grid-cols-[64px_1fr_28px] items-center gap-2 text-meta">
-                                    <span className="text-fg-muted">{formatMonth(m.month)}</span>
-                                    <span className="relative h-[8px] rounded-[4px] bg-surface-2">
-                                      <i
-                                        className="absolute inset-y-0 left-0 rounded-[4px] bg-accent"
-                                        style={{ width: `${(m.count / max) * 100}%` }}
-                                      />
-                                    </span>
-                                    <span className="text-right nums text-fg" data-numeric="">{m.count}</span>
-                                  </li>
-                                ));
-                              })()}
-                            </ul>
-                          </div>
-                        </div>
-
-                        <h3 className="card-title mt-8">
-                          Toutes les prises{' '}
-                          <span className="nums font-400 text-fg-muted">{mine.catches.length}</span>
-                        </h3>
-                        <ul className="mt-3 grid gap-3 md:grid-cols-2">
-                          {mine.catches.map((entry) => {
-                            const vignette = photoUrl(entry.photoPath);
-
-                            return (
-                            <li key={entry.id} className="surface p-4">
-                              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                                <span className="text-body font-600 text-fg">
-                                  {entry.species}
-                                  {formatMeasures(entry.lengthCm, entry.weightG) !== null && (
-                                    <span className="nums font-400 text-fg-muted">
-                                      {' '}
-                                      · {formatMeasures(entry.lengthCm, entry.weightG)}
-                                    </span>
-                                  )}
-                                  {entry.released && <span className="font-400 text-fg-muted"> · relâché</span>}
-                                </span>
-                                <span className="text-body text-fg-muted">{nameOf(entry.spotSlug)}</span>
-                              </div>
-                              {vignette !== null && (
-                                <Image
-                                  src={vignette}
-                                  alt={`Votre prise : ${entry.species} à ${nameOf(entry.spotSlug)}`}
-                                  width={640}
-                                  height={480}
-                                  sizes="(max-width: 768px) 100vw, 320px"
-                                  className="mt-3 h-auto w-full rounded-inner"
-                                />
-                              )}
-                              {entry.note && <p className="mt-2 max-w-prose text-body text-fg">{entry.note}</p>}
-                              <div className="card-source mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
-                                <span className="nums">{formatDateTime(new Date(entry.caughtAt), TIME_ZONE)}</span>
-                                <form action={deleteCatch}>
-                                  <input type="hidden" name="catch_id" value={entry.id} />
-                                  <input type="hidden" name="spot_slug" value={entry.spotSlug} />
-                                  <button type="submit" className="underline decoration-dotted underline-offset-4 hover:text-fg">
-                                    Supprimer
-                                  </button>
-                                </form>
-                              </div>
-                            </li>
-                            );
-                          })}
-                        </ul>
-                      </>
-                    )}
+                  <section id="espace-profil" className="panneau-espace mt-6" aria-label="Profil">
+                    <PanneauProfil profil={profile} />
                   </section>
 
-                  {mine.reviews.length > 0 && (
-                    <section aria-labelledby="avis" className="mt-10">
-                      <h2 id="avis" className="font-serif text-h2 font-semibold">
-                        Vos avis{' '}
-                        <span className="nums font-400 text-fg-muted">{mine.reviews.length}</span>
-                      </h2>
-                      <ul className="mt-4 grid gap-3 md:grid-cols-2">
-                        {mine.reviews.map((review) => (
-                          <li key={review.id} className="surface p-4">
-                            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                              <span className="text-body font-600 text-fg">{nameOf(review.spotSlug)}</span>
-                              <span className="nums text-body text-fg-muted">{review.rating}/5</span>
-                            </div>
-                            {review.comment && <p className="mt-2 max-w-prose text-body text-fg">{review.comment}</p>}
-                            <div className="card-source mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
-                              <span className="nums">{formatDateTime(new Date(review.createdAt), TIME_ZONE)}</span>
-                              <form action={deleteReview}>
-                                <input type="hidden" name="review_id" value={review.id} />
-                                <input type="hidden" name="spot_slug" value={review.spotSlug} />
-                                <button type="submit" className="underline decoration-dotted underline-offset-4 hover:text-fg">
-                                  Supprimer
-                                </button>
-                              </form>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </section>
-                  )}
-                </section>
-
-                {/* ── Sorties et favoris ─────────────────────────────────── */}
-                <section id="espace-sorties" className="panneau-espace mt-6" aria-label="Sorties et favoris">
-                  {/* ── Sorties programmées ─────────────────────────────────────── */}
-                  <section aria-labelledby="sorties" className="mt-10">
-                    <h2 id="sorties" className="font-serif text-h2 font-semibold">
-                      Sorties programmées
-                    </h2>
-                    {upcoming.length === 0 ? (
-                      <p className="mt-2 max-w-prose text-read text-fg-muted">
-                        Aucune sortie à venir. Programmez-en une depuis l’onglet « Espèces » d’un spot :
-                        vous recevrez les conditions prévues la veille, par courriel, si vous le
-                        demandez.
-                      </p>
-                    ) : (
-                      <ul className="mt-4 grid gap-3 md:grid-cols-2">
-                        {upcoming.map((outing) => {
-                          const slot = outingSlots.get(outing.id) ?? null;
-                          const score = scoreOf(slot);
-                          const href = pathOf(outing.spotSlug);
-                          const belowThreshold =
-                            outing.minScore !== null &&
-                            slot?.score.value !== null &&
-                            slot?.score.value !== undefined &&
-                            slot.score.value < outing.minScore;
-
-                          return (
-                            <li key={outing.id} className="surface p-4">
-                              <div className="flex items-start justify-between gap-4">
-                                <div>
-                                  {href ? (
-                                    <Link href={`${href}/prevision`} className="text-body font-600 text-fg underline decoration-dotted underline-offset-4">
-                                      {nameOf(outing.spotSlug)}
-                                    </Link>
-                                  ) : (
-                                    <span className="text-body font-600 text-fg">{nameOf(outing.spotSlug)}</span>
-                                  )}
-                                  <p className="mt-1 text-body nums text-fg-muted">
-                                    {formatDateTime(new Date(outing.plannedAt), TIME_ZONE)}
-                                  </p>
-                                  {outing.note && <p className="mt-2 max-w-prose text-body text-fg">{outing.note}</p>}
-                                </div>
-                                <div className="text-right">
-                                  <span className="block text-[22px] font-bold nums" style={{ color: score.color }} data-numeric="">
-                                    {score.text}
-                                  </span>
-                                  <span className="block text-[11px]" style={{ color: score.color }}>
-                                    {slot ? score.label : 'au-delà de 7 jours'}
-                                  </span>
-                                </div>
-                              </div>
-
-                              {slot?.score.safety.level === 'danger' && (
-                                <p className="mt-3 text-body font-600 text-danger">
-                                  Danger prévu à cette heure-là — ne sortez pas.
-                                </p>
-                              )}
-                              {!slot?.score.safety || slot.score.safety.level !== 'danger' ? (
-                                belowThreshold ? (
-                                  <p className="mt-3 text-body text-fg-muted">
-                                    Sous votre seuil de <span className="nums">{outing.minScore}</span>.
-                                  </p>
-                                ) : null
-                              ) : null}
-
-                              <div className="card-source mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
-                                <span>
-                                  {outing.alert
-                                    ? outing.notifiedAt
-                                      ? `Courriel envoyé le ${formatDateTime(new Date(outing.notifiedAt), TIME_ZONE)}`
-                                      : 'Courriel la veille'
-                                    : 'Sans courriel'}
-                                </span>
-                                {outing.minScore !== null && (
-                                  <span className="nums">seuil {outing.minScore}</span>
-                                )}
-                                <form action={deleteOuting}>
-                                  <input type="hidden" name="outing_id" value={outing.id} />
-                                  <button type="submit" className="underline decoration-dotted underline-offset-4 hover:text-fg">
-                                    Supprimer
-                                  </button>
-                                </form>
-                              </div>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    )}
+                  <section id="espace-carnet" className="panneau-espace mt-6" aria-label="Carnet de prises">
+                    <PanneauCarnet
+                      carnet={carnet}
+                      catches={mine.catches}
+                      reviews={mine.reviews}
+                      nameOf={nameOf}
+                      spotChoices={spotChoices}
+                      especesConnues={especesConnues}
+                    />
                   </section>
 
-                  {/* ── Favoris ─────────────────────────────────────────────────── */}
-                  <section aria-labelledby="favoris" className="mt-10">
-                    <h2 id="favoris" className="font-serif text-h2 font-semibold">
-                      Spots favoris
-                    </h2>
-                    {favoriteSummaries.length === 0 ? (
-                      <p className="mt-2 max-w-prose text-read text-fg-muted">
-                        Aucun favori. Le bouton « Ajouter aux favoris » est en haut de chaque page de
-                        spot ; vous retrouverez ici leur score du moment, en un coup d’œil.
-                      </p>
-                    ) : (
-                      <ul className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                        {favoriteSummaries.map(({ spot, current, nextGood }) => {
-                          const score = scoreOf(current);
-                          return (
-                            <li key={spot.slug}>
-                              <Link
-                                href={spotPath(spot)}
-                                className="surface flex min-h-tap items-center justify-between gap-3 p-3 tappable"
-                              >
-                                <span>
-                                  <span className="block text-body font-600 text-fg">{spot.name}</span>
-                                  <span className="block text-meta text-fg-muted">
-                                    {nextGood
-                                      ? `prochaine bonne fenêtre ${formatDateTime(new Date(nextGood.start), spot.timezone)}`
-                                      : spot.regionName}
-                                  </span>
-                                </span>
-                                <span className="text-right">
-                                  <span className="block text-[19px] font-bold nums" style={{ color: score.color }} data-numeric="">
-                                    {score.text}
-                                  </span>
-                                  <span className="block text-[11px]" style={{ color: score.color }}>
-                                    {score.label}
-                                  </span>
-                                </span>
-                              </Link>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    )}
-                  </section>
-                </section>
-
-                {/* ── Préférences ────────────────────────────────────────── */}
-                <section id="espace-preferences" className="panneau-espace mt-6" aria-labelledby="preferences">
-                  <h2 id="preferences" className="font-serif text-h2 font-semibold">
-                    Préférences de communication
-                  </h2>
-                  <p className="mt-2 max-w-prose text-read text-fg-muted">
-                    Deux cases, et elles partent décochées sauf celle que vous avez déjà
-                    demandée en programmant une sortie. Nous n’envoyons rien que vous n’ayez
-                    coché, et chaque message porte son lien de désabonnement.
-                  </p>
-                  <div className="surface mt-4 max-w-prose p-4">
-                    <PreferencesForm profil={profile} />
-                  </div>
-                </section>
-
-                {/* ── Vos données ────────────────────────────────────────── */}
-                <section id="espace-donnees" className="panneau-espace mt-6" aria-label="Vos données">
-                  <div className="grid gap-x-10 lg:grid-cols-2">
-                  <section aria-labelledby="donnees" className="mt-10 max-w-prose">
-                    <h2 id="donnees" className="font-serif text-h2 font-semibold">
-                      Vos données
-                    </h2>
-                    <p className="mt-2 text-read text-fg-muted">
-                      Tout ce que nous détenons sur vous — profil, avis, prises, favoris, sorties —
-                      tient dans un fichier que vous pouvez télécharger maintenant, sans nous le
-                      demander et sans délai.
-                    </p>
-                    <p className="mt-4">
-                      <a
-                        href="/api/compte/export"
-                        className="inline-flex min-h-tap items-center rounded-ctl border border-edge-strong px-5 font-600 text-fg hover:bg-surface-2"
-                        download
-                      >
-                        Télécharger mes données (JSON)
-                      </a>
-                    </p>
+                  <section id="espace-sorties" className="panneau-espace mt-6" aria-label="Sorties et favoris">
+                    <PanneauSorties
+                      upcoming={upcoming}
+                      outingSlots={outingSlots}
+                      favoriteSummaries={favoriteSummaries}
+                      nameOf={nameOf}
+                      pathOf={pathOf}
+                      scoreOf={scoreOf}
+                    />
                   </section>
 
-                  <section aria-labelledby="effacer" className="mt-10 max-w-prose">
-                    <h2 id="effacer" className="font-serif text-h2 font-semibold">
-                      Effacer le compte
-                    </h2>
-                    <p className="mt-2 text-read text-fg-muted">
-                      La suppression emporte le profil, les avis, les prises, les photos, les favoris
-                      et les sorties. Elle est immédiate et sans retour possible. Nous ne gardons pas
-                      de copie « au cas où » : ce serait exactement ce que l’effacement interdit.
-                    </p>
-                    <p className="mt-2 text-read text-fg-muted">
-                      Pensez à exporter vos données avant, si vous voulez les garder.
-                    </p>
-                    <div className="surface mt-4 p-4">
-                      <DeleteAccountForm />
-                    </div>
+                  <section id="espace-preferences" className="panneau-espace mt-6" aria-label="Préférences">
+                    <PanneauPreferences profil={profile} />
                   </section>
 
-                  </div>
-                  {exploitation}
-                </section>
-              </div>
+                  <section id="espace-donnees" className="panneau-espace mt-6" aria-label="Vos données">
+                    <PanneauDonnees exploitation={exploitation} />
+                  </section>
+                </div>
+              </>
             )}
 
             {/*

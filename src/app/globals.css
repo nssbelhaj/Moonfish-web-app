@@ -990,3 +990,119 @@
 .bouton-google:hover {
   background: var(--surface-2);
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   L'espace personnel : en-tête, fiches, titres de panneau.
+
+   Ces classes existent parce que la page de compte empilait `surface p-4` et
+   `mt-10` au cas par cas : deux fiches voisines n'avaient ni le même fond, ni
+   le même écart, ni la même graisse de titre. Nommer les trois formes — une
+   bande d'en-tête, une fiche, un titre de panneau — suffit à ce qu'un panneau
+   écrit demain ressemble aux quatre autres.
+   ══════════════════════════════════════════════════════════════════════════ */
+.entete-compte {
+  padding: 20px;
+  border-radius: 14px;
+  background: var(--card);
+}
+
+@media (min-width: 768px) {
+  .entete-compte {
+    padding: 24px 28px;
+  }
+}
+
+.entete-chiffres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 20px 0 0;
+}
+
+.entete-chiffre {
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--surface-2);
+}
+
+.entete-nombre {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.entete-libelle {
+  font-size: 13px;
+  color: var(--fg-muted);
+}
+
+/* La fiche : l'unité de contenu d'un panneau. Un fond, un rayon, rien d'autre
+   — pas de liseré ET d'ombre par-dessus, qui est la signature générique. */
+.fiche {
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--card);
+}
+
+@media (min-width: 768px) {
+  .fiche {
+    padding: 20px;
+  }
+}
+
+.fiche-titre {
+  margin: 0;
+  font-family: var(--font-spectral), Spectral, Georgia, serif;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.fiche-note {
+  margin: 6px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--fg-muted);
+}
+
+.panneau-titre {
+  font-family: var(--font-spectral), Spectral, Georgia, serif;
+  font-size: 21px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.panneau-chapo {
+  max-width: 68ch;
+  margin-top: 8px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--fg-muted);
+}
+
+/*
+  État vide : ce n'est pas une erreur, et cela ne doit pas en avoir l'air.
+  Un cadre pointillé discret, le texte au centre, et l'action qui remplit le
+  vide juste en dessous.
+*/
+.vide {
+  padding: 28px 20px;
+  border: 1px dashed var(--edge);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.vide-titre {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.vide-texte {
+  max-width: 46ch;
+  margin: 8px auto 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fg-muted);
+}
