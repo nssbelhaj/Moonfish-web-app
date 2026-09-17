@@ -52,9 +52,38 @@ export const fishingTechniqueSchema = z.enum([
   'peche-a-pied',
 ]);
 
+/**
+ * Forme d'un slug de spot : sans accent, stable, utilisé dans l'URL.
+ *
+ * Elle est déclarée une seule fois parce que DEUX endroits en dépendent : le
+ * catalogue, qui la valide à la construction, et l'API, qui la valide sur ce
+ * qu'un client envoie. Deux expressions séparées finiraient par diverger, et
+ * la divergence se verrait sous la forme la plus désagréable — un spot
+ * accessible par le site et introuvable par l'application.
+ */
+const FORME_SLUG = /^[a-z0-9-]+$/;
+
+/**
+ * Le slug tel qu'il arrive d'un client : borné et vérifié.
+ *
+ * Les bornes ne sont pas décoratives. Sans elles, une chaîne de dix mille
+ * caractères descendrait jusqu'à une requête SQL — paramétrée, donc sans
+ * risque d'injection, mais qui aurait quand même traversé tout le serveur et
+ * occupé une connexion pour ne rien trouver.
+ */
+export const spotSlugSchema = z
+  .string({ required_error: 'Quel spot ? L’identifiant est manquant.' })
+  .trim()
+  .min(1, 'Identifiant de spot manquant.')
+  .max(80, 'Identifiant de spot trop long.')
+  .regex(
+    FORME_SLUG,
+    'Identifiant de spot invalide : uniquement des minuscules, des chiffres et des tirets.',
+  );
+
 export const spotSchema = z.object({
   /** Slug sans accent, stable, utilisé dans l'URL. */
-  slug: z.string().regex(/^[a-z0-9-]+$/),
+  slug: z.string().regex(FORME_SLUG),
   name: z.string().min(2),
   countrySlug: z.string().regex(/^[a-z0-9-]+$/),
   countryName: z.string().min(2),

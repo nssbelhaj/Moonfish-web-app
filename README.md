@@ -1095,6 +1095,59 @@ serveur, les photos de prises seront débarrassées de leurs métadonnées EXIF
 avant enregistrement, et toute mesure d'audience sera sans identifiant ou
 soumise à un consentement préalable.
 
+## L'API publique (v1)
+
+Elle existe pour l'application mobile, et elle n'existe que pour ça : le site
+ne l'appelle pas — ses pages lisent les mêmes modules directement.
+
+### La décision qui la gouverne
+
+**L'application ne recalcule rien.** Le score porte une règle de sécurité non
+négociable — houle > 2,5 m OU vent > 50 km/h ⇒ `danger` — et cette règle décide
+si quelqu'un va se mettre en danger sur des rochers. Deux implémentations
+finissent toujours par diverger : un seuil ajusté d'un côté, un arrondi de
+l'autre, et un jour l'application dit « Bon » là où le site dit « Danger ».
+
+`GET /api/v1/spots/{slug}/prevision` appelle donc `getSpotForecast`, la MÊME
+fonction que les pages de spot. Il n'y a qu'un moteur de score, qu'une
+évaluation de la sécurité, et aucun moyen de les faire diverger.
+
+### Ce que la forme du JSON garantit
+
+| | |
+| --- | --- |
+| **`safety` est frère de `score`, jamais son enfant** | `ScoreResult` porte `safety` à l'intérieur ; l'API l'en sort. Un client qui la recevrait dans le score finirait par la traiter comme une conséquence du score — par la masquer quand il est bon, par l'oublier quand il est absent. `securite-hors-score.test.ts` fait échouer le build si elle y retourne. |
+| **`sources` accompagne chaque prévision** | Provenance, fraîcheur, durée de validité et repli-après-panne. L'application doit pouvoir écrire « marée simulée » exactement là où le site l'écrit. |
+| **`userId` ne sort jamais** | Le nom affiché suffit à signer. Publier l'identifiant permettrait de recouper toutes les contributions d'une personne à travers les 42 spots. |
+| **Aucun en-tête CORS** | Une application n'a pas d'origine et n'en a pas besoin. Les navigateurs en ont une : sans ces en-têtes, aucun autre site ne peut lire cette API. Le catalogue et les scores sont le produit, pas une source de données gratuite. |
+| **Aucune route ne sait recevoir une position** | La proximité se calcule sur l'appareil, contre le catalogue déjà téléchargé. C'est plus solide qu'une promesse de ne pas s'en servir, et un test refuse qu'une route accepte une latitude. |
+
+### Le jeton porteur n'est pas un second système
+
+`lib/auth/session-cookie.ts` écrit déjà les sessions à la main dans la table
+`sessions` ; le cookie n'est que le transport du jeton. L'application range le
+même jeton dans le trousseau du téléphone et l'envoie dans
+`Authorization: Bearer`. Le serveur fait alors exactement ce qu'il fait pour le
+web : un `select` sur la même table, avec la même condition d'expiration.
+
+Conséquence vérifiée en intégration : **une déconnexion coupe l'accès à la
+requête suivante**, depuis le téléphone comme depuis le navigateur.
+
+### Un piège que seul le build montrait
+
+`export const revalidate = 3600` ne suffit PAS sur un segment `[slug]` : sans
+`generateStaticParams`, Next range la route en « ƒ » — rendue à chaque appel —
+alors que la constante juste au-dessus laisse croire le contraire.
+
+Rien ne l'aurait signalé à l'usage, les réponses restant justes. Le prix se
+serait payé sur le quota Stormglass : dix appels par jour, épuisés par une
+poignée d'ouvertures de l'application, puis 42 spots retombés en marée simulée
+jusqu'au lendemain. Exactement la panne silencieuse que `TIDE_REAL_SPOTS`
+existe pour éviter, réintroduite par une autre porte. Un test relit désormais
+les deux déclarations ensemble.
+
+**Le détail de toutes les routes est dans `docs/api-v1.md`.**
+
 ## Déploiement
 
 Aucune base de données n'est nécessaire à ce stade, et Open-Meteo ne demande pas

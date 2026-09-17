@@ -157,6 +157,16 @@ export interface AccountExport {
   catches: Catch[];
   favorites: Favorite[];
   outings: Outing[];
+  /*
+    Les appareils enregistrés pour les notifications.
+
+    Ils ne sont visibles nulle part ailleurs, et c'est précisément pourquoi
+    ils doivent être ICI : le droit d'accès porte sur tout ce que nous
+    détenons, pas sur ce que l'interface montre déjà. Un jeton de notification
+    est une donnée rattachée à une personne et à un appareil ; l'omettre
+    rendrait l'export incomplet sans que personne ne puisse s'en apercevoir.
+  */
+  devices: { token: string; platform: string; label: string | null }[];
 }
 
 /**
