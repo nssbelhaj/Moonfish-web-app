@@ -1005,16 +1005,80 @@ export const SPOTS: readonly Spot[] = Object.freeze(
 );
 
 /**
+ * Le catalogue regroupé par pays, dans l'ordre où les pays apparaissent.
+ *
+ * ─── Pourquoi le dériver, encore ──────────────────────────────────────────
+ *
+ * Même raison que `CATALOGUE.total` : « 20 spots en France » écrit à la main
+ * dans la page d'accueil serait faux le jour où un spot s'ajoute, et rien ne
+ * le signalerait. Le sélecteur de pays, les titres et les compteurs lisent
+ * donc tous cette liste — qui ne peut pas mentir, puisqu'elle EST le
+ * catalogue.
+ *
+ * L'ordre est celui du tableau source, et non l'ordre alphabétique : il suit
+ * la construction du catalogue, ce qui rend le diff lisible quand un pays
+ * s'ajoute.
+ */
+export interface PaysCatalogue {
+  slug: string;
+  nom: string;
+  spots: Spot[];
+  /** Les régions du pays, sans doublon, dans l'ordre du catalogue. */
+  regions: string[];
+}
+
+export const PAYS: readonly PaysCatalogue[] = Object.freeze(
+  SPOTS.reduce<PaysCatalogue[]>((acc, spot) => {
+    let pays = acc.find((candidat) => candidat.slug === spot.countrySlug);
+    if (!pays) {
+      pays = { slug: spot.countrySlug, nom: spot.countryName, spots: [], regions: [] };
+      acc.push(pays);
+    }
+    pays.spots.push(spot);
+    if (!pays.regions.includes(spot.regionName)) pays.regions.push(spot.regionName);
+    return acc;
+  }, []),
+);
+
+/**
+ * La préposition de chaque pays. « en France », mais « au Maroc ».
+ *
+ * Elle ne se déduit d'aucune règle mécanique — elle dépend du genre et de
+ * l'initiale — et c'est justement pourquoi elle est déclarée ici plutôt
+ * qu'écrite dans une phrase : un pays ajouté sans sa préposition fait
+ * échouer `src/data/__tests__/pays.test.ts`, au lieu de produire « en Maroc »
+ * dans un titre de page.
+ */
+export const PREPOSITIONS_PAYS: Record<string, string> = {
+  france: 'en France',
+  espagne: 'en Espagne',
+  maroc: 'au Maroc',
+};
+
+/**
  * Taille et étendue du catalogue, pour les textes qui les citent.
  *
  * Le nombre a été écrit en dur — « 12 spots » — dans neuf endroits du site,
  * et il est resté à douze après le passage à quarante-deux. Un chiffre recopié
  * est un chiffre périmé en attente ; celui-ci se calcule.
+ *
+ * L'étendue l'était aussi : « en France, en Espagne et au Maroc », annoncée
+ * comme étant « dans l'ordre du catalogue », alors que le catalogue range le
+ * Maroc avant l'Espagne. Elle se compose maintenant depuis `PAYS`, donc dans
+ * le vrai ordre, et un pays ajouté y apparaît sans que personne n'y pense.
  */
 export const CATALOGUE = {
   total: SPOTS.length,
-  /** « en France, en Espagne et au Maroc » — dans l'ordre du catalogue. */
-  etendue: 'en France, en Espagne et au Maroc',
+  /** « en France, au Maroc et en Espagne » — dans l'ordre du catalogue. */
+  etendue: (() => {
+    const morceaux = PAYS.map((pays) => PREPOSITIONS_PAYS[pays.slug] ?? `en ${pays.nom}`);
+    const dernier = morceaux.pop();
+    return dernier === undefined
+      ? ''
+      : morceaux.length === 0
+        ? dernier
+        : `${morceaux.join(', ')} et ${dernier}`;
+  })(),
 } as const;
 
 export const EXPOSURE_LABELS: Record<Spot['exposure'], string> = {

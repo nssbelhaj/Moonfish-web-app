@@ -5,6 +5,7 @@ import type {
   Author,
   ContributionResult,
   ContributionsRepository,
+  RecentContributions,
   SpotContributions,
   SpotRating,
 } from '../types';
@@ -42,6 +43,10 @@ export class ClosedContributionsRepository implements ContributionsRepository {
 
   async forSpot(_spotSlug: string): Promise<SpotContributions> {
     return { reviews: [], catches: [], averageRating: null, reviewCount: 0 };
+  }
+
+  async recentPublic(_limite: number): Promise<RecentContributions> {
+    return { catches: [], reviews: [] };
   }
 
   async listForUser(_userId: string): Promise<{ reviews: []; catches: [] }> {

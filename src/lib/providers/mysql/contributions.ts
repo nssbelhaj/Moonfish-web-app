@@ -31,6 +31,7 @@ import type {
   ContributionResult,
   ContributionsRepository,
   PendingAlert,
+  RecentContributions,
   SpotContributions,
   SpotRating,
 } from '../types';
@@ -319,6 +320,46 @@ export class MysqlContributionsRepository implements ContributionsRepository {
       // tomber parce que les avis sont indisponibles.
       console.error('[contributions] lecture du spot', error);
       return { reviews: [], catches: [], averageRating: null, reviewCount: 0 };
+    }
+  }
+
+  async recentPublic(limite: number): Promise<RecentContributions> {
+    /*
+      La borne est ramenée dans un intervalle raisonnable AVANT d'atteindre
+      la base : `limit ?` accepterait sans broncher un million, et une page
+      d'accueil qui rapatrie un million de lignes est une panne, pas une
+      page. Elle vient d'un appelant interne aujourd'hui — elle pourrait
+      venir d'ailleurs demain.
+    */
+    const borne = Math.max(1, Math.min(24, Math.trunc(limite) || 1));
+
+    try {
+      const [catches, reviews] = await Promise.all([
+        /*
+          `visibility = 'publique'` dans la REQUÊTE, comme dans `forSpot`, et
+          pour la même raison : une prise privée ne doit pas voyager jusqu'au
+          rendu pour y être écartée.
+
+          Le tri porte sur `caught_at`, la date de la prise, et non sur
+          `created_at` : ce qu'on annonce est « les dernières prises », pas
+          « les dernières saisies ». Une sortie rentrée le dimanche soir se
+          range au jour où elle a eu lieu.
+        */
+        query<CatchRow>(
+          `select * from catches
+             where visibility = 'publique'
+             order by caught_at desc limit ?`,
+          [borne],
+        ),
+        query<ReviewRow>('select * from spot_reviews order by created_at desc limit ?', [borne]),
+      ]);
+
+      return { catches: catches.map(toCatch), reviews: reviews.map(toReview) };
+    } catch (error) {
+      // Même règle que partout ici : une panne de lecture vide la section,
+      // elle ne casse pas la page d'accueil.
+      console.error('[contributions] dernières contributions publiques', error);
+      return { catches: [], reviews: [] };
     }
   }
 

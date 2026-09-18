@@ -166,6 +166,25 @@ export const NOTE_VIDE: SpotRating = {
   breakdown: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
 };
 
+/**
+ * Les dernières contributions PUBLIQUES, tous spots confondus.
+ *
+ * ─── Pourquoi un point d'entrée à part ────────────────────────────────────
+ *
+ * La page d'accueil veut montrer ce que les pêcheurs déclarent ici, sans
+ * savoir à l'avance sur quels spots. Le faire en appelant `forSpot` pour
+ * chacun des spots du catalogue serait quarante requêtes pour en garder six —
+ * et le tri par date se ferait en mémoire, donc faux dès que le site marche.
+ *
+ * Les prises rendues ici sont celles, et seulement celles, dont la visibilité
+ * est `publique`. Le filtre est dans la REQUÊTE : une prise privée ne quitte
+ * pas la base.
+ */
+export interface RecentContributions {
+  catches: Catch[];
+  reviews: SpotReview[];
+}
+
 export interface SpotContributions {
   reviews: SpotReview[];
   catches: Catch[];
@@ -214,6 +233,11 @@ export interface ContributionsRepository {
   forSpot(spotSlug: string): Promise<SpotContributions>;
   /** Note agrégée d'un spot, comptée en base sur TOUS les avis. */
   ratingFor(spotSlug: string): Promise<SpotRating>;
+  /**
+   * Dernières contributions publiques, tous spots confondus, pour l'accueil.
+   * `limite` borne CHAQUE liste, pas leur somme.
+   */
+  recentPublic(limite: number): Promise<RecentContributions>;
   /** Contributions d'une personne, pour son écran de compte. */
   listForUser(userId: string): Promise<{ reviews: SpotReview[]; catches: Catch[] }>;
 

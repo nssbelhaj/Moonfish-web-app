@@ -1,18 +1,34 @@
 import type { Metadata } from 'next';
-
-import { CATALOGUE } from '@/data/spots';
-import { FACTOR_LABELS, FACTOR_WEIGHTS } from '@/lib/scoring';
 import Link from 'next/link';
+
+import { CATALOGUE, PAYS } from '@/data/spots';
+import { ChoixPays, type OptionPays } from '@/components/accueil/ChoixPays';
+import { CarteMoment } from '@/components/accueil/CarteMoment';
+import { DernieresContributions } from '@/components/accueil/DernieresContributions';
+import { FriseCoefficients } from '@/components/accueil/FriseCoefficients';
 import { DemoDataNotice } from '@/components/data/DemoDataNotice';
 import { EmailCaptureForm } from '@/components/forms/EmailCaptureForm';
 import { SpotSearch, type SearchableSpot } from '@/components/forms/SpotSearch';
-import { SpotCard } from '@/components/spot/SpotCard';
+import { ScoreBreakdown } from '@/components/score/ScoreBreakdown';
+import { NearbySpots } from '@/components/spot/NearbySpots';
 import { ButtonLink } from '@/components/ui/Button';
 import { Section } from '@/components/ui/Section';
-import { collectSources, getAllSpotSummaries, referenceNow } from '@/lib/forecast';
-import { tides, weather } from '@/lib/providers';
+import {
+  collectSources,
+  getAllSpotSummaries,
+  getSpotForecast,
+  referenceNow,
+} from '@/lib/forecast';
+import { prochainsCoefficients } from '@/lib/forecast/coefficients';
+import { momentsFor, type Moment } from '@/lib/forecast/moments';
+import { contributions, tides, weather } from '@/lib/providers';
 import { absoluteUrl, spotPath } from '@/lib/routes';
-import { formatDateTime } from '@/lib/time';
+import {
+  FACTOR_COUNT_WORD,
+  FACTOR_LABELS,
+  FACTOR_WEIGHTS,
+  factorWeightSentence,
+} from '@/lib/scoring';
 
 /** Les données sont recalculées chaque heure ; la page reste statique entre-temps. */
 export const revalidate = 3600;
@@ -29,6 +45,11 @@ export const metadata: Metadata = {
     url: absoluteUrl('/'),
   },
 };
+
+/** Combien de contributions récentes on affiche, par type. */
+const COMBIEN_DE_CONTRIBUTIONS = 4;
+/** Longueur de la frise des coefficients. Un mois couvre deux vives-eaux. */
+const JOURS_DE_FRISE = 30;
 
 /**
  * La réponse sur l'origine des données ne peut pas être écrite en dur : elle
@@ -58,8 +79,14 @@ const DATA_QUESTION = {
 const FAQ = [
   {
     question: 'Comment le score Luna Marea est-il calculé ?',
-    answer:
-      'Cinq facteurs pondérés : la marée pour 35 %, le vent pour 25 %, la houle pour 20 %, les périodes solunaires et la lune pour 15 %, la lumière pour 5 %. Chaque sous-score et son poids sont affichés sur la page du spot, avec la phrase qui l’explique.',
+    /*
+      La phrase est ASSEMBLÉE depuis les poids du moteur. Elle disait « Cinq
+      facteurs pondérés : la marée pour 35 %… » alors que le modèle en compte
+      sept et n'a jamais appliqué ces pourcentages depuis l'arrivée de la
+      pression. Une FAQ qui se trompe sur le calcul qu'elle explique est pire
+      qu'une FAQ absente.
+    */
+    answer: `${FACTOR_COUNT_WORD} facteurs pondérés : ${factorWeightSentence()}. Chaque sous-score et son poids sont affichés sur la page du spot, avec la phrase qui l’explique.`,
   },
   DATA_QUESTION,
   {
@@ -74,11 +101,128 @@ const FAQ = [
   },
 ] as const;
 
+/** Les libellés des facteurs, avec le texte qui les explique et son guide. */
+const EXPLICATIONS = {
+  tide: {
+    body: 'La fenêtre de deux heures avant à une heure après la pleine mer, et la descendante établie. L’étale est pénalisée : sans courant, rien ne circule.',
+    href: '/guides/comprendre-les-coefficients-de-maree',
+    link: 'Comprendre les coefficients',
+  },
+  wind: {
+    body: '10 à 25 km/h de secteur mer brassent le bord sans le rendre impêchable. Au-delà de 40 km/h, c’est non.',
+    href: '/guides/vent-houle-et-surfcasting',
+    link: 'Vent, houle et surfcasting',
+  },
+  swell: {
+    body: 'Entre 0,5 et 1,5 m, la mer travaille le bord. Sous 0,3 m elle est trop lisse ; au-delà de 2,5 m, la question n’est plus la pêche.',
+    href: '/guides/vent-houle-et-surfcasting',
+    link: 'Lire l’état de mer',
+  },
+  solunar: {
+    body: 'Périodes majeures au zénith et au nadir, mineures au lever et au coucher. Bonus en vive-eau. Un effet réel, mais modeste.',
+    href: '/guides/lune-et-periodes-solunaires',
+    link: 'Ce que vaut vraiment le solunaire',
+  },
+  pressure: {
+    body: 'La tendance, pas la valeur : une pression qui baisse précède souvent une phase active, une remontée franche derrière un front la referme.',
+    href: '/guides/vent-houle-et-surfcasting',
+    link: 'Lire une tendance',
+  },
+  water: {
+    body: 'Le métabolisme d’un poisson suit celui de l’eau : trop froide il ralentit, trop chaude l’oxygène manque. Le plateau va de 11 à 22 °C — assez large pour la Bretagne comme pour Agadir.',
+    href: '/guides/quand-pecher-le-bar-du-bord',
+    link: 'Quand pêcher le bar',
+  },
+  light: {
+    body: 'Aube, crépuscule et nuit devant le plein jour. Le poids est faible parce que l’effet, seul, l’est aussi.',
+    href: '/guides/quand-pecher-le-bar-du-bord',
+    link: 'Quand pêcher le bar',
+  },
+} as const;
+
 export default async function HomePage() {
   const now = referenceNow();
   const summaries = await getAllSpotSummaries(now);
-  const featured = summaries.slice(0, 3);
   const sources = collectSources(summaries);
+
+  /*
+    Les prévisions complètes, pour disposer de TOUS les créneaux et pas
+    seulement du meilleur. Elles ne coûtent rien de plus : `getSpotForecast`
+    est mémoïsé pour la durée de la requête, et `getAllSpotSummaries` vient
+    de les calculer.
+  */
+  const previsions = await Promise.all(
+    summaries.map(async (summary) => ({
+      spot: summary.spot,
+      days: (await getSpotForecast(summary.spot, now)).days,
+    })),
+  );
+
+  /*
+    ─── Tout est groupé PAR PAYS ────────────────────────────────────────────
+
+    L'accueil classait les créneaux sur le catalogue entier. Pour quelqu'un
+    qui pêche en Bretagne, cela donnait régulièrement trois spots marocains :
+    exacts, bien classés, et sans le moindre usage. On rend donc les trois
+    pays, chacun dans son bloc `data-pays`, et le sélecteur masque les
+    autres. Sans JavaScript, les trois restent lisibles sous leur titre.
+  */
+  const parPays = PAYS.map((pays) => {
+    const slugs = new Set(pays.spots.map((spot) => spot.slug));
+    const previsionsDuPays = previsions.filter((entree) => slugs.has(entree.spot.slug));
+    const resumes = summaries.filter((summary) => slugs.has(summary.spot.slug));
+    const meilleur = resumes.find((summary) => summary.current?.score.value != null) ?? null;
+
+    return {
+      pays,
+      moments: momentsFor(previsionsDuPays, now),
+      option: {
+        slug: pays.slug,
+        nom: pays.nom,
+        spots: pays.spots.length,
+        meilleur: meilleur?.current?.score.value ?? null,
+        meilleurSpot: meilleur?.spot.name ?? null,
+        /*
+          Deux régions nommées, puis le compte de celles qui restent. Trois
+          noms débordaient de la carte et l'ellipse CSS les coupait au milieu
+          d'un mot — « Tanger-Tétoua… » — ce qui cachait en plus combien il
+          en restait.
+        */
+        regions:
+          pays.regions.length <= 2
+            ? pays.regions.join(', ')
+            : `${pays.regions.slice(0, 2).join(', ')} +${pays.regions.length - 2}`,
+        points: pays.spots.map((spot) => ({
+          slug: spot.slug,
+          name: spot.name,
+          lat: spot.lat,
+          lng: spot.lng,
+        })),
+      } satisfies OptionPays,
+    };
+  });
+
+  const coefficients = prochainsCoefficients(now, JOURS_DE_FRISE);
+
+  /*
+    Les contributions publiques récentes. Le dépôt rend des listes vides
+    quand les comptes ne sont pas configurés ou quand la base ne répond pas :
+    la section le DIT alors, elle n'invente aucun avis de démonstration.
+  */
+  const recentes = await contributions.recentPublic(COMBIEN_DE_CONTRIBUTIONS);
+  const parSlug = new Map(summaries.map((summary) => [summary.spot.slug, summary.spot]));
+  const situer = <T extends { spotSlug: string }>(entree: T) => {
+    const spot = parSlug.get(entree.spotSlug);
+    return spot === undefined
+      ? null
+      : { ...entree, spotNom: spot.name, spotHref: spotPath(spot) };
+  };
+  const prisesRecentes = recentes.catches
+    .map(situer)
+    .filter((entree): entree is NonNullable<typeof entree> => entree !== null);
+  const avisRecents = recentes.reviews
+    .map(situer)
+    .filter((entree): entree is NonNullable<typeof entree> => entree !== null);
 
   const searchable: SearchableSpot[] = summaries.map((summary) => ({
     slug: summary.spot.slug,
@@ -126,18 +270,66 @@ export default async function HomePage() {
       </div>
 
       <Section
-        title="Les trois meilleurs créneaux en ce moment"
-        lead="Classement établi sur le score du créneau en cours, tous spots confondus. Un spot en conditions dangereuses n’y figure jamais en tête."
+        title="Où pêchez-vous ?"
+        lead="Choisissez une façade : le reste de la page s’y limite, et votre choix est retenu pour la prochaine visite. Les points de chaque vignette sont les spots, à leurs vraies coordonnées."
       >
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {featured.map((summary) => (
-            <li key={summary.spot.slug}>
-              <SpotCard summary={summary} />
-            </li>
-          ))}
-        </ul>
+        <ChoixPays options={parPays.map((entree) => entree.option)} />
 
-        <div className="mt-6">
+        <div className="mt-8 max-w-prose">
+          {/*
+            « Autour de moi » remonte ici depuis /spots : c'est la question la
+            plus fréquente, et elle ne demande rien tant qu'on ne clique pas.
+            La position reste dans le navigateur — aucun point d'accès serveur
+            n'accepterait de la recevoir.
+          */}
+          <NearbySpots
+            spots={summaries.map((summary) => ({
+              slug: summary.spot.slug,
+              name: summary.spot.name,
+              regionLabel: summary.spot.regionName,
+              path: spotPath(summary.spot),
+              lat: summary.spot.lat,
+              lng: summary.spot.lng,
+            }))}
+          />
+        </div>
+      </Section>
+
+      <Section
+        title="Ce soir, demain matin"
+        lead="Le meilleur créneau de chacune des deux fenêtres où l’on pêche réellement du bord — pas un classement du catalogue. Un créneau en conditions dangereuses n’y figure jamais, quel que soit son score."
+      >
+        <div className="space-y-8">
+          {parPays.map(({ pays, moments }) => (
+            <div key={pays.slug} data-pays={pays.slug}>
+              <h3 className="text-h3 font-semibold font-600" data-titre-pays="">
+                {pays.nom}
+              </h3>
+
+              {moments.length === 0 ? (
+                <p className="mt-3 max-w-prose text-body text-fg-muted">
+                  Aucun créneau praticable {pays.nom === 'France' ? 'en France' : `— ${pays.nom}`}{' '}
+                  sur ces deux fenêtres : soit elles sont passées, soit les conditions y sont
+                  dangereuses. Le calendrier complet reste sur chaque page de spot.
+                </p>
+              ) : (
+                <>
+                  <ul className="mt-3 grid gap-4 sm:grid-cols-2">
+                    {moments.map((moment) => (
+                      <li key={moment.cle}>
+                        <CarteMoment moment={moment} />
+                      </li>
+                    ))}
+                  </ul>
+
+                  <PourquoiCeScore moment={moments[0]!} />
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-8">
           <ButtonLink href="/spots" variant="secondary">
             Voir les {CATALOGUE.total} spots
           </ButtonLink>
@@ -145,8 +337,22 @@ export default async function HomePage() {
       </Section>
 
       <Section
+        title="Le calendrier des coefficients"
+        lead="Trente jours d’avance, pour poser un jour de congé au bon moment plutôt que pour décider ce soir. Les vives-eaux tombent deux fois par mois et se calculent un an à l’avance."
+      >
+        <FriseCoefficients jours={coefficients} />
+      </Section>
+
+      <Section
+        title="Ce que les pêcheurs déclarent ici"
+        lead="Les dernières prises rendues publiques et les derniers avis sur les spots. Une prise reste privée tant que son auteur n’a pas coché la case."
+      >
+        <DernieresContributions prises={prisesRecentes} avis={avisRecents} />
+      </Section>
+
+      <Section
         title="Ce que le score regarde"
-        lead="Sept facteurs, pondérés. Le poids compte autant que la note : un excellent score de lumière ne rattrape pas une mauvaise marée."
+        lead={`${FACTOR_COUNT_WORD} facteurs, pondérés. Le poids compte autant que la note : un excellent score de lumière ne rattrape pas une mauvaise marée.`}
       >
         {/*
           Une liste pondérée plutôt qu'une rangée de cartes identiques.
@@ -159,89 +365,48 @@ export default async function HomePage() {
           en comptait six depuis l'arrivée de la pression, et sept depuis
           celle de l'eau — cette page annonçait donc des pondérations que le
           score n'appliquait plus, et rien ne pouvait le signaler. Elle lit
-          maintenant `FACTOR_WEIGHTS`, la seule source de vérité.
+          maintenant `FACTOR_WEIGHTS`, la seule source de vérité, et l'ORDRE
+          des lignes en découle aussi.
         */}
         <ul className="divide-y divide-edge">
-          {(
-            [
-              {
-                facteur: 'tide',
-                body: 'La fenêtre de deux heures avant à une heure après la pleine mer, et la descendante établie. L’étale est pénalisée : sans courant, rien ne circule.',
-                href: '/guides/comprendre-les-coefficients-de-maree',
-                link: 'Comprendre les coefficients',
-              },
-              {
-                facteur: 'wind',
-                body: '10 à 25 km/h de secteur mer brassent le bord sans le rendre impêchable. Au-delà de 40 km/h, c’est non.',
-                href: '/guides/vent-houle-et-surfcasting',
-                link: 'Vent, houle et surfcasting',
-              },
-              {
-                facteur: 'swell',
-                body: 'Entre 0,5 et 1,5 m, la mer travaille le bord. Sous 0,3 m elle est trop lisse ; au-delà de 2,5 m, la question n’est plus la pêche.',
-                href: '/guides/vent-houle-et-surfcasting',
-                link: 'Lire l’état de mer',
-              },
-              {
-                facteur: 'solunar',
-                body: 'Périodes majeures au zénith et au nadir, mineures au lever et au coucher. Bonus en vive-eau. Un effet réel, mais modeste.',
-                href: '/guides/lune-et-periodes-solunaires',
-                link: 'Ce que vaut vraiment le solunaire',
-              },
-              {
-                facteur: 'pressure',
-                body: 'La tendance, pas la valeur : une pression qui baisse précède souvent une phase active, une remontée franche derrière un front la referme.',
-                href: '/guides/vent-houle-et-surfcasting',
-                link: 'Lire une tendance',
-              },
-              {
-                facteur: 'water',
-                body: 'Le métabolisme d’un poisson suit celui de l’eau : trop froide il ralentit, trop chaude l’oxygène manque. Le plateau va de 11 à 22 °C — assez large pour la Bretagne comme pour Agadir.',
-                href: '/guides/quand-pecher-le-bar-du-bord',
-                link: 'Quand pêcher le bar',
-              },
-              {
-                facteur: 'light',
-                body: 'Aube, crépuscule et nuit devant le plein jour. Le poids est faible parce que l’effet, seul, l’est aussi.',
-                href: '/guides/quand-pecher-le-bar-du-bord',
-                link: 'Quand pêcher le bar',
-              },
-            ] as const
-          ).map((entree) => {
-            const poids = Math.round(FACTOR_WEIGHTS[entree.facteur] * 100);
-            const maximum = Math.round(Math.max(...Object.values(FACTOR_WEIGHTS)) * 100);
+          {(Object.keys(EXPLICATIONS) as (keyof typeof EXPLICATIONS)[])
+            .sort((a, b) => FACTOR_WEIGHTS[b] - FACTOR_WEIGHTS[a])
+            .map((facteur) => {
+              const entree = EXPLICATIONS[facteur];
+              const poids = Math.round(FACTOR_WEIGHTS[facteur] * 100);
+              const maximum = Math.round(Math.max(...Object.values(FACTOR_WEIGHTS)) * 100);
 
-            return (
-              <li key={entree.facteur} className="py-6">
-                <div className="flex items-baseline gap-4">
-                  <span
-                    className="w-16 shrink-0 nums font-serif text-h1 font-semibold text-fg"
-                    data-numeric=""
+              return (
+                <li key={facteur} className="py-6">
+                  <div className="flex items-baseline gap-4">
+                    <span
+                      className="w-16 shrink-0 nums font-serif text-h1 font-semibold text-fg"
+                      data-numeric=""
+                    >
+                      {poids}
+                      <span className="text-body font-500 text-fg-faint"> %</span>
+                    </span>
+                    <h3 className="text-body font-semibold font-600">{FACTOR_LABELS[facteur]}</h3>
+                  </div>
+
+                  {/* La barre rend l'écart de poids immédiatement lisible. */}
+                  <div className="ml-20 mt-2 h-1 rounded-[2px] bg-surface-2" aria-hidden="true">
+                    <div
+                      className="h-full rounded-[2px] bg-accent-score"
+                      style={{ width: `${(poids / maximum) * 100}%` }}
+                    />
+                  </div>
+
+                  <p className="ml-20 mt-3 max-w-prose text-body text-fg-muted">{entree.body}</p>
+                  <Link
+                    href={entree.href}
+                    className="ml-20 mt-2 inline-flex min-h-[44px] items-center text-meta nums text-fg underline decoration-dotted underline-offset-4"
                   >
-                    {poids}
-                    <span className="text-body font-500 text-fg-faint"> %</span>
-                  </span>
-                  <h3 className="text-body font-semibold font-600">{FACTOR_LABELS[entree.facteur]}</h3>
-                </div>
-
-                {/* La barre rend l'écart de poids immédiatement lisible. */}
-                <div className="ml-20 mt-2 h-1 rounded-[2px] bg-surface-2" aria-hidden="true">
-                  <div
-                    className="h-full rounded-[2px] bg-accent-score"
-                    style={{ width: `${(poids / maximum) * 100}%` }}
-                  />
-                </div>
-
-                <p className="ml-20 mt-3 max-w-prose text-body text-fg-muted">{entree.body}</p>
-                <Link
-                  href={entree.href}
-                  className="ml-20 mt-2 inline-flex min-h-[44px] items-center text-meta nums text-fg underline decoration-dotted underline-offset-4"
-                >
-                  {entree.link}
-                </Link>
-              </li>
-            );
-          })}
+                    {entree.link}
+                  </Link>
+                </li>
+              );
+            })}
         </ul>
       </Section>
 
@@ -264,14 +429,42 @@ export default async function HomePage() {
         <div className="max-w-[42rem]">
           <EmailCaptureForm source="accueil" />
         </div>
-        <p className="mt-4 text-meta nums text-fg-faint" data-numeric="">
-          Prochaine fenêtre la plus proche, tous spots confondus :{' '}
-          {summaries[0]?.nextGood
-            ? `${summaries[0].spot.name}, ${formatDateTime(new Date(summaries[0].nextGood.start), summaries[0].spot.timezone)}`
-            : 'aucune sous 7 jours'}
-          .
-        </p>
       </Section>
     </>
+  );
+}
+
+/**
+ * Le détail du calcul du créneau mis en avant, dépliable.
+ *
+ * ─── Pourquoi ici, et pourquoi replié ─────────────────────────────────────
+ *
+ * « Faites-nous confiance, c'est 8,4 » est exactement ce que fait un site
+ * concurrent. La page d'accueil peut montrer le calcul qui vient de produire
+ * le chiffre au-dessus : c'est la démonstration de la promesse, sur une
+ * donnée réelle, avant même d'ouvrir une page de spot.
+ *
+ * Replié dans un `<details>` : déployé, il ferait quarante lignes de tableau
+ * à la place du contenu, et il n'a pas besoin de JavaScript pour s'ouvrir.
+ */
+function PourquoiCeScore({ moment }: { moment: Moment }) {
+  return (
+    <details className="mt-4 rounded-card border border-edge bg-card px-4 py-2">
+      {/*
+        Le marqueur natif est CONSERVÉ : sans lui, rien n'indique que la ligne
+        s'ouvre, et une ligne cliquable qui ne se signale pas n'est pas
+        cliquée. D'où l'absence de `list-none` — et l'absence de `flex` :
+        donner à un `summary` un `display` autre que `list-item` fait
+        disparaître le triangle, ce qui revient au même. La hauteur de cible
+        vient donc du `py-3`, pas d'un `items-center`.
+      */}
+      <summary className="cursor-pointer py-3 text-body font-600 text-fg marker:text-fg-muted">
+        Pourquoi ce score ? Le détail du calcul pour {moment.spot.name}
+      </summary>
+
+      <div className="mt-4">
+        <ScoreBreakdown score={moment.slot.score} />
+      </div>
+    </details>
   );
 }

@@ -193,6 +193,50 @@ export const FACTOR_SUBJECTS: Record<ScoreFactor, string> = {
   light: 'la lumière',
 };
 
+/**
+ * Combien de facteurs, en toutes lettres — et la phrase qui les énumère.
+ *
+ * ─── Pourquoi ce n'est pas une constante de texte ─────────────────────────
+ *
+ * La page d'accueil et sa FAQ annonçaient « Cinq facteurs pondérés : la marée
+ * pour 35 %, le vent pour 25 %… ». Le moteur en comptait six depuis l'arrivée
+ * de la pression, sept depuis celle de l'eau, et aucun de ces pourcentages
+ * n'était plus celui qui servait au calcul. Rien ne pouvait le signaler : une
+ * phrase en dur est cohérente avec elle-même, pour toujours.
+ *
+ * Un site dont la promesse est d'expliquer son calcul ne peut pas se tromper
+ * sur son propre calcul. Le texte est donc DÉRIVÉ des poids, ici, une seule
+ * fois.
+ */
+const NOMBRES_EN_LETTRES: Record<number, string> = {
+  3: 'Trois',
+  4: 'Quatre',
+  5: 'Cinq',
+  6: 'Six',
+  7: 'Sept',
+  8: 'Huit',
+  9: 'Neuf',
+  10: 'Dix',
+};
+
+/** Les facteurs du plus lourd au plus léger. L'ordre du texte suit l'importance. */
+export const FACTORS_BY_WEIGHT: readonly ScoreFactor[] = (
+  Object.keys(FACTOR_WEIGHTS) as ScoreFactor[]
+).sort((a, b) => FACTOR_WEIGHTS[b] - FACTOR_WEIGHTS[a]);
+
+/** « Sept », capitalisé, pour ouvrir une phrase. Le chiffre si le mot manque. */
+export const FACTOR_COUNT_WORD: string =
+  NOMBRES_EN_LETTRES[FACTORS_BY_WEIGHT.length] ?? String(FACTORS_BY_WEIGHT.length);
+
+/** « la marée pour 30 %, le vent pour 21 %, …, et la lumière pour 5 % ». */
+export function factorWeightSentence(): string {
+  const parts = FACTORS_BY_WEIGHT.map(
+    (factor) => `${FACTOR_SUBJECTS[factor]} pour ${Math.round(FACTOR_WEIGHTS[factor] * 100)} %`,
+  );
+  const last = parts.pop();
+  return last === undefined ? '' : parts.length === 0 ? last : `${parts.join(', ')} et ${last}`;
+}
+
 /** Note affichée dans le détail quand la source du facteur manque. */
 export const FACTOR_UNAVAILABLE_NOTES: Record<ScoreFactor, string> = {
   tide: 'horaires de marée indisponibles pour ce créneau',

@@ -257,6 +257,15 @@ export const CLIENT_STORAGE: readonly ClientStorageEntry[] = [
     scope: 'always',
   },
   {
+    key: 'luna-marea:pays',
+    kind: 'localStorage',
+    purpose:
+      'Retenir la façade que vous avez choisie sur la page d’accueil — France, Espagne ou Maroc — pour ne pas vous remontrer des spots à deux mille kilomètres à chaque visite. La valeur enregistrée est le nom du pays, et rien d’autre.',
+    retention: 'Jusqu’à ce que vous effaciez les données du site dans votre navigateur.',
+    consentRequired: false,
+    scope: 'always',
+  },
+  {
     key: 'luna-marea:rechargement-apres-erreur',
     kind: 'sessionStorage',
     purpose:
@@ -313,6 +322,12 @@ export const CLIENT_STORAGE_WRITE_SITES: readonly StorageWriteSite[] = [
     writes: 1,
     entry: 'luna-marea:carte:vue',
     why: 'Mémorise le dernier cadrage de la carte.',
+  },
+  {
+    file: 'src/components/accueil/ChoixPays.tsx',
+    writes: 1,
+    entry: 'luna-marea:pays',
+    why: 'Mémorise la façade choisie sur la page d’accueil.',
   },
   {
     file: 'src/app/global-error.tsx',

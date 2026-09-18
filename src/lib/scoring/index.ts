@@ -7,7 +7,14 @@ export { SWELL_CAUTION_M, SWELL_DANGER_M, SWELL_TOO_CALM_M } from './factors/swe
 export { moonPhaseName, syzygyProximity, SYNODIC_MONTH_D } from './factors/solunar';
 export type { MoonPhaseName } from './factors/solunar';
 export { coefficientFactor, tidePositionFactor } from './factors/tide';
-export { FACTOR_LABELS, FACTOR_WEIGHTS } from './types';
+export {
+  FACTOR_COUNT_WORD,
+  FACTOR_LABELS,
+  FACTOR_SUBJECTS,
+  FACTOR_WEIGHTS,
+  FACTORS_BY_WEIGHT,
+  factorWeightSentence,
+} from './types';
 export type {
   FactorResult,
   LightInput,
