@@ -9,6 +9,7 @@ import { refusExplique } from '@/lib/diagnostic/refus';
 import { essaiBase } from '@/lib/diagnostic/essai-base';
 import { essaiPhotos } from '@/lib/diagnostic/essai-photos';
 import { emplacementsPossibles } from '@/lib/diagnostic/emplacements';
+import { auditPhotos } from '@/lib/diagnostic/audit-photos';
 import { essaiSmtp } from '@/lib/diagnostic/smtp';
 import { uploadsDir } from '@/lib/photo/storage';
 
@@ -84,6 +85,20 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     sans effet de bord, et une route qu'on peut faire se connecter en boucle
     à un tiers est un levier gratuit.
   */
+  /*
+    L'audit relit CHAQUE photo du disque. Sur demande explicite seulement,
+    comme l'essai SMTP : le diagnostic ordinaire doit rester instantané, et
+    une route qu'on peut faire lire des centaines de fichiers en boucle est un
+    levier gratuit.
+
+    C'est la seule façon honnête de vérifier la promesse : le CDN de
+    l'hébergeur ré-encode les images qu'il sert, donc en télécharger une et
+    l'inspecter décrit le CDN, pas le fichier stocké.
+  */
+  if (request.nextUrl.searchParams.get('photos') === '1') {
+    points.push(await auditPhotos(uploadsDir()));
+  }
+
   if (request.nextUrl.searchParams.get('smtp') === '1') {
     points.push(await essaiSmtp(process.env.EMAIL_SERVER, process.env.EMAIL_FROM));
   }
