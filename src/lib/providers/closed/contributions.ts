@@ -1,10 +1,12 @@
 import type { CatchInput, OutingInput, SpotReviewInput, Visibility } from '@/data/schemas';
+import { NOTE_VIDE } from '../types';
 import type {
   AccountExport,
   Author,
   ContributionResult,
   ContributionsRepository,
   SpotContributions,
+  SpotRating,
 } from '../types';
 
 const CLOSED_MESSAGE =
@@ -72,6 +74,10 @@ export class ClosedContributionsRepository implements ContributionsRepository {
 
   async deleteCatch(_catchId: string, _userId: string): Promise<ContributionResult<null>> {
     return closed();
+  }
+
+  async ratingFor(_spotSlug: string): Promise<SpotRating> {
+    return NOTE_VIDE;
   }
 
   async setCatchVisibility(

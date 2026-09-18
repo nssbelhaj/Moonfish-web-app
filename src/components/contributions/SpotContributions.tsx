@@ -1,39 +1,12 @@
 import Image from 'next/image';
 import Link from 'next/link';
 
-import { ContributePanel } from '@/components/contributions/ContributePanel';
 import { formatMeasures } from '@/lib/contributions/catch-log';
 import { photoUrl } from '@/lib/photo/url';
 import type { SpotContributions as Contributions } from '@/lib/providers';
 import { formatDateTime } from '@/lib/time';
 
 const TIME_ZONE = 'Europe/Paris';
-
-function Stars({ rating }: { rating: number }) {
-  // Une note se lit en clair pour tout le monde ; les étoiles sont un renfort
-  // visuel, pas le porteur de l'information (D-redondance).
-  return (
-    <span className="inline-flex items-center gap-2">
-      <span aria-hidden="true" className="etoiles-lecture">
-        <span className="text-warn">{'★'.repeat(rating)}</span>
-        <span className="text-edge">{'★'.repeat(5 - rating)}</span>
-      </span>
-      <span className="nums text-meta text-fg-muted">{rating}/5</span>
-    </span>
-  );
-}
-
-/** Pastille d'initiale : ce qu'on a d'un auteur sans photo, et sans image cassée. */
-function Initiale({ nom }: { nom: string }) {
-  return (
-    <span
-      aria-hidden="true"
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-surface-2 font-serif text-body text-fg"
-    >
-      {nom.trim().slice(0, 1).toUpperCase() || '•'}
-    </span>
-  );
-}
 
 /**
  * Avis et prises déclarées d'un spot.
@@ -49,17 +22,13 @@ function Initiale({ nom }: { nom: string }) {
 export function SpotContributionsSection({
   contributions,
   available,
-  spotSlug,
   spotPath,
   spotName,
-  speciesSuggestions,
 }: {
   contributions: Contributions;
   available: boolean;
-  spotSlug: string;
   spotPath: string;
   spotName: string;
-  speciesSuggestions: readonly string[];
 }) {
   /*
     Les prises qui portent une photo, les plus récentes d'abord. Calculé ici et
@@ -77,12 +46,13 @@ export function SpotContributionsSection({
   return (
     <section aria-labelledby="contributions" className="mt-12">
       <h2 id="contributions" className="font-serif text-h2 font-semibold">
-        Ce que les pêcheurs déclarent ici
+        Ce qui se prend ici
       </h2>
 
       <p className="mt-2 max-w-prose text-read text-fg-muted">
-        Avis et prises rapportés par des personnes titulaires d’un compte. Ce sont des témoignages,
-        pas des mesures : nous ne les vérifions pas, et ils n’entrent pas dans le score.
+        Prises rapportées par des personnes titulaires d’un compte, et seulement celles qu’elles
+        ont choisi de publier. Ce sont des témoignages, pas des mesures : nous ne les vérifions
+        pas, et ils n’entrent pas dans le score.
       </p>
 
       {!available ? (
@@ -132,50 +102,7 @@ export function SpotContributionsSection({
             </div>
           )}
 
-          <div className="mt-8 grid gap-6 lg:grid-cols-2">
-            {/* ── Avis ───────────────────────────────────────────────── */}
-            <div>
-              <h3 className="card-title">
-                Avis sur le spot
-                {contributions.averageRating !== null && (
-                  <span className="ml-2 text-body font-400 text-fg-muted">
-                    <span className="nums">
-                      {contributions.averageRating.toFixed(1).replace('.', ',')}
-                    </span>
-                    /5 sur <span className="nums">{contributions.reviewCount}</span>
-                  </span>
-                )}
-              </h3>
-
-              {contributions.reviews.length === 0 ? (
-                <p className="mt-3 max-w-prose text-body text-fg-muted">
-                  Aucun avis pour l’instant. Le premier sera le vôtre.
-                </p>
-              ) : (
-                <ul className="mt-3 space-y-3">
-                  {contributions.reviews.map((review) => (
-                    <li key={review.id} className="surface p-4">
-                      <div className="flex items-start gap-3">
-                        <Initiale nom={review.authorName} />
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                            <span className="text-body font-600 text-fg">{review.authorName}</span>
-                            <Stars rating={review.rating} />
-                          </div>
-                          <p className="card-source mt-0.5 nums">
-                            {formatDateTime(new Date(review.createdAt), TIME_ZONE)}
-                          </p>
-                          {review.comment && (
-                            <p className="mt-2 max-w-prose text-body text-fg">{review.comment}</p>
-                          )}
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
+          <div className="mt-8">
             {/* ── Prises ─────────────────────────────────────────────── */}
             <div>
               <h3 className="card-title">
@@ -236,17 +163,12 @@ export function SpotContributionsSection({
             </div>
           </div>
 
-          {/* ── Contribuer ───────────────────────────────────────────── */}
-          <div className="mt-8">
-            <ContributePanel
-              spotSlug={spotSlug}
-              spotPath={spotPath}
-              speciesSuggestions={speciesSuggestions}
-            />
-          </div>
-
           <p className="mt-4 max-w-prose text-meta text-fg-muted">
-            Vos propres contributions se modifient et se suppriment depuis{' '}
+            Pour déclarer une prise ou noter ce spot, c’est sur{' '}
+            <Link href={spotPath} className="underline decoration-dotted underline-offset-4">
+              la page du spot
+            </Link>
+            . Vos propres contributions se modifient et se suppriment depuis{' '}
             <Link href="/compte" className="underline decoration-dotted underline-offset-4">
               votre compte
             </Link>

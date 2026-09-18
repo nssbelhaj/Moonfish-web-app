@@ -149,6 +149,7 @@ export type {
   ContributionResult,
   ContributionsRepository,
   SpotContributions,
+  SpotRating,
   DateRange,
   DataKind,
   SourceMeta,

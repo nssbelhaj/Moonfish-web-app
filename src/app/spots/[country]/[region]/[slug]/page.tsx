@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 
+import { AvisSpot } from '@/components/contributions/AvisSpot';
 import { DataSourceTag } from '@/components/data/DataSourceTag';
 import { DemoDataNotice, simulatedSources } from '@/components/data/DemoDataNotice';
 import { TideActivityChart } from '@/components/v3/TideActivityChart';
@@ -20,7 +21,9 @@ import {
   SPOT_TYPE_LABELS,
   TECHNIQUE_LABELS,
 } from '@/data/spots';
+import { SPECIES } from '@/data/species';
 import { sourceList } from '@/lib/forecast';
+import { contributions } from '@/lib/providers';
 import { moonPhase } from '@/lib/astro';
 import { tidalRangeOf } from '@/lib/forecast/tide-curve';
 import { absoluteUrl, spotPath } from '@/lib/routes';
@@ -49,6 +52,10 @@ export async function generateMetadata({
 
 export default async function SpotLivePage({ params }: { params: Promise<RouteParams> }) {
   const { spot, forecast, now } = await resolveSpot(params);
+  const [note, contribs] = await Promise.all([
+    contributions.ratingFor(spot.slug),
+    contributions.forSpot(spot.slug),
+  ]);
   const current = forecast.current;
   const today = forecast.days[0];
 
@@ -376,6 +383,29 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
             />
           </section>
         </aside>
+      </div>
+
+      {/*
+        Les avis en bas de la page PRINCIPALE, pas sur un onglet.
+
+        Ils vivaient avec les prises, sur « Espèces » : un rangement logique
+        où personne ne les trouvait. Un avis parle de l'accès, du
+        stationnement, de la sécurité — il intéresse quiconque envisage d'y
+        aller, pas seulement qui cherche une espèce.
+      */}
+      <div className="mx-auto w-full max-w-shell px-4 pb-8 md:px-8 md:pb-12">
+        <AvisSpot
+          contributions={contribs}
+          note={note}
+          available={contributions.available}
+          spotSlug={spot.slug}
+          spotPath={spotPath(spot)}
+          spotName={spot.name}
+          speciesSuggestions={[
+            ...spot.species,
+            ...SPECIES.map((espece) => espece.name).filter((nom) => !spot.species.includes(nom)),
+          ]}
+        />
       </div>
     </>
   );
