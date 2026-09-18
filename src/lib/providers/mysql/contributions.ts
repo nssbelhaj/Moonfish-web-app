@@ -24,6 +24,7 @@ import { CONSENT_VERSION } from '@/lib/auth/consent';
 import { execute, query, queryOne, toIso, toMysqlDateTime } from '@/lib/db/mysql';
 import { appareilsDe } from '@/lib/providers/mysql/appareils';
 import { deletePhoto } from '@/lib/photo/storage';
+import { NOTE_VIDE } from '../types';
 import type {
   AccountExport,
   Author,
@@ -31,6 +32,7 @@ import type {
   ContributionsRepository,
   PendingAlert,
   SpotContributions,
+  SpotRating,
 } from '../types';
 
 /**
@@ -244,6 +246,38 @@ export class MysqlContributionsRepository implements ContributionsRepository {
     precision:
       'Avis et prises déclarés par des personnes titulaires d’un compte. Ce sont des témoignages, pas des mesures : nous ne les vérifions pas.',
   };
+
+  async ratingFor(spotSlug: string): Promise<SpotRating> {
+    try {
+      // Un seul passage : la base compte et regroupe, on n'en rapatrie que
+      // cinq lignes au maximum, quel que soit le nombre d'avis.
+      const lignes = await query<{ rating: number; combien: number }>(
+        'select rating, count(*) as combien from spot_reviews where spot_slug = ? group by rating',
+        [spotSlug],
+      );
+
+      const breakdown: Record<1 | 2 | 3 | 4 | 5, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+      let total = 0;
+      let somme = 0;
+
+      for (const { rating, combien } of lignes) {
+        if (rating < 1 || rating > 5) continue;
+        const note = rating as 1 | 2 | 3 | 4 | 5;
+        // `count(*)` revient en `bigint`, que le pilote peut rendre en chaîne.
+        const n = Number(combien);
+        breakdown[note] = n;
+        total += n;
+        somme += note * n;
+      }
+
+      return { average: total === 0 ? null : somme / total, count: total, breakdown };
+    } catch (error) {
+      // Une note indisponible n'est pas une page en panne : la page du spot
+      // vaut pour la marée et le vent, l'avis n'en est qu'un complément.
+      console.error('[contributions] note du spot illisible', error);
+      return NOTE_VIDE;
+    }
+  }
 
   async forSpot(spotSlug: string): Promise<SpotContributions> {
     try {

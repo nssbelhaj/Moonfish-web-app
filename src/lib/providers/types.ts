@@ -140,6 +140,32 @@ export type ContributionResult<T> =
   | { ok: true; data: T }
   | { ok: false; reason: ContributionFailure; message: string };
 
+/**
+ * La note d'un spot, telle qu'on la lit en haut de sa page.
+ *
+ * ─── Pourquoi une requête à part, et pas les avis déjà chargés ────────────
+ *
+ * La moyenne doit porter sur TOUS les avis, pas sur la page qu'on affiche.
+ * Calculée depuis `SpotContributions.reviews` — bornée à `PAGE_SIZE` — elle
+ * serait juste tant qu'un spot a moins de cinquante avis, puis fausse sans
+ * prévenir : exactement le genre de chiffre qui se dégrade en silence à
+ * mesure que le site marche. C'est donc la base qui compte, avec un
+ * `group by`, et la répartition vient du même passage.
+ */
+export interface SpotRating {
+  /** Moyenne sur 5, `null` sans aucun avis — jamais 0, qui se lirait comme une mauvaise note. */
+  average: number | null;
+  count: number;
+  /** Combien d'avis pour chaque note, de 1 à 5. Zéro inclus : une barre vide est une information. */
+  breakdown: Record<1 | 2 | 3 | 4 | 5, number>;
+}
+
+export const NOTE_VIDE: SpotRating = {
+  average: null,
+  count: 0,
+  breakdown: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+};
+
 export interface SpotContributions {
   reviews: SpotReview[];
   catches: Catch[];
@@ -186,6 +212,8 @@ export interface ContributionsRepository {
   readonly source: SourceMeta;
 
   forSpot(spotSlug: string): Promise<SpotContributions>;
+  /** Note agrégée d'un spot, comptée en base sur TOUS les avis. */
+  ratingFor(spotSlug: string): Promise<SpotRating>;
   /** Contributions d'une personne, pour son écran de compte. */
   listForUser(userId: string): Promise<{ reviews: SpotReview[]; catches: Catch[] }>;
 

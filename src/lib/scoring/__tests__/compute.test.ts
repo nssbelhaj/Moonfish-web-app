@@ -25,7 +25,12 @@ describe('computeScore — invariants', () => {
 
   it('expose un breakdown complet dont les poids somment à 1', () => {
     const { breakdown } = computeScore(IDEAL);
-    const factors = ['tide', 'wind', 'swell', 'solunar', 'pressure', 'light'] as const;
+    /*
+      La liste vient du MOTEUR, pas d'une copie : recopiée, elle est restée à
+      six facteurs quand la pression puis l'eau sont entrées dans le modèle,
+      et le test vérifiait alors un modèle qui n'existait plus.
+    */
+    const factors = Object.keys(FACTOR_WEIGHTS) as (keyof typeof FACTOR_WEIGHTS)[];
 
     expect(Object.keys(breakdown).sort()).toStrictEqual([...factors].sort());
     const total = factors.reduce((sum, f) => sum + breakdown[f].weight, 0);

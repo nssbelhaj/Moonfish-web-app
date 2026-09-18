@@ -39,6 +39,7 @@ function creneauDangereuxMaisBienNote() {
     },
     light: { phase: 'dawn' },
     pressure: { hPa: 1012, trend3hHpa: -1.2 },
+    water: { celsius: 15 },
     // Et la mer est dangereuse.
     swell: { heightM: 3.4, periodS: 11 },
     wind: { speedKmh: 62, fromDeg: spot.facingDeg },
@@ -116,6 +117,7 @@ describe('la sécurité n’est pas une propriété du score', () => {
           moonAgeDays: 7,
         },
         pressure: { hPa: 1015, trend3hHpa: -0.6 },
+        water: { celsius: 15 },
         light: { phase: 'day' },
       }),
       conditions: null,
@@ -146,6 +148,7 @@ describe('la sécurité n’est pas une propriété du score', () => {
         swell: null,
         solunar: null,
         pressure: null,
+        water: null,
         light: { phase: 'day' },
       }),
       conditions: null,

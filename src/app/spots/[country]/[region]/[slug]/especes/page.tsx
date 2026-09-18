@@ -5,7 +5,7 @@ import { EmailCaptureForm } from '@/components/forms/EmailCaptureForm';
 import { SpotTabs } from '@/components/spot/SpotTabs';
 import { SpeciesCard } from '@/components/v3/SpeciesCard';
 import { SpotContributionsSection } from '@/components/contributions/SpotContributions';
-import { SPECIES, SPECIES_BY_NAME } from '@/data/species';
+import { SPECIES_BY_NAME } from '@/data/species';
 import { sourceList } from '@/lib/forecast';
 import { contributions } from '@/lib/providers';
 import { absoluteUrl, spotPath } from '@/lib/routes';
@@ -45,14 +45,6 @@ export default async function SpotSpeciesPage({ params }: { params: Promise<Rout
   */
   const spotContributions = await contributions.forSpot(spot.slug);
 
-  // Suggestions du champ « espèce » : celles du spot d'abord, puis le reste du
-  // catalogue. Une liste ouverte, jamais fermée : un pêcheur peut avoir pris
-  // quelque chose que nous n'avons pas répertorié, et le lui interdire
-  // fabriquerait un silence dans nos propres données.
-  const suggestions = [
-    ...spot.species,
-    ...SPECIES.map((species) => species.name).filter((name) => !spot.species.includes(name)),
-  ];
 
   const known = spot.species
     .map((name) => SPECIES_BY_NAME.get(name.toLowerCase()))
@@ -111,10 +103,8 @@ export default async function SpotSpeciesPage({ params }: { params: Promise<Rout
         <SpotContributionsSection
           contributions={spotContributions}
           available={contributions.available}
-          spotSlug={spot.slug}
           spotPath={spotPath(spot)}
           spotName={spot.name}
-          speciesSuggestions={suggestions}
         />
 
         {!contributions.available && (

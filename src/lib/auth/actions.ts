@@ -269,15 +269,34 @@ export async function renameProfile(
  * chemin, une contribution supprimée restait visible jusqu'à une heure sur la
  * page publique — un effacement qui se fait attendre n'est pas un effacement.
  */
-async function spotSpeciesPath(formData: FormData): Promise<string | null> {
-  const path = String(formData.get('spot_path') ?? '');
-  if (/^\/spots\/[a-z0-9-]+\/[a-z0-9-]+\/[a-z0-9-]+$/.test(path)) return `${path}/especes`;
+/**
+ * Les pages d'un spot à régénérer après une contribution.
+ *
+ * ─── Toutes, et pas seulement « Espèces » ─────────────────────────────────
+ *
+ * Cette fonction ne rendait que `/especes`, du temps où avis et prises y
+ * vivaient ensemble. Les avis sont remontés sur la page principale du spot,
+ * qui est pré-rendue avec `revalidate = 3600` : publier un avis ne le
+ * montrait donc plus AVANT UNE HEURE. Le formulaire répondait « Avis
+ * enregistré », la page restait vide, et rien n'était en panne — la donnée
+ * était bien en base. Mesuré au navigateur ; aucun test unitaire ne pouvait
+ * le voir, puisque le défaut est dans ce qu'on oublie de régénérer.
+ *
+ * On rend donc les deux chemins. Régénérer une page qui n'a pas changé ne
+ * coûte qu'un rendu ; en oublier une la fige pour une heure.
+ */
+async function spotPathsToRevalidate(formData: FormData): Promise<string[]> {
+  const fourni = String(formData.get('spot_path') ?? '');
+  const base = /^\/spots\/[a-z0-9-]+\/[a-z0-9-]+\/[a-z0-9-]+$/.test(fourni)
+    ? fourni
+    : await (async () => {
+        const slug = String(formData.get('spot_slug') ?? '');
+        if (!/^[a-z0-9-]+$/.test(slug)) return null;
+        const spot = await spots.findBySlug(slug);
+        return spot ? spotPath(spot) : null;
+      })();
 
-  const slug = String(formData.get('spot_slug') ?? '');
-  if (!/^[a-z0-9-]+$/.test(slug)) return null;
-
-  const spot = await spots.findBySlug(slug);
-  return spot ? `${spotPath(spot)}/especes` : null;
+  return base === null ? [] : [base, `${base}/especes`];
 }
 
 export async function saveReview(
@@ -312,8 +331,7 @@ export async function saveReview(
 
   if (!result.ok) return { ok: false, message: result.message };
 
-  const path = await spotSpeciesPath(formData);
-  if (path) revalidatePath(path);
+  for (const chemin of await spotPathsToRevalidate(formData)) revalidatePath(chemin);
 
   return {
     ok: true,
@@ -329,8 +347,7 @@ export async function deleteReview(formData: FormData): Promise<void> {
   // lieu, en MySQL, de la politique de sécurité que PostgreSQL appliquait.
   await contributions.deleteReview(String(formData.get('review_id') ?? ''), user.id);
 
-  const path = await spotSpeciesPath(formData);
-  if (path) revalidatePath(path);
+  for (const chemin of await spotPathsToRevalidate(formData)) revalidatePath(chemin);
   revalidatePath('/compte');
 }
 
@@ -395,8 +412,7 @@ export async function addCatch(
 
   if (!result.ok) return { ok: false, message: result.message };
 
-  const path = await spotSpeciesPath(formData);
-  if (path) revalidatePath(path);
+  for (const chemin of await spotPathsToRevalidate(formData)) revalidatePath(chemin);
   // Le carnet vit sur la page de compte : une prise déclarée depuis le carnet
   // lui-même doit y apparaître sans que la personne ait à recharger.
   revalidatePath('/compte');
@@ -425,8 +441,7 @@ export async function setCatchVisibility(formData: FormData): Promise<void> {
     voulue.data,
   );
 
-  const path = await spotSpeciesPath(formData);
-  if (path) revalidatePath(path);
+  for (const chemin of await spotPathsToRevalidate(formData)) revalidatePath(chemin);
   revalidatePath('/compte');
 }
 
@@ -436,8 +451,7 @@ export async function deleteCatch(formData: FormData): Promise<void> {
 
   await contributions.deleteCatch(String(formData.get('catch_id') ?? ''), user.id);
 
-  const path = await spotSpeciesPath(formData);
-  if (path) revalidatePath(path);
+  for (const chemin of await spotPathsToRevalidate(formData)) revalidatePath(chemin);
   revalidatePath('/compte');
 }
 

@@ -3,10 +3,11 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { FavoriteButton } from '@/components/account/FavoriteButton';
+import { NoteCompacte } from '@/components/contributions/NoteSpot';
 import { SafetyBanner } from '@/components/spot/SafetyBanner';
 import { BOTTOM_LABELS, EXPOSURE_LABELS, TECHNIQUE_LABELS } from '@/data/spots';
 import { shelteredNearby } from '@/lib/geo';
-import { spots as spotRepository } from '@/lib/providers';
+import { contributions, spots as spotRepository } from '@/lib/providers';
 import { absoluteUrl, spotPath } from '@/lib/routes';
 import { findSpot, resolveSpot, spotStaticParams, type RouteParams } from './spot-page-data';
 
@@ -54,6 +55,7 @@ export default async function SpotLayout({
 
   const allSpots = await spotRepository.list();
   const shelters = shelteredNearby(spot, allSpots, 20);
+  const note = await contributions.ratingFor(spot.slug);
 
   const placeJsonLd = {
     '@context': 'https://schema.org',
@@ -67,6 +69,26 @@ export default async function SpotLayout({
       addressRegion: spot.regionName,
       addressCountry: spot.countryName === 'France' ? 'FR' : 'MA',
     },
+    /*
+      La note agrégée, au format que les moteurs lisent.
+
+      C'est elle qui fait apparaître des étoiles sous un résultat de
+      recherche — et c'est aussi la raison de ne PAS l'écrire quand il n'y a
+      aucun avis : un `aggregateRating` à zéro avis est une donnée
+      structurée fausse, que Google sanctionne et qui, surtout, annoncerait
+      une note que personne n'a donnée.
+    */
+    ...(note.average !== null
+      ? {
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: Number(note.average.toFixed(1)),
+            reviewCount: note.count,
+            bestRating: 5,
+            worstRating: 1,
+          },
+        }
+      : {}),
     additionalProperty: [
       { '@type': 'PropertyValue', name: 'Exposition', value: EXPOSURE_LABELS[spot.exposure] },
       { '@type': 'PropertyValue', name: 'Type de fond', value: BOTTOM_LABELS[spot.bottom] },
@@ -135,7 +157,18 @@ export default async function SpotLayout({
           ne pouvait pas voir qu'il y avait autre chose que la page courante.
         */}
         <div className="mt-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-          <h1 className="font-serif text-h1 font-semibold">{spot.name}</h1>
+          <div>
+            <h1 className="font-serif text-h1 font-semibold">{spot.name}</h1>
+            {/*
+              Les étoiles sous le titre, comme partout ailleurs sur le web :
+              c'est là qu'on les cherche. Elles mènent aux avis, qui vivaient
+              jusqu'ici sur l'onglet « Espèces » — personne ne pensait à
+              cliquer « Espèces » pour lire ce que les gens disent d'un lieu.
+            */}
+            <div className="mt-1">
+              <NoteCompacte note={note} href={`${spotPath(spot)}#avis`} />
+            </div>
+          </div>
           {/*
             Le bouton lit la session côté client : la page reste pré-rendue.
             Il n'apparaît qu'une fois l'état connu, pour ne pas changer de

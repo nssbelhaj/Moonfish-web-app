@@ -72,6 +72,7 @@ describe('cumul de facteurs négatifs', () => {
       },
       // Pression en hausse franche derrière un front : le cas le moins porteur.
       pressure: { hPa: 1027, trend3hHpa: 3.4 },
+      water: { celsius: 15 },
       light: { phase: 'day' },
     });
 

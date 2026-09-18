@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 
 import { CATALOGUE } from '@/data/spots';
+import { FACTOR_LABELS, FACTOR_WEIGHTS } from '@/lib/scoring';
 import Link from 'next/link';
 import { DemoDataNotice } from '@/components/data/DemoDataNotice';
 import { EmailCaptureForm } from '@/components/forms/EmailCaptureForm';
@@ -145,81 +146,102 @@ export default async function HomePage() {
 
       <Section
         title="Ce que le score regarde"
-        lead="Cinq facteurs, pondérés. Le poids compte autant que la note : un excellent score de lumière ne rattrape pas une mauvaise marée."
+        lead="Sept facteurs, pondérés. Le poids compte autant que la note : un excellent score de lumière ne rattrape pas une mauvaise marée."
       >
         {/*
           Une liste pondérée plutôt qu'une rangée de cartes identiques.
           Quatre cartes côte à côte, c'est la mise en page générique par défaut —
-          et surtout elle rendait les cinq poids indiscernables, alors que
-          l'écart entre 35 % et 5 % est toute l'information de cette section.
+          et surtout elle rendait les poids indiscernables, alors que l'écart
+          entre 30 % et 5 % est toute l'information de cette section.
+
+          ─── Les poids viennent du MOTEUR, ils ne sont plus recopiés ──────
+          Ils l'étaient : « 35 / 25 / 20 / 15 / 5 », cinq facteurs. Le modèle
+          en comptait six depuis l'arrivée de la pression, et sept depuis
+          celle de l'eau — cette page annonçait donc des pondérations que le
+          score n'appliquait plus, et rien ne pouvait le signaler. Elle lit
+          maintenant `FACTOR_WEIGHTS`, la seule source de vérité.
         */}
         <ul className="divide-y divide-edge">
-          {[
-            {
-              title: 'Marée',
-              weight: 35,
-              body: 'La fenêtre de deux heures avant à une heure après la pleine mer, et la descendante établie. L’étale est pénalisée : sans courant, rien ne circule.',
-              href: '/guides/comprendre-les-coefficients-de-maree',
-              link: 'Comprendre les coefficients',
-            },
-            {
-              title: 'Vent',
-              weight: 25,
-              body: '10 à 25 km/h de secteur mer brassent le bord sans le rendre impêchable. Au-delà de 40 km/h, c’est non.',
-              href: '/guides/vent-houle-et-surfcasting',
-              link: 'Vent, houle et surfcasting',
-            },
-            {
-              title: 'Houle',
-              weight: 20,
-              body: 'Entre 0,5 et 1,5 m, la mer travaille le bord. Sous 0,3 m elle est trop lisse ; au-delà de 2,5 m, la question n’est plus la pêche.',
-              href: '/guides/vent-houle-et-surfcasting',
-              link: 'Lire l’état de mer',
-            },
-            {
-              title: 'Solunaire et lune',
-              weight: 15,
-              body: 'Périodes majeures au zénith et au nadir, mineures au lever et au coucher. Bonus en vive-eau. Un effet réel, mais modeste.',
-              href: '/guides/lune-et-periodes-solunaires',
-              link: 'Ce que vaut vraiment le solunaire',
-            },
-            {
-              title: 'Lumière',
-              weight: 5,
-              body: 'Aube, crépuscule et nuit devant le plein jour. Le poids est faible parce que l’effet, seul, l’est aussi.',
-              href: '/guides/quand-pecher-le-bar-du-bord',
-              link: 'Quand pêcher le bar',
-            },
-          ].map((factor) => (
-            <li key={factor.title} className="py-6">
-              <div className="flex items-baseline gap-4">
-                <span
-                  className="w-16 shrink-0 nums font-serif text-h1 font-semibold text-fg"
-                  data-numeric=""
+          {(
+            [
+              {
+                facteur: 'tide',
+                body: 'La fenêtre de deux heures avant à une heure après la pleine mer, et la descendante établie. L’étale est pénalisée : sans courant, rien ne circule.',
+                href: '/guides/comprendre-les-coefficients-de-maree',
+                link: 'Comprendre les coefficients',
+              },
+              {
+                facteur: 'wind',
+                body: '10 à 25 km/h de secteur mer brassent le bord sans le rendre impêchable. Au-delà de 40 km/h, c’est non.',
+                href: '/guides/vent-houle-et-surfcasting',
+                link: 'Vent, houle et surfcasting',
+              },
+              {
+                facteur: 'swell',
+                body: 'Entre 0,5 et 1,5 m, la mer travaille le bord. Sous 0,3 m elle est trop lisse ; au-delà de 2,5 m, la question n’est plus la pêche.',
+                href: '/guides/vent-houle-et-surfcasting',
+                link: 'Lire l’état de mer',
+              },
+              {
+                facteur: 'solunar',
+                body: 'Périodes majeures au zénith et au nadir, mineures au lever et au coucher. Bonus en vive-eau. Un effet réel, mais modeste.',
+                href: '/guides/lune-et-periodes-solunaires',
+                link: 'Ce que vaut vraiment le solunaire',
+              },
+              {
+                facteur: 'pressure',
+                body: 'La tendance, pas la valeur : une pression qui baisse précède souvent une phase active, une remontée franche derrière un front la referme.',
+                href: '/guides/vent-houle-et-surfcasting',
+                link: 'Lire une tendance',
+              },
+              {
+                facteur: 'water',
+                body: 'Le métabolisme d’un poisson suit celui de l’eau : trop froide il ralentit, trop chaude l’oxygène manque. Le plateau va de 11 à 22 °C — assez large pour la Bretagne comme pour Agadir.',
+                href: '/guides/quand-pecher-le-bar-du-bord',
+                link: 'Quand pêcher le bar',
+              },
+              {
+                facteur: 'light',
+                body: 'Aube, crépuscule et nuit devant le plein jour. Le poids est faible parce que l’effet, seul, l’est aussi.',
+                href: '/guides/quand-pecher-le-bar-du-bord',
+                link: 'Quand pêcher le bar',
+              },
+            ] as const
+          ).map((entree) => {
+            const poids = Math.round(FACTOR_WEIGHTS[entree.facteur] * 100);
+            const maximum = Math.round(Math.max(...Object.values(FACTOR_WEIGHTS)) * 100);
+
+            return (
+              <li key={entree.facteur} className="py-6">
+                <div className="flex items-baseline gap-4">
+                  <span
+                    className="w-16 shrink-0 nums font-serif text-h1 font-semibold text-fg"
+                    data-numeric=""
+                  >
+                    {poids}
+                    <span className="text-body font-500 text-fg-faint"> %</span>
+                  </span>
+                  <h3 className="text-body font-semibold font-600">{FACTOR_LABELS[entree.facteur]}</h3>
+                </div>
+
+                {/* La barre rend l'écart de poids immédiatement lisible. */}
+                <div className="ml-20 mt-2 h-1 rounded-[2px] bg-surface-2" aria-hidden="true">
+                  <div
+                    className="h-full rounded-[2px] bg-accent-score"
+                    style={{ width: `${(poids / maximum) * 100}%` }}
+                  />
+                </div>
+
+                <p className="ml-20 mt-3 max-w-prose text-body text-fg-muted">{entree.body}</p>
+                <Link
+                  href={entree.href}
+                  className="ml-20 mt-2 inline-flex min-h-[44px] items-center text-meta nums text-fg underline decoration-dotted underline-offset-4"
                 >
-                  {factor.weight}
-                  <span className="text-body font-500 text-fg-faint"> %</span>
-                </span>
-                <h3 className="text-body font-semibold font-600">{factor.title}</h3>
-              </div>
-
-              {/* La barre rend l'écart de poids immédiatement lisible. */}
-              <div className="ml-20 mt-2 h-1 rounded-[2px] bg-surface-2" aria-hidden="true">
-                <div
-                  className="h-full rounded-[2px] bg-accent-score"
-                  style={{ width: `${(factor.weight / 35) * 100}%` }}
-                />
-              </div>
-
-              <p className="ml-20 mt-3 max-w-prose text-body text-fg-muted">{factor.body}</p>
-              <Link
-                href={factor.href}
-                className="ml-20 mt-2 inline-flex min-h-[44px] items-center text-meta nums text-fg underline decoration-dotted underline-offset-4"
-              >
-                {factor.link}
-              </Link>
-            </li>
-          ))}
+                  {entree.link}
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       </Section>
 

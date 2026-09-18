@@ -23,7 +23,7 @@ Le bar remonte avec le flot. Sur un estran qui découvre, il attend que l'eau re
 
 La descendante établie fonctionne différemment mais tout aussi bien : le bar se poste en aval d'une baïne, d'une passe ou d'un chenal, et laisse le courant lui amener la nourriture. Sur la côte landaise, l'ouverture d'une baïne à mi-descendante est un poste de premier ordre.
 
-Le croisement idéal est simple à énoncer et rare à obtenir : **une pleine mer qui tombe à l'aube ou au crépuscule**. Quand les deux coïncident, ne cherchez pas ailleurs. C'est exactement ce que le score cherche à faire ressortir en pondérant la marée à 35 % et la lumière à 5 % : la marée décide du lieu et du mouvement, la lumière décide de l'intensité.
+Le croisement idéal est simple à énoncer et rare à obtenir : **une pleine mer qui tombe à l'aube ou au crépuscule**. Quand les deux coïncident, ne cherchez pas ailleurs. C'est exactement ce que le score cherche à faire ressortir : la marée pèse le plus lourd des sept facteurs, la lumière le moins. La marée décide du lieu et du mouvement, la lumière décide de l'intensité — et le détail des pondérations est sur la page d'accueil, où il est lu directement dans le moteur plutôt que recopié.
 
 ## La saison
 
