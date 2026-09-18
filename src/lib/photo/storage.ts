@@ -116,8 +116,26 @@ export async function savePhoto(
     await writeFile(absolute, bytes, { flag: 'wx' });
     return { ok: true, path: relative };
   } catch (error) {
-    console.error('[photo] écriture impossible', error);
-    return { ok: false, message: 'Enregistrement de la photo impossible.' };
+    /*
+      Le message rendu ne nommait NI la cause NI le remède — la règle que ce
+      dépôt s'impose partout ailleurs. Constaté en production : toute photo
+      échouait ici, et « Enregistrement de la photo impossible » ne permettait
+      ni de savoir que le dossier était en cause, ni de distinguer un défaut du
+      serveur d'une photo refusée.
+
+      Le chemin complet et le code système vont dans le JOURNAL, pas dans la
+      réponse : il n'y a aucune raison d'apprendre l'arborescence du serveur à
+      qui envoie une photo. La personne, elle, apprend deux choses utiles — que
+      sa photo n'est pas en cause, et que la déclaration sans photo marche.
+    */
+    const code = (error as NodeJS.ErrnoException).code ?? 'inconnu';
+    console.error(`[photo] écriture impossible dans ${uploadsDir()} (${code})`, error);
+
+    return {
+      ok: false,
+      message:
+        'Le serveur n’a pas pu enregistrer la photo — son espace de stockage ne répond pas. Ce n’est pas votre image : déclarez la prise sans photo, elle sera enregistrée.',
+    };
   }
 }
 
