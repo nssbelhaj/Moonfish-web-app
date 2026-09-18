@@ -77,6 +77,11 @@ describe('l’API v1 existe et couvre ce qui a été annoncé', () => {
       'compte/favoris/[slug]/route.ts',
       'compte/sorties/route.ts',
       'compte/appareils/route.ts',
+      'compte/profil/route.ts',
+      'compte/preferences/route.ts',
+      'compte/export/route.ts',
+      'compte/prises/[id]/route.ts',
+      'compte/sorties/[id]/route.ts',
     ];
 
     const presentes = FICHIERS.map((fichier) => path.relative(V1, fichier));

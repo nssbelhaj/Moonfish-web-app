@@ -325,6 +325,63 @@ Ni modèle d'appareil, ni version du système, ni identifiant publicitaire : ils
 rendraient le débogage d'un cheveu plus facile et transformeraient la table en
 profil.
 
+### `PUT /compte/profil`
+
+```jsonc
+{ "displayName": "Camille", "profil": { "city": "Brest", "bio": null } }
+```
+
+`displayName` est le seul champ obligatoire, et le seul PUBLIC : il signe les
+avis et les prises publiées. Le reste ne sort nulle part aujourd'hui.
+
+### `PUT /compte/preferences`
+
+```jsonc
+{ "notifyOutings": true, "notifyNews": false }
+```
+
+Deux booléens, pas un réglage libre : ce qui n'est pas listé n'est pas envoyé.
+C'est ce qui permet à la page de confidentialité de dire exactement ce qu'on
+envoie. `notifyOutings` commandera aussi les notifications push — même
+consentement, autre canal.
+
+### `PUT` · `DELETE /compte/prises/{id}`
+
+`PUT { "visibility": "publique" | "privee" }` publie une prise ou la reprend.
+`DELETE` la supprime. Les deux rafraîchissent la page du spot : elle est
+pré-rendue une heure, et **un retrait qui se voit encore n'est pas un
+retrait**.
+
+### `DELETE /compte/sorties/{id}`
+
+Annule la sortie ET son alerte : la tâche d'entretien ne ramasse que les
+lignes existantes. Pas de second geste, pas d'alerte orpheline.
+
+### `GET /compte/export`
+
+Droit d'accès et de portabilité. Il porte aussi ce qui ne s'affiche nulle part
+— à commencer par les appareils de notification. Un export limité à ce que
+l'interface montre serait incomplet sans que personne puisse s'en apercevoir.
+Aucun budget d'appel : exercer un droit n'a pas à être rationné.
+
+### `DELETE /compte`
+
+```jsonc
+{ "confirmation": "supprimer" }
+```
+
+Le droit à l'oubli, **depuis l'application** — l'App Store l'exige de toute
+application permettant de créer un compte, et renvoyer vers un navigateur
+poserait une friction exactement là où il ne faut pas.
+
+La confirmation explicite n'est pas un ornement : un `DELETE` nu effacerait un
+compte sur une requête rejouée ou un bouton mal câblé, et le bouton voisin à
+l'écran est « se déconnecter ». Les pages du site sont rafraîchies avant que
+les lignes ne disparaissent, sans quoi un avis resterait affiché une heure
+après l'effacement — défaut constaté en production.
+
+---
+
 ---
 
 ## Budgets d'appel

@@ -3,6 +3,7 @@ import type { ForecastDay, ForecastSlot, SpotForecast, SourceStatus } from '@/li
 import type { SafetyLevel, ScoreFactor, ScoreLabel } from '@/lib/scoring';
 import type { DataKind } from '@/lib/providers';
 import type { SpotContributions } from '@/lib/providers/types';
+import type { CatchLogSummary } from '@/lib/contributions/catch-log';
 import type { Catch, Visibility } from '@/data/schemas';
 import { photoUrl } from '@/lib/photo/url';
 import { absoluteUrl } from '@/lib/routes';
@@ -333,4 +334,38 @@ export interface PriseCarnetJson extends PriseJson {
 
 export function priseDuCarnetEnJson(prise: Catch): PriseCarnetJson {
   return { ...priseEnJson(prise), visibility: prise.visibility };
+}
+
+/* ── Résumé du carnet ──────────────────────────────────────────────────── */
+
+/**
+ * Le résumé du carnet, sérialisé.
+ *
+ * ═══ UN DÉFAUT TROUVÉ EN ÉCRIVANT LE CLIENT MOBILE ═══
+ *
+ * `summarizeCatches` rend des `Catch` du DOMAINE — avec `userId` et
+ * `photoPath`. Ils partaient tels quels dans `catchLog.longest`, alors que
+ * toutes les autres prises de la même réponse passaient par `priseEnJson`.
+ * L'identifiant de compte et le chemin de stockage sortaient donc du serveur
+ * par cette seule porte, à côté de trois autres correctement fermées.
+ *
+ * Ce n'est pas une fuite entre personnes — c'est son propre carnet — mais
+ * c'est une rupture du contrat annoncé, et la sorte de chose qui devient une
+ * vraie fuite le jour où quelqu'un réutilise ce champ ailleurs. Le trou s'est
+ * vu en écrivant le schéma Zod du client : il attendait `photoUrl` et
+ * recevait `photoPath`.
+ */
+export interface CarnetJson extends Omit<CatchLogSummary, 'longest' | 'first' | 'last'> {
+  longest: PriseCarnetJson | null;
+  first: PriseCarnetJson | null;
+  last: PriseCarnetJson | null;
+}
+
+export function carnetEnJson(resume: CatchLogSummary): CarnetJson {
+  return {
+    ...resume,
+    longest: resume.longest === null ? null : priseDuCarnetEnJson(resume.longest),
+    first: resume.first === null ? null : priseDuCarnetEnJson(resume.first),
+    last: resume.last === null ? null : priseDuCarnetEnJson(resume.last),
+  };
 }
