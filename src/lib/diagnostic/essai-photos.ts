@@ -1,8 +1,5 @@
-import { mkdir, rm, writeFile } from 'node:fs/promises';
-import path from 'node:path';
-import { randomUUID } from 'node:crypto';
-
 import type { Point } from './etat';
+import { peutEcrire } from './ecriture';
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
@@ -40,34 +37,25 @@ import type { Point } from './etat';
   Avec un nom connu, l'essai peut poser un dossier à cette place exacte : la
   création du dossier passe, l'écriture échoue. Le sabotage est alors vu.
 */
-export async function essaiPhotos(dossier: string, nom = `.essai-${randomUUID()}`): Promise<Point> {
+export async function essaiPhotos(dossier: string, nom?: string): Promise<Point> {
   const sujet = 'Écriture des photos';
-  const essai = path.join(dossier, nom);
+  const resultat = nom === undefined ? await peutEcrire(dossier) : await peutEcrire(dossier, nom);
 
-  try {
-    await mkdir(dossier, { recursive: true });
-    await writeFile(essai, 'essai', { flag: 'wx' });
-
+  if (resultat.ok) {
     return {
       sujet,
       etat: 'ok',
       constat: `Le dossier ${dossier} existe et accepte l’écriture. Les photos de prises peuvent être enregistrées.`,
       remede: null,
     };
-  } catch (erreur) {
-    const code = (erreur as NodeJS.ErrnoException).code ?? 'inconnu';
-
-    return {
-      sujet,
-      etat: 'absent',
-      constat: `Impossible d’écrire dans ${dossier} (${code}). Toute déclaration de prise AVEC photo échoue, sur le site comme dans l’application ; sans photo, elle passe.`,
-      remede: REMEDES[code] ?? `Vérifiez que ${dossier} existe et appartient à l’utilisateur qui fait tourner l’application.`,
-    };
-  } finally {
-    // Le fichier d'essai ne doit pas survivre à l'essai, et son absence n'est
-    // pas une erreur : s'il n'a pas pu être créé, il n'y a rien à retirer.
-    await rm(essai, { force: true }).catch(() => undefined);
   }
+
+  return {
+    sujet,
+    etat: 'absent',
+    constat: `Impossible d’écrire dans ${dossier} (${resultat.code}). Toute déclaration de prise AVEC photo échoue, sur le site comme dans l’application ; sans photo, elle passe.`,
+    remede: REMEDES[resultat.code] ?? `Vérifiez que ${dossier} existe et appartient à l’utilisateur qui fait tourner l’application.`,
+  };
 }
 
 /**
