@@ -6,6 +6,7 @@ import { SPOTS } from '@/data/spots';
 import { estProprietaire } from '@/lib/auth/proprietaire';
 import { BUILD_STAMP } from '@/lib/build-stamp';
 import { essaiBase } from '@/lib/diagnostic/essai-base';
+import { essaiPhotos } from '@/lib/diagnostic/essai-photos';
 import { essaiMarees } from '@/lib/diagnostic/essai-marees';
 import { diagnostiquer, verdictGlobal, type Etat, type Point } from '@/lib/diagnostic/etat';
 import { etatMigrations } from '@/lib/diagnostic/migrations';
@@ -86,6 +87,7 @@ export default async function Page() {
 
   points.push(await essaiBase(process.env.DATABASE_URL));
   points.push(await etatMigrations());
+  points.push(await essaiPhotos(uploadsDir()));
 
   // Un vrai appel à Stormglass, gardé six heures : c'est la seule façon de
   // distinguer une clé refusée d'un quota épuisé, et les deux se sont vus.

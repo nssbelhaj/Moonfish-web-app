@@ -2,6 +2,8 @@ import { mkdir, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 
+import { MESSAGE_REFUS, inspecterJpeg } from './exif';
+
 /**
  * Photos de prises sur le disque.
  *
@@ -81,6 +83,27 @@ export async function savePhoto(
     return { ok: false, message: 'Ce fichier n’est pas une image JPEG.' };
   }
 
+  /*
+    ═══ LE SECOND VERROU SUR LES MÉTADONNÉES ═══
+
+    Le nettoyage a lieu sur l'appareil, avant l'envoi, et cela ne change pas :
+    ce qui n'est jamais parti n'a pas à être effacé. Mais cette garantie
+    repose entièrement sur un client — installé en plusieurs versions
+    simultanées, sur des téléphones qu'on ne met pas à jour, avec une
+    bibliothèque de réencodage qui peut changer de comportement à une mise à
+    jour du système.
+
+    Le jour où ce nettoyage régresse, personne ne s'en aperçoit : la photo
+    s'affiche normalement et les coordonnées du poste dorment dans le fichier.
+    On REFUSE donc plutôt que de nettoyer ici — nettoyer reviendrait à
+    accepter que l'original ait traversé le réseau.
+  */
+  const metadonnees = inspecterJpeg(bytes);
+  if (!metadonnees.propre) {
+    console.warn(`[photo] envoi refusé : ${metadonnees.segment} encore présent`);
+    return { ok: false, message: MESSAGE_REFUS[metadonnees.raison] };
+  }
+
   if (!/^[0-9a-fA-F-]{36}$/.test(userId)) {
     return { ok: false, message: 'Identifiant utilisateur invalide.' };
   }
@@ -93,8 +116,26 @@ export async function savePhoto(
     await writeFile(absolute, bytes, { flag: 'wx' });
     return { ok: true, path: relative };
   } catch (error) {
-    console.error('[photo] écriture impossible', error);
-    return { ok: false, message: 'Enregistrement de la photo impossible.' };
+    /*
+      Le message rendu ne nommait NI la cause NI le remède — la règle que ce
+      dépôt s'impose partout ailleurs. Constaté en production : toute photo
+      échouait ici, et « Enregistrement de la photo impossible » ne permettait
+      ni de savoir que le dossier était en cause, ni de distinguer un défaut du
+      serveur d'une photo refusée.
+
+      Le chemin complet et le code système vont dans le JOURNAL, pas dans la
+      réponse : il n'y a aucune raison d'apprendre l'arborescence du serveur à
+      qui envoie une photo. La personne, elle, apprend deux choses utiles — que
+      sa photo n'est pas en cause, et que la déclaration sans photo marche.
+    */
+    const code = (error as NodeJS.ErrnoException).code ?? 'inconnu';
+    console.error(`[photo] écriture impossible dans ${uploadsDir()} (${code})`, error);
+
+    return {
+      ok: false,
+      message:
+        'Le serveur n’a pas pu enregistrer la photo — son espace de stockage ne répond pas. Ce n’est pas votre image : déclarez la prise sans photo, elle sera enregistrée.',
+    };
   }
 }
 

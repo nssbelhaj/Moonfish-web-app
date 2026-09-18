@@ -7,6 +7,7 @@ import { estProprietaire } from '@/lib/auth/proprietaire';
 import { etatMigrations } from '@/lib/diagnostic/migrations';
 import { refusExplique } from '@/lib/diagnostic/refus';
 import { essaiBase } from '@/lib/diagnostic/essai-base';
+import { essaiPhotos } from '@/lib/diagnostic/essai-photos';
 import { essaiSmtp } from '@/lib/diagnostic/smtp';
 import { uploadsDir } from '@/lib/photo/storage';
 
@@ -64,6 +65,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   */
   points.push(await essaiBase(process.env.DATABASE_URL));
   points.push(await etatMigrations());
+
+  /*
+    Un octet écrit, puis retiré. La configuration disait « les photos vont
+    là » ; elle ne disait pas que « là » refusait l'écriture, et c'est
+    pourtant ce qui se passait en production.
+  */
+  points.push(await essaiPhotos(uploadsDir()));
 
   /*
     L'essai SMTP ouvre une vraie connexion. On ne le fait que sur demande
