@@ -4,7 +4,6 @@ import { revalidatePath } from 'next/cache';
 
 import { signIn } from '@/auth';
 
-import { CONSENT_VERSION } from '@/lib/auth/consent';
 import {
   connexionSchema,
   inscriptionSchema,
@@ -14,7 +13,8 @@ import {
   profilSchema,
 } from '@/data/schemas-compte';
 import { accountsEnabled, googleEnabled, magicLinkEnabled } from '@/lib/auth/config';
-import { hacher, verifier } from '@/lib/auth/password';
+import { hacher } from '@/lib/auth/password';
+import { creerCompte, verifierIdentifiants } from '@/lib/auth/identification';
 import { piegeDeclenche } from '@/lib/auth/piege';
 import { fermerSession, ouvrirSession } from '@/lib/auth/session-cookie';
 import { currentUser } from '@/lib/auth/session';
@@ -22,15 +22,12 @@ import { BUDGETS, consommer, delaiLisible, ipAppelante, rembourser } from '@/lib
 import { deletePhoto } from '@/lib/photo/storage';
 import {
   consommerReinitialisation,
-  creerCompteAvecMotDePasse,
-  echecDeConnexion,
   identifiantsDe,
   majPreferences,
   majProfil,
   ouvrirReinitialisation,
   retirerAvatar,
   remplacerMotDePasse,
-  succesDeConnexion,
 } from '@/lib/providers/mysql/comptes';
 import { absoluteUrl } from '@/lib/routes';
 
@@ -136,21 +133,9 @@ export async function inscrire(
 
   const { email, password, firstName, lastName, birthDate } = analyse.data;
 
-  /*
-    Le nom affiché part du prénom seul. C'est lui qui apparaît sous un avis ou
-    une prise : y mettre « Prénom NOM » publierait le nom de famille de
-    quelqu'un qui n'a jamais demandé cela. Il reste modifiable sur la page du
-    compte.
-  */
-  const resultat = await creerCompteAvecMotDePasse({
-    email,
-    passwordHash: await hacher(password),
-    firstName,
-    lastName,
-    birthDate,
-    displayName: firstName,
-    consentVersion: CONSENT_VERSION,
-  });
+  // La règle du nom affiché — le prénom seul, jamais « Prénom NOM » — vit
+  // dans `creerCompte`, partagée avec l'inscription par l'API mobile.
+  const resultat = await creerCompte({ email, password, firstName, lastName, birthDate });
 
   if (!resultat.ok) {
     if (resultat.raison === 'adresse-prise') {
@@ -218,47 +203,29 @@ export async function seConnecter(
     };
   }
 
-  const identifiants = await identifiantsDe(analyse.data.email);
-
   /*
-    Aucune adresse trouvée : on vérifie quand même un mot de passe, contre une
-    empreinte factice. Sans cela, la réponse reviendrait instantanément pour
-    une adresse inconnue et après cent millisecondes pour une adresse connue —
-    et ce délai suffirait à distinguer les deux, ce que le message refuse
-    justement de faire.
+    Vérification, verrou de compte et comparaison à temps constant vivent dans
+    `verifierIdentifiants`, partagée avec la route de connexion de l'API
+    mobile. Recopier ces règles ici aurait fini par les faire diverger — un
+    verrou appliqué d'un côté et pas de l'autre ne se voit sur aucun écran.
   */
-  if (identifiants === null) {
-    await verifier(analyse.data.password, EMPREINTE_FACTICE);
+  const verdict = await verifierIdentifiants(analyse.data.email, analyse.data.password);
+
+  if (!verdict.ok) {
+    if (verdict.raison === 'verrouille') {
+      return {
+        ok: false,
+        message: `Ce compte est temporairement bloqué après plusieurs tentatives. Réessayez dans ${delaiLisible(verdict.jusqua)}.`,
+      };
+    }
     return REFUS;
   }
 
-  if (identifiants.lockedUntil !== null && new Date(identifiants.lockedUntil) > new Date()) {
-    return {
-      ok: false,
-      message: `Ce compte est temporairement bloqué après plusieurs tentatives. Réessayez dans ${delaiLisible(new Date(identifiants.lockedUntil).getTime())}.`,
-    };
-  }
-
-  if (!(await verifier(analyse.data.password, identifiants.passwordHash))) {
-    await echecDeConnexion(identifiants.userId);
-    return REFUS;
-  }
-
-  await succesDeConnexion(identifiants.userId);
-  await ouvrirSession(identifiants.userId);
+  await ouvrirSession(verdict.userId);
   revalidatePath('/compte');
 
   return { ok: true, message: 'Vous êtes connecté.' };
 }
-
-/**
- * Empreinte d'un mot de passe que personne ne connaît.
- *
- * Elle ne sert qu'à faire passer le même temps de calcul quand l'adresse est
- * inconnue. Elle est constante, donc calculée une fois.
- */
-const EMPREINTE_FACTICE =
-  'scrypt$65536$8$1$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Déconnexion

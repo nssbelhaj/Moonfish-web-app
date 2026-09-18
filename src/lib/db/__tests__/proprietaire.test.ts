@@ -23,8 +23,16 @@ const SQL_ALLOWED = [
   'src/lib/auth/mysql-adapter.ts',
 ];
 
-/** Tables dont chaque ligne appartient à quelqu'un. */
-const OWNED_TABLES = ['spot_reviews', 'catches', 'profiles', 'favorites', 'outings'];
+/**
+ * Tables dont chaque ligne appartient à quelqu'un.
+ *
+ * `push_devices` en fait partie depuis l'API mobile : une ligne y rattache un
+ * jeton de notification à un compte. Sans `user_id = ?` sur les
+ * modifications, quiconque connaîtrait le jeton d'un autre pourrait le
+ * supprimer, donc le couper de ses alertes de sortie — un tort discret, que
+ * la victime attribuerait à une panne.
+ */
+const OWNED_TABLES = ['spot_reviews', 'catches', 'profiles', 'favorites', 'outings', 'push_devices'];
 
 function sources(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {
@@ -67,7 +75,7 @@ describe('discipline SQL', () => {
       if (isAllowed(file)) continue;
 
       const source = read(file);
-      if (/\b(from|into)\s+(spot_reviews|catches|profiles|favorites|outings|waitlist|users|sessions)\b/i.test(source)) {
+      if (/\b(from|into)\s+(spot_reviews|catches|profiles|favorites|outings|waitlist|users|sessions|push_devices)\b/i.test(source)) {
         offenders.push(path.relative(ROOT, file));
       }
     }

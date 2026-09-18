@@ -740,18 +740,46 @@ idempotents, et trois tests le vérifient.
 
 ### Authentification
 
-Un lien reçu par courriel, pas de mot de passe : ce que nous ne stockons pas ne
-peut pas fuir. Aucun fournisseur externe non plus — « se connecter avec
-Google » ferait savoir à Google que vous pêchez.
+**Cette section a longtemps décrit un état dépassé du code**, et le décalage a
+duré assez pour mériter d'être signalé plutôt que corrigé en silence : elle
+affirmait « un lien reçu par courriel, pas de mot de passe » et « aucun
+fournisseur externe », alors que l'inscription par mot de passe
+(`0004_mot_de_passe_et_identite.sql`, `src/lib/auth/password.ts`) et la
+connexion Google existaient déjà. Une documentation fausse sur
+l'authentification est le genre de chose qui coûte une journée à qui la lit.
 
-Auth.js gère le flux ; l'adaptateur MySQL est écrit à la main
-(`src/lib/auth/mysql-adapter.ts`) plutôt que tiré d'un ORM, parce qu'il ne fait
-que traduire une quinzaine d'appels en autant de requêtes de trois lignes.
+Trois chemins mènent à une session, et ils aboutissent tous à la même ligne
+dans la même table :
+
+| Chemin | Ce qu'il demande |
+| --- | --- |
+| **Adresse + mot de passe** ← le principal | `inscriptionSchema` : prénom, nom, date de naissance (15 ans révolus), consentement |
+| **Lien par courriel** | un serveur d'envoi configuré ; le profil est complété à la première venue |
+| **Google** | `AUTH_GOOGLE_ID` et `AUTH_GOOGLE_SECRET` ; s'ajoute aux deux autres, ne les remplace pas |
+
+Les mots de passe sont dérivés par **scrypt** (`node:crypto`, aucun module
+natif à compiler), avec les paramètres stockés dans l'empreinte pour pouvoir
+les durcir sans déconnecter personne.
+
+Auth.js gère le flux du lien par courriel ; l'adaptateur MySQL est écrit à la
+main (`src/lib/auth/mysql-adapter.ts`) plutôt que tiré d'un ORM, parce qu'il ne
+fait que traduire une quinzaine d'appels en autant de requêtes de trois lignes.
 
 Les sessions vivent **en base**, pas dans un jeton signé. Conséquence qui
 compte : une déconnexion ou une suppression de compte prend effet
 immédiatement, alors qu'un jeton auto-porté reste valable jusqu'à son
-expiration — y compris après un « supprimez mes données ».
+expiration — y compris après un « supprimez mes données ». C'est aussi ce qui
+permet à l'API mobile de n'être qu'un second TRANSPORT du même jeton, et pas
+un second système d'authentification.
+
+**La vérification est écrite une seule fois.** `src/lib/auth/identification.ts`
+porte `verifierIdentifiants` et `creerCompte` ; le formulaire du site et la
+route JSON de l'application les appellent tous les deux. Elles vivaient
+auparavant dans `actions-compte.ts`, mêlées à la lecture d'un `FormData` et à
+la pose d'un cookie, ce qui aurait obligé l'API à les recopier. Une connexion
+recopiée finit par diverger, et la divergence ne se voit sur aucun écran : un
+verrou de compte appliqué d'un côté et pas de l'autre, une comparaison à temps
+constant oubliée sur un seul chemin.
 
 ### Photos : les métadonnées ne partent jamais
 
@@ -1066,6 +1094,59 @@ qu'on puisse nous les opposer : la position de l'appareil ne remontera pas au
 serveur, les photos de prises seront débarrassées de leurs métadonnées EXIF
 avant enregistrement, et toute mesure d'audience sera sans identifiant ou
 soumise à un consentement préalable.
+
+## L'API publique (v1)
+
+Elle existe pour l'application mobile, et elle n'existe que pour ça : le site
+ne l'appelle pas — ses pages lisent les mêmes modules directement.
+
+### La décision qui la gouverne
+
+**L'application ne recalcule rien.** Le score porte une règle de sécurité non
+négociable — houle > 2,5 m OU vent > 50 km/h ⇒ `danger` — et cette règle décide
+si quelqu'un va se mettre en danger sur des rochers. Deux implémentations
+finissent toujours par diverger : un seuil ajusté d'un côté, un arrondi de
+l'autre, et un jour l'application dit « Bon » là où le site dit « Danger ».
+
+`GET /api/v1/spots/{slug}/prevision` appelle donc `getSpotForecast`, la MÊME
+fonction que les pages de spot. Il n'y a qu'un moteur de score, qu'une
+évaluation de la sécurité, et aucun moyen de les faire diverger.
+
+### Ce que la forme du JSON garantit
+
+| | |
+| --- | --- |
+| **`safety` est frère de `score`, jamais son enfant** | `ScoreResult` porte `safety` à l'intérieur ; l'API l'en sort. Un client qui la recevrait dans le score finirait par la traiter comme une conséquence du score — par la masquer quand il est bon, par l'oublier quand il est absent. `securite-hors-score.test.ts` fait échouer le build si elle y retourne. |
+| **`sources` accompagne chaque prévision** | Provenance, fraîcheur, durée de validité et repli-après-panne. L'application doit pouvoir écrire « marée simulée » exactement là où le site l'écrit. |
+| **`userId` ne sort jamais** | Le nom affiché suffit à signer. Publier l'identifiant permettrait de recouper toutes les contributions d'une personne à travers les 42 spots. |
+| **Aucun en-tête CORS** | Une application n'a pas d'origine et n'en a pas besoin. Les navigateurs en ont une : sans ces en-têtes, aucun autre site ne peut lire cette API. Le catalogue et les scores sont le produit, pas une source de données gratuite. |
+| **Aucune route ne sait recevoir une position** | La proximité se calcule sur l'appareil, contre le catalogue déjà téléchargé. C'est plus solide qu'une promesse de ne pas s'en servir, et un test refuse qu'une route accepte une latitude. |
+
+### Le jeton porteur n'est pas un second système
+
+`lib/auth/session-cookie.ts` écrit déjà les sessions à la main dans la table
+`sessions` ; le cookie n'est que le transport du jeton. L'application range le
+même jeton dans le trousseau du téléphone et l'envoie dans
+`Authorization: Bearer`. Le serveur fait alors exactement ce qu'il fait pour le
+web : un `select` sur la même table, avec la même condition d'expiration.
+
+Conséquence vérifiée en intégration : **une déconnexion coupe l'accès à la
+requête suivante**, depuis le téléphone comme depuis le navigateur.
+
+### Un piège que seul le build montrait
+
+`export const revalidate = 3600` ne suffit PAS sur un segment `[slug]` : sans
+`generateStaticParams`, Next range la route en « ƒ » — rendue à chaque appel —
+alors que la constante juste au-dessus laisse croire le contraire.
+
+Rien ne l'aurait signalé à l'usage, les réponses restant justes. Le prix se
+serait payé sur le quota Stormglass : dix appels par jour, épuisés par une
+poignée d'ouvertures de l'application, puis 42 spots retombés en marée simulée
+jusqu'au lendemain. Exactement la panne silencieuse que `TIDE_REAL_SPOTS`
+existe pour éviter, réintroduite par une autre porte. Un test relit désormais
+les deux déclarations ensemble.
+
+**Le détail de toutes les routes est dans `docs/api-v1.md`.**
 
 ## Déploiement
 

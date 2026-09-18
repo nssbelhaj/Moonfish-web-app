@@ -22,6 +22,7 @@ import {
 } from '@/data/schemas';
 import { CONSENT_VERSION } from '@/lib/auth/consent';
 import { execute, query, queryOne, toIso, toMysqlDateTime } from '@/lib/db/mysql';
+import { appareilsDe } from '@/lib/providers/mysql/appareils';
 import { deletePhoto } from '@/lib/photo/storage';
 import { NOTE_VIDE } from '../types';
 import type {
@@ -725,11 +726,12 @@ export class MysqlContributionsRepository implements ContributionsRepository {
     email: string | null,
   ): Promise<ContributionResult<AccountExport>> {
     try {
-      const [profile, mine, favorites, outings] = await Promise.all([
+      const [profile, mine, favorites, outings, devices] = await Promise.all([
         this.getProfile(userId),
         this.listForUser(userId),
         this.listFavorites(userId),
         this.listOutings(userId),
+        appareilsDe(userId),
       ]);
 
       return {
@@ -742,6 +744,7 @@ export class MysqlContributionsRepository implements ContributionsRepository {
           catches: mine.catches,
           favorites,
           outings,
+          devices,
         },
       };
     } catch (error) {
