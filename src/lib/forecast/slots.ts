@@ -159,6 +159,16 @@ export function buildForecastDays(
                 hPa: conditions.pressureHpa,
                 trend3hHpa: pressureTrend(marineByHour, middle),
               },
+        /*
+          La température de l'eau était mesurée et affichée depuis toujours,
+          sans jamais entrer dans le calcul. Elle y entre maintenant — et
+          `null` reste `null` : une eau non mesurée sort du calcul, poids
+          renormalisés, plutôt que de recevoir une valeur par défaut.
+        */
+        water:
+          conditions === null || conditions.waterTempC === null
+            ? null
+            : { celsius: conditions.waterTempC },
         solunar: {
           hoursToMajorPeriod: hoursToNearest(middle, solunar.major),
           hoursToMinorPeriod: hoursToNearest(middle, solunar.minor),

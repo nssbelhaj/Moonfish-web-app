@@ -3,7 +3,14 @@
  * Aucun import : ce module doit rester utilisable hors Next.js (test, worker, CLI).
  */
 
-export type ScoreFactor = 'tide' | 'wind' | 'swell' | 'solunar' | 'pressure' | 'light';
+export type ScoreFactor =
+  | 'tide'
+  | 'wind'
+  | 'swell'
+  | 'solunar'
+  | 'pressure'
+  | 'water'
+  | 'light';
 
 export type ScoreLabel = 'Médiocre' | 'Passable' | 'Bon' | 'Excellent';
 
@@ -54,6 +61,11 @@ export interface PressureInput {
   trend3hHpa: number | null;
 }
 
+export interface WaterInput {
+  /** Température de surface de la mer, en degrés Celsius. */
+  celsius: number;
+}
+
 export type LightPhase = 'dawn' | 'day' | 'dusk' | 'night';
 
 export interface LightInput {
@@ -80,6 +92,7 @@ export interface ScoreInput {
   swell: SwellInput | null;
   solunar: SolunarInput | null;
   pressure: PressureInput | null;
+  water: WaterInput | null;
   light: LightInput | null;
 }
 
@@ -132,13 +145,30 @@ export interface ScoreResult {
  * points sur lesquels la pratique et la littérature s'accordent — mais
  * secondaire devant la marée. Lui donner davantage prétendrait une précision
  * que ni la donnée horaire ni la littérature ne soutiennent.
+ *
+ * ─── La température de l'eau, entrée à 7 % ────────────────────────────────
+ *
+ * Elle était déjà mesurée et AFFICHÉE, sans entrer dans le calcul : le site
+ * montrait « Eau 14,2 °C » à côté d'un score qui l'ignorait. Elle compte
+ * pourtant — le métabolisme d'un poisson suit celui de l'eau.
+ *
+ * Elle reste secondaire pour une raison de forme, pas d'importance : l'eau
+ * bouge de quelques dixièmes par jour, là où la marée change tout en deux
+ * heures. Elle départage des SAISONS et des spots, pas deux créneaux du même
+ * après-midi. Lui donner le poids de la marée reviendrait à décaler toute
+ * une journée d'un bloc, ce qui n'aiderait personne à choisir son heure.
+ *
+ * Les 7 % sont pris sur les six autres au prorata, comme pour la pression :
+ * l'équilibre relatif entre marée, vent, houle, solunaire, pression et
+ * lumière est INCHANGÉ.
  */
 export const FACTOR_WEIGHTS: Record<ScoreFactor, number> = {
-  tide: 0.32,
-  wind: 0.23,
-  swell: 0.18,
-  solunar: 0.13,
-  pressure: 0.09,
+  tide: 0.3,
+  wind: 0.21,
+  swell: 0.17,
+  solunar: 0.12,
+  pressure: 0.08,
+  water: 0.07,
   light: 0.05,
 };
 
@@ -148,6 +178,7 @@ export const FACTOR_LABELS: Record<ScoreFactor, string> = {
   swell: 'Houle',
   solunar: 'Solunaire & lune',
   pressure: 'Pression',
+  water: 'Température de l’eau',
   light: 'Lumière',
 };
 
@@ -158,6 +189,7 @@ export const FACTOR_SUBJECTS: Record<ScoreFactor, string> = {
   swell: 'la houle',
   solunar: 'le solunaire',
   pressure: 'la pression',
+  water: 'la température de l’eau',
   light: 'la lumière',
 };
 
@@ -168,6 +200,7 @@ export const FACTOR_UNAVAILABLE_NOTES: Record<ScoreFactor, string> = {
   swell: 'houle indisponible pour ce créneau',
   solunar: 'éphémérides lunaires indisponibles pour ce créneau',
   pressure: 'pression indisponible pour ce créneau',
+  water: 'température de l’eau indisponible pour ce créneau',
   light: 'lever et coucher du soleil indisponibles pour ce créneau',
 };
 

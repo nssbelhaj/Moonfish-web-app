@@ -298,7 +298,8 @@ export default async function SpotLivePage({ params }: { params: Promise<RoutePa
                 </div>
                 <dl className="mt-4 grid grid-cols-2 gap-3 text-meta nums">
                   {[
-                    ['Eau', formatMeasure(current.conditions.waterTempC, '°C', 1)],
+                    // L'eau est remontée dans « État de mer » : elle pèse sur le
+                    // score, elle n'est plus une mesure d'appoint.
                     ['Air', formatMeasure(current.conditions.airTempC, '°C', 1)],
                     ['Ressenti', formatMeasure(current.conditions.apparentTempC, '°C', 1)],
                     ['Pression', formatMeasure(current.conditions.pressureHpa, 'hPa', 0)],

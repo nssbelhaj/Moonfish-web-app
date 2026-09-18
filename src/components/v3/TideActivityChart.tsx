@@ -122,12 +122,24 @@ export function carryingWindows(day: ForecastDay, max = 4): CarryingWindow[] {
     const value = slot.score.value ?? 0;
     const last = merged[merged.length - 1];
 
-    // Fusion uniquement à niveau ÉGAL.
-    //
-    // Fusionner des niveaux différents faisait absorber les créneaux moyens
-    // voisins par une fenêtre à trois poissons, et produisait une « fenêtre très
-    // élevée » de dix-huit heures — c'est-à-dire plus rien de lisible, et une
-    // affirmation fausse sur les heures avalées au passage.
+    /*
+      Fusion uniquement à niveau ÉGAL, et jamais au-delà d'une demi-journée.
+
+      Fusionner des niveaux différents faisait absorber les créneaux moyens
+      voisins par une fenêtre à trois poissons, et produisait une « fenêtre
+      très élevée » de dix-huit heures — plus rien de lisible, et une
+      affirmation fausse sur les heures avalées au passage.
+
+      Une fenêtre PEUT couvrir une longue plage, et ce n'est pas le même
+      défaut : quand l'eau est entrée dans le score, des journées entières se
+      sont mises à tenir au même niveau d'activité, et la fusion rend alors
+      « 06 h – 20 h ». C'est exact. On a essayé de borner à douze heures — et
+      cela produisait deux fenêtres ADJACENTES de même niveau, exactement la
+      paire de pastilles collées que la fusion existe pour éviter. Entre une
+      longue fenêtre vraie et deux courtes fenêtres mal découpées, on garde
+      la vraie : c'est l'interface qui choisit d'en afficher une seule, pas
+      le calcul qui doit mentir sur ses bornes.
+    */
     if (
       last &&
       last.level === level &&

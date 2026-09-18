@@ -80,11 +80,29 @@ describe('fenêtres porteuses', () => {
     }
   });
 
-  it('ne produit jamais une fenêtre couvrant la moitié de la journée', () => {
+  it('ne produit jamais une fenêtre plus longue que la journée elle-même', () => {
+    /*
+      ─── Ce test bornait à douze heures, et ne le peut plus ────────────────
+      Il protégeait d'un vrai défaut : la fusion de niveaux DIFFÉRENTS
+      produisait une « fenêtre très élevée » de dix-huit heures qui avalait
+      des créneaux moyens. Ce défaut-là est fermé par la fusion à niveau
+      égal, et c'est cette règle qui le tient, pas la borne de douze heures.
+
+      Depuis que la température de l'eau entre dans le score, une journée
+      entière peut légitimement tenir au même niveau d'activité, et la
+      fenêtre fait alors quatorze heures. C'est exact. Borner à douze
+      découpait cette fenêtre vraie en deux fenêtres adjacentes de même
+      niveau — précisément la paire de pastilles collées que le test suivant
+      interdit. On vérifie donc ce qui reste faux dans tous les cas : une
+      fenêtre ne peut pas déborder de sa journée.
+    */
     for (const day of days) {
+      const debut = new Date(day.slots[0]!.start).getTime();
+      const fin = new Date(day.slots[day.slots.length - 1]!.end).getTime();
+
       for (const w of carryingWindows(day, 12)) {
-        const hours = (new Date(w.end).getTime() - new Date(w.start).getTime()) / 3_600_000;
-        expect(hours).toBeLessThanOrEqual(12);
+        expect(new Date(w.start).getTime()).toBeGreaterThanOrEqual(debut);
+        expect(new Date(w.end).getTime()).toBeLessThanOrEqual(fin);
       }
     }
   });

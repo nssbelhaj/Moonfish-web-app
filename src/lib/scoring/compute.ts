@@ -3,6 +3,7 @@ import { scorePressure } from './factors/pressure';
 import { scoreSolunar } from './factors/solunar';
 import { scoreSwell } from './factors/swell';
 import { scoreTide } from './factors/tide';
+import { scoreWater } from './factors/water';
 import { scoreWind } from './factors/wind';
 import { clamp, round1 } from './math';
 import { buildReasons } from './reasons';
@@ -21,7 +22,15 @@ export function labelFor(value: number): ScoreLabel {
   return 'Excellent';
 }
 
-const FACTORS: readonly ScoreFactor[] = ['tide', 'wind', 'swell', 'solunar', 'pressure', 'light'];
+const FACTORS: readonly ScoreFactor[] = [
+  'tide',
+  'wind',
+  'swell',
+  'solunar',
+  'pressure',
+  'water',
+  'light',
+];
 
 /**
  * Le score Luna Marea.
@@ -45,6 +54,7 @@ export function computeScore(input: ScoreInput): ScoreResult {
     swell: scoreSwell(input.swell),
     solunar: scoreSolunar(input.solunar),
     pressure: scorePressure(input.pressure),
+    water: scoreWater(input.water),
     light: scoreLight(input.light),
   };
 

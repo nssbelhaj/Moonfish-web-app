@@ -3,7 +3,12 @@ import { computeScore } from '../compute';
 import { FACTOR_WEIGHTS, type ScoreFactor } from '../types';
 import { IDEAL, scoreOf, withInput } from './fixtures';
 
-const ALL: ScoreFactor[] = ['tide', 'wind', 'swell', 'solunar', 'pressure', 'light'];
+/*
+  La liste vient du MOTEUR. Recopiée, elle est restée à six facteurs quand
+  l'eau est entrée dans le modèle : la somme des poids « valait 1 » sur six
+  facteurs sur sept, et le test passait en vérifiant un modèle périmé.
+*/
+const ALL = Object.keys(FACTOR_WEIGHTS) as ScoreFactor[];
 
 /**
  * D11 — un score calculé avec un facteur manquant le DÉCLARE.
@@ -39,9 +44,16 @@ describe('sources manquantes — renormalisation', () => {
 
   it('rapporte la couverture réellement atteinte', () => {
     expect(computeScore(IDEAL).coverage).toBeCloseTo(1, 10);
-    // 1 − 0,18 pour la houle ; puis 1 − 0,18 − 0,32 avec la marée en moins.
-    expect(computeScore(withInput({ swell: null })).coverage).toBeCloseTo(0.82, 10);
-    expect(computeScore(withInput({ tide: null, swell: null })).coverage).toBeCloseTo(0.5, 10);
+    /*
+      Les couvertures se DÉDUISENT des poids, elles ne sont plus recopiées :
+      « 0,82 » était juste tant que le modèle comptait six facteurs, et faux
+      dès que l'eau y est entrée — sans que rien ne relie les deux.
+    */
+    expect(computeScore(withInput({ swell: null })).coverage).toBeCloseTo(1 - FACTOR_WEIGHTS.swell, 10);
+    expect(computeScore(withInput({ tide: null, swell: null })).coverage).toBeCloseTo(
+      1 - FACTOR_WEIGHTS.tide - FACTOR_WEIGHTS.swell,
+      10,
+    );
   });
 
   it('vaut exactement la moyenne pondérée des facteurs restants', () => {
@@ -83,6 +95,7 @@ describe('sources manquantes — une absence n’est pas un zéro', () => {
       swell: null,
       solunar: null,
       pressure: null,
+      water: null,
       light: null,
     });
 

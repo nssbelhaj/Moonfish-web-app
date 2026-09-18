@@ -1,6 +1,9 @@
 import type { MarinePoint } from '@/data/schemas';
 import { compassPoint, waveHeights } from '@/lib/forecast/wave-statistics';
 import { formatMeasure } from '@/lib/score-display';
+import { describeWater } from '@/lib/scoring/factors/water';
+import { fr } from '@/lib/scoring/math';
+import { FACTOR_WEIGHTS } from '@/lib/scoring';
 import { WaterValue } from './WaterValue';
 
 /**
@@ -24,11 +27,18 @@ export function SeaStateCard({ conditions }: { conditions: MarinePoint }) {
         État de mer
       </h2>
 
-      <dl className="mt-3 grid grid-cols-3 gap-3">
+      <dl className="mt-3 grid grid-cols-4 gap-3">
         {[
           ['Direction', `${compassPoint(conditions.swellFromDeg)} (${Math.round(conditions.swellFromDeg)}°)`],
           ['Hauteur', formatMeasure(conditions.swellHeightM, 'm', 2)],
           ['Période', formatMeasure(conditions.swellPeriodS, 's', 1)],
+          /*
+            La température de l'eau remonte ici, avec la houle, au lieu de la
+            dixième case d'une grille de mesures secondaires : elle ENTRE dans
+            le score depuis qu'un facteur lui est consacré, et une grandeur qui
+            pèse sur la note ne se range pas avec l'indice UV.
+          */
+          ['Eau', formatMeasure(conditions.waterTempC, '°C', 1)],
         ].map(([label, value]) => (
           <div key={label}>
             <dt className="text-[11px] text-fg-muted">{label}</dt>
@@ -38,6 +48,14 @@ export function SeaStateCard({ conditions }: { conditions: MarinePoint }) {
           </div>
         ))}
       </dl>
+
+      {conditions.waterTempC !== null && (
+        <p className="mt-3 text-body text-fg-muted">
+          <span className="font-semibold text-fg">Eau {fr(conditions.waterTempC)} °C</span> —{' '}
+          {describeWater(conditions.waterTempC)}. Le métabolisme d’un poisson suit celui de l’eau :
+          cette mesure compte pour {Math.round(FACTOR_WEIGHTS.water * 100)} % du score.
+        </p>
+      )}
 
       <ul className="mt-4 space-y-2">
         <li className="flex items-baseline gap-3">

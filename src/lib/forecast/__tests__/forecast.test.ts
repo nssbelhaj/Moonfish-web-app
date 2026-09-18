@@ -1,3 +1,4 @@
+import { FACTOR_WEIGHTS } from '@/lib/scoring';
 import { describe, expect, it } from 'vitest';
 import { SPOTS } from '@/data/spots';
 import { generateMarineSeries } from '@/data/generators/marine';
@@ -258,7 +259,9 @@ describe('panne du fournisseur de marées (D11)', () => {
     const slot = days[0]!.slots[0]!;
 
     expect(slot.score.value).not.toBeNull();
-    expect(slot.score.coverage).toBeCloseTo(1 - 0.32, 10);
+    // Le poids vient du moteur : « 0,32 » recopié devient faux à la première
+    // repondération, sans que rien ne relie les deux valeurs.
+    expect(slot.score.coverage).toBeCloseTo(1 - FACTOR_WEIGHTS.tide, 10);
     expect(slot.score.reasons.join(' ')).toContain('Calculé sans la marée');
   });
 
@@ -288,12 +291,16 @@ describe('panne du fournisseur météo (D11)', () => {
     expect(days[0]!.slots).toHaveLength(SLOTS_PER_DAY);
     expect(slot.conditions).toBeNull();
     expect(slot.score.value).not.toBeNull();
-    // La pression vient de la MÊME série météo : elle disparaît avec elle, et
-    // la déclaration doit la nommer aussi. L'oublier laisserait croire que le
-    // score tient encore compte d'un facteur qu'il n'a plus.
-    expect(slot.score.reasons.join(' ')).toContain(
-      'Calculé sans le vent, la houle ni la pression',
-    );
+    /*
+      La pression ET la température de l'eau viennent de la MÊME série météo :
+      elles disparaissent avec elle, et la déclaration doit les nommer toutes.
+      En omettre une laisserait croire que le score tient encore compte d'un
+      facteur qu'il n'a plus.
+    */
+    const declaration = slot.score.reasons.join(' ');
+    for (const sujet of ['le vent', 'la houle', 'la pression', 'la température de l’eau']) {
+      expect(declaration, `« ${sujet} » absent de la déclaration`).toContain(sujet);
+    }
   });
 
   it('ne déclare jamais la sortie sûre sans mesure de vent ni de houle', () => {
