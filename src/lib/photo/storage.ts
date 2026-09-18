@@ -2,6 +2,8 @@ import { mkdir, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 
+import { MESSAGE_REFUS, inspecterJpeg } from './exif';
+
 /**
  * Photos de prises sur le disque.
  *
@@ -79,6 +81,27 @@ export async function savePhoto(
   // extension .jpg — un fichier HTML servi depuis notre domaine, par exemple.
   if (bytes[0] !== 0xff || bytes[1] !== 0xd8) {
     return { ok: false, message: 'Ce fichier n’est pas une image JPEG.' };
+  }
+
+  /*
+    ═══ LE SECOND VERROU SUR LES MÉTADONNÉES ═══
+
+    Le nettoyage a lieu sur l'appareil, avant l'envoi, et cela ne change pas :
+    ce qui n'est jamais parti n'a pas à être effacé. Mais cette garantie
+    repose entièrement sur un client — installé en plusieurs versions
+    simultanées, sur des téléphones qu'on ne met pas à jour, avec une
+    bibliothèque de réencodage qui peut changer de comportement à une mise à
+    jour du système.
+
+    Le jour où ce nettoyage régresse, personne ne s'en aperçoit : la photo
+    s'affiche normalement et les coordonnées du poste dorment dans le fichier.
+    On REFUSE donc plutôt que de nettoyer ici — nettoyer reviendrait à
+    accepter que l'original ait traversé le réseau.
+  */
+  const metadonnees = inspecterJpeg(bytes);
+  if (!metadonnees.propre) {
+    console.warn(`[photo] envoi refusé : ${metadonnees.segment} encore présent`);
+    return { ok: false, message: MESSAGE_REFUS[metadonnees.raison] };
   }
 
   if (!/^[0-9a-fA-F-]{36}$/.test(userId)) {
