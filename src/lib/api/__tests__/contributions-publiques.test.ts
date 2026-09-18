@@ -114,3 +114,54 @@ describe('la note moyenne', () => {
     expect(json.reviewCount).toBe(0);
   });
 });
+
+describe('le résumé du carnet passe par la MÊME sérialisation que le reste', () => {
+  it('ne laisse sortir ni userId ni photoPath par ses prises remarquables', async () => {
+    /*
+      ═══ LE DÉFAUT QUE CE TEST FIGE ═══
+
+      `summarizeCatches` rend des objets du DOMAINE — avec `userId` et
+      `photoPath`. Ils partaient tels quels dans `catchLog.longest`,
+      `first` et `last`, alors que les trois autres listes de la même réponse
+      passaient par `priseEnJson`. L'identifiant de compte et le chemin de
+      stockage sortaient donc du serveur par cette seule porte, à côté de
+      trois correctement fermées.
+
+      Ce n'était pas une fuite entre personnes — c'est son propre carnet —
+      mais une rupture du contrat annoncé, et la sorte de chose qui devient
+      une vraie fuite le jour où quelqu'un réutilise le champ ailleurs. Il
+      s'est vu en écrivant le schéma Zod du client mobile, qui attendait
+      `photoUrl` et recevait `photoPath`.
+    */
+    const { carnetEnJson } = await import('@/lib/api/serialisation');
+    const { summarizeCatches } = await import('@/lib/contributions/catch-log');
+
+    const resume = carnetEnJson(summarizeCatches([{ ...PRISE, lengthCm: 54 }]));
+
+    for (const [nom, prise] of [
+      ['longest', resume.longest],
+      ['first', resume.first],
+      ['last', resume.last],
+    ] as const) {
+      expect(prise, `${nom} devrait porter la prise de l’essai`).not.toBeNull();
+      expect(Object.keys(prise!), `${nom} publie userId`).not.toContain('userId');
+      expect(Object.keys(prise!), `${nom} publie photoPath`).not.toContain('photoPath');
+      expect(prise!.photoUrl, `${nom} sans URL absolue`).toMatch(/^https?:\/\//);
+    }
+  });
+
+  it('garde les agrégats intacts — seules les prises sont resérialisées', async () => {
+    const { carnetEnJson } = await import('@/lib/api/serialisation');
+    const { summarizeCatches } = await import('@/lib/contributions/catch-log');
+
+    const brut = summarizeCatches([PRISE]);
+    const json = carnetEnJson(brut);
+
+    expect(json.total).toBe(brut.total);
+    expect(json.distinctSpecies).toBe(brut.distinctSpecies);
+    expect(json.byMonth).toStrictEqual(brut.byMonth);
+    // Douze mois, vides compris : une année creuse ne doit pas raccourcir la
+    // série, sans quoi le graphique du carnet changerait d'échelle tout seul.
+    expect(json.byMonth).toHaveLength(12);
+  });
+});
