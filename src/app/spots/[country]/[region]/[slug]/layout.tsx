@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { FavoriteButton } from '@/components/account/FavoriteButton';
 import { NoteCompacte } from '@/components/contributions/NoteSpot';
 import { SafetyBanner } from '@/components/spot/SafetyBanner';
+import { ficheDe, paysPath } from '@/data/pays';
 import { BOTTOM_LABELS, EXPOSURE_LABELS, TECHNIQUE_LABELS } from '@/data/spots';
 import { shelteredNearby } from '@/lib/geo';
 import { contributions, spots as spotRepository } from '@/lib/providers';
@@ -67,7 +68,12 @@ export default async function SpotLayout({
     address: {
       '@type': 'PostalAddress',
       addressRegion: spot.regionName,
-      addressCountry: spot.countryName === 'France' ? 'FR' : 'MA',
+      /*
+        Le code venait d'un ternaire « France, sinon Maroc » : l'Espagne y
+        était donc déclarée marocaine dans les données structurées. La fiche
+        pays porte le code ISO, et un test refuse un pays sans fiche.
+      */
+      addressCountry: ficheDe(spot.countrySlug).iso,
     },
     /*
       La note agrégée, au format que les moteurs lisent.
@@ -136,7 +142,7 @@ export default async function SpotLayout({
           </Link>
           {' / '}
           <Link
-            href={`/spots?pays=${spot.countrySlug}`}
+            href={paysPath(spot.countrySlug)}
             className="underline decoration-dotted underline-offset-4"
           >
             {spot.countryName}

@@ -1,26 +1,26 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-import { CATALOGUE, PAYS } from '@/data/spots';
-import { ChoixPays, type OptionPays } from '@/components/accueil/ChoixPays';
 import { CarteMoment } from '@/components/accueil/CarteMoment';
+import { CartesPays, type CartePays } from '@/components/accueil/CartesPays';
 import { DernieresContributions } from '@/components/accueil/DernieresContributions';
 import { FriseCoefficients } from '@/components/accueil/FriseCoefficients';
+import { PourquoiCeScore } from '@/components/accueil/PourquoiCeScore';
+import { SelecteurFacade } from '@/components/accueil/SelecteurFacade';
 import { DemoDataNotice } from '@/components/data/DemoDataNotice';
+import { VueDirect } from '@/components/direct/VueDirect';
 import { EmailCaptureForm } from '@/components/forms/EmailCaptureForm';
 import { SpotSearch, type SearchableSpot } from '@/components/forms/SpotSearch';
-import { ScoreBreakdown } from '@/components/score/ScoreBreakdown';
 import { NearbySpots } from '@/components/spot/NearbySpots';
 import { ButtonLink } from '@/components/ui/Button';
 import { Section } from '@/components/ui/Section';
-import {
-  collectSources,
-  getAllSpotSummaries,
-  getSpotForecast,
-  referenceNow,
-} from '@/lib/forecast';
+import { ficheDe, prepositionDe } from '@/data/pays';
+import { CATALOGUE, PAYS } from '@/data/spots';
+import { moonPhase } from '@/lib/astro';
+import { FACADE_PAR_DEFAUT } from '@/lib/facade';
+import { collectSources, getAllSpotSummaries, getSpotForecast, referenceNow } from '@/lib/forecast';
 import { prochainsCoefficients } from '@/lib/forecast/coefficients';
-import { momentsFor, type Moment } from '@/lib/forecast/moments';
+import { resumePays } from '@/lib/forecast/pays';
 import { contributions, tides, weather } from '@/lib/providers';
 import { absoluteUrl, spotPath } from '@/lib/routes';
 import {
@@ -28,7 +28,9 @@ import {
   FACTOR_LABELS,
   FACTOR_WEIGHTS,
   factorWeightSentence,
+  moonPhaseName,
 } from '@/lib/scoring';
+import { formatDayLong } from '@/lib/time';
 
 /** Les données sont recalculées chaque heure ; la page reste statique entre-temps. */
 export const revalidate = 3600;
@@ -146,63 +148,50 @@ export default async function HomePage() {
   const sources = collectSources(summaries);
 
   /*
-    Les prévisions complètes, pour disposer de TOUS les créneaux et pas
-    seulement du meilleur. Elles ne coûtent rien de plus : `getSpotForecast`
-    est mémoïsé pour la durée de la requête, et `getAllSpotSummaries` vient
-    de les calculer.
+    Les prévisions complètes — tous les créneaux, les marées — pour le direct.
+    Elles ne coûtent rien de plus : `getSpotForecast` est mémoïsé pour la
+    durée de la requête, et `getAllSpotSummaries` vient de les calculer.
   */
-  const previsions = await Promise.all(
-    summaries.map(async (summary) => ({
-      spot: summary.spot,
-      days: (await getSpotForecast(summary.spot, now)).days,
-    })),
+  const forecasts = await Promise.all(
+    summaries.map((summary) => getSpotForecast(summary.spot, now)),
   );
 
   /*
-    ─── Tout est groupé PAR PAYS ────────────────────────────────────────────
+    ─── Tout le direct est rendu PAR PAYS, un seul visible ──────────────────
 
-    L'accueil classait les créneaux sur le catalogue entier. Pour quelqu'un
-    qui pêche en Bretagne, cela donnait régulièrement trois spots marocains :
-    exacts, bien classés, et sans le moindre usage. On rend donc les trois
-    pays, chacun dans son bloc `data-pays`, et le sélecteur masque les
-    autres. Sans JavaScript, les trois restent lisibles sous leur titre.
+    Chaque bloc `data-pays` est rendu pour les trois pays ; le serveur ne
+    laisse visible que la façade par défaut, et le sélecteur remplace ce choix
+    par celui qu'on a retenu. Sans script, la page montre la France ; avec,
+    elle montre votre façade. Aucune requête, aucun score recalculé côté
+    client.
   */
   const parPays = PAYS.map((pays) => {
-    const slugs = new Set(pays.spots.map((spot) => spot.slug));
-    const previsionsDuPays = previsions.filter((entree) => slugs.has(entree.spot.slug));
-    const resumes = summaries.filter((summary) => slugs.has(summary.spot.slug));
-    const meilleur = resumes.find((summary) => summary.current?.score.value != null) ?? null;
-
-    return {
-      pays,
-      moments: momentsFor(previsionsDuPays, now),
-      option: {
-        slug: pays.slug,
-        nom: pays.nom,
-        spots: pays.spots.length,
-        meilleur: meilleur?.current?.score.value ?? null,
-        meilleurSpot: meilleur?.spot.name ?? null,
-        /*
-          Deux régions nommées, puis le compte de celles qui restent. Trois
-          noms débordaient de la carte et l'ellipse CSS les coupait au milieu
-          d'un mot — « Tanger-Tétoua… » — ce qui cachait en plus combien il
-          en restait.
-        */
-        regions:
-          pays.regions.length <= 2
-            ? pays.regions.join(', ')
-            : `${pays.regions.slice(0, 2).join(', ')} +${pays.regions.length - 2}`,
-        points: pays.spots.map((spot) => ({
-          slug: spot.slug,
-          name: spot.name,
-          lat: spot.lat,
-          lng: spot.lng,
-        })),
-      } satisfies OptionPays,
+    const resume = resumePays(pays, forecasts, now);
+    const fiche = ficheDe(pays.slug);
+    const carte: CartePays = {
+      slug: pays.slug,
+      nom: pays.nom,
+      spots: pays.spots.length,
+      regions:
+        pays.regions.length <= 2
+          ? pays.regions.join(', ')
+          : `${pays.regions.slice(0, 2).join(', ')} +${pays.regions.length - 2}`,
+      accroche: fiche.accroche.split(/(?<=\.)\s/)[0] ?? fiche.accroche,
+      meilleur: resume.meilleur?.current?.score.value ?? null,
+      meilleurSpot: resume.meilleur?.spot.name ?? null,
+      points: pays.spots.map((spot) => ({
+        slug: spot.slug,
+        name: spot.name,
+        lat: spot.lat,
+        lng: spot.lng,
+      })),
     };
+    return { pays, resume, carte };
   });
 
   const coefficients = prochainsCoefficients(now, JOURS_DE_FRISE);
+  const prochainPic = coefficients.find((jour) => jour.pic) ?? null;
+  const lune = moonPhase(now);
 
   /*
     Les contributions publiques récentes. Le dépôt rend des listes vides
@@ -243,6 +232,29 @@ export default async function HomePage() {
     })),
   };
 
+  const faits = [
+    {
+      cle: 'lune',
+      libelle: 'Lune',
+      valeur: moonPhaseName(lune.ageDays),
+      detail: `${Math.round(lune.illuminationPct)} % éclairée`,
+    },
+    {
+      cle: 'vives-eaux',
+      libelle: 'Prochaines vives-eaux',
+      valeur: prochainPic
+        ? formatDayLong(new Date(prochainPic.date), 'Europe/Paris')
+        : 'au-delà de 30 jours',
+      detail: prochainPic ? `coefficient ${prochainPic.coefficient}` : 'aucun pic sous un mois',
+    },
+    {
+      cle: 'catalogue',
+      libelle: 'Catalogue',
+      valeur: `${CATALOGUE.total} spots`,
+      detail: PAYS.map((pays) => pays.nom).join(', '),
+    },
+  ];
+
   return (
     <>
       <script
@@ -250,37 +262,104 @@ export default async function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
 
+      {/*
+        ─── Le héros est un tableau de bord, pas une brochure ─────────────
+        À gauche, ce que le site est, en une phrase, et la recherche. À
+        droite, ce qu'il MONTRE : le meilleur spot de votre façade maintenant,
+        sa marée, sa semaine. Un site de conditions montre des conditions.
+      */}
       <div className="mx-auto w-full max-w-shell px-4 pb-4 pt-8 md:px-8 md:pt-12">
-        <h1 className="max-w-[16ch] font-serif text-h1 font-semibold">
-          Les meilleurs créneaux de pêche en mer, spot par spot
-        </h1>
-        <p className="mt-4 max-w-prose text-body text-fg-muted">
-          Un score sur 10 par tranche de deux heures, sur sept jours. Marée, vent, houle, lune et
-          lumière, pondérés et expliqués — pour choisir quand y aller, pas pour vous promettre une
-          prise. Surfcasting, lancer-ramener, rockfishing : chaque spot indique ce qui s’y pratique.
-        </p>
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,6fr)_minmax(0,6fr)] lg:gap-12">
+          <div>
+            <p className="label">Pêche du bord · {CATALOGUE.etendue}</p>
+            <h1 className="mt-3 max-w-[16ch] font-serif text-display font-semibold md:text-display-lg">
+              Les meilleurs créneaux de pêche en mer, spot par spot
+            </h1>
+            <p className="mt-5 max-w-prose text-read text-fg-muted">
+              Un score sur 10 par tranche de deux heures, sur sept jours, pour {CATALOGUE.total}{' '}
+              spots. {FACTOR_COUNT_WORD} facteurs pondérés et expliqués — marée, vent, houle, lune,
+              pression, température de l’eau, lumière — pour choisir quand y aller, pas pour vous
+              promettre une prise.
+            </p>
 
-        <div className="mt-6 max-w-[42rem]">
-          <SpotSearch spots={searchable} />
+            <div className="mt-6 max-w-[42rem]">
+              <SpotSearch spots={searchable} />
+            </div>
+
+            <dl className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {faits.map((fait) => (
+                <div key={fait.cle} className="border-l-2 border-edge pl-3">
+                  <dt className="text-meta text-fg-muted">{fait.libelle}</dt>
+                  <dd className="mt-0.5 font-serif text-h3 font-semibold text-fg">{fait.valeur}</dd>
+                  <dd className="text-meta nums text-fg-muted" data-numeric="">
+                    {fait.detail}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          <div>
+            <div className="mb-4">
+              <SelecteurFacade options={PAYS.map((pays) => ({ slug: pays.slug, nom: pays.nom }))} />
+            </div>
+            {parPays.map(({ pays, resume }) => (
+              <div key={pays.slug} data-pays={pays.slug} hidden={pays.slug !== FACADE_PAR_DEFAUT}>
+                <VueDirect resume={resume} now={now} />
+              </div>
+            ))}
+          </div>
         </div>
 
-        <div className="mt-6">
+        <div className="mt-8">
           <DemoDataNotice sources={sources} />
         </div>
       </div>
 
       <Section
-        title="Où pêchez-vous ?"
-        lead="Choisissez une façade : le reste de la page s’y limite, et votre choix est retenu pour la prochaine visite. Les points de chaque vignette sont les spots, à leurs vraies coordonnées."
+        title="Ce soir, demain matin"
+        lead="Le meilleur créneau de chacune des deux fenêtres où l’on pêche réellement du bord, sur votre façade. Un créneau en conditions dangereuses n’y figure jamais, quel que soit son score."
       >
-        <ChoixPays options={parPays.map((entree) => entree.option)} />
+        {parPays.map(({ pays, resume }) => (
+          <div key={pays.slug} data-pays={pays.slug} hidden={pays.slug !== FACADE_PAR_DEFAUT}>
+            {resume.moments.length === 0 ? (
+              <p className="max-w-prose text-body text-fg-muted">
+                Aucun créneau praticable {prepositionDe(pays)} sur ces deux fenêtres : soit elles
+                sont passées, soit les conditions y sont dangereuses. Le calendrier complet reste
+                sur chaque page de spot.
+              </p>
+            ) : (
+              <>
+                <ul className="grid gap-4 sm:grid-cols-2">
+                  {resume.moments.map((moment) => (
+                    <li key={moment.cle}>
+                      <CarteMoment moment={moment} />
+                    </li>
+                  ))}
+                </ul>
+                <PourquoiCeScore moment={resume.moments[0]!} />
+              </>
+            )}
+          </div>
+        ))}
+      </Section>
 
-        <div className="mt-8 max-w-prose">
+      <Section
+        title="Trois pays, trois façons de pêcher"
+        lead="La marée, la saison, la règle et le danger changent d’un pays à l’autre. Chaque page pays dit ce qui change — et montre ses spots en direct."
+      >
+        <CartesPays cartes={parPays.map((entree) => entree.carte)} />
+
+        <div className="mt-6">
+          <ButtonLink href="/spots" variant="secondary">
+            Tous les {CATALOGUE.total} spots, filtrables
+          </ButtonLink>
+        </div>
+
+        <div className="mt-10 max-w-prose">
           {/*
-            « Autour de moi » remonte ici depuis /spots : c'est la question la
-            plus fréquente, et elle ne demande rien tant qu'on ne clique pas.
-            La position reste dans le navigateur — aucun point d'accès serveur
-            n'accepterait de la recevoir.
+            « Autour de moi » : la position reste dans le navigateur — aucun
+            point d'accès serveur n'accepterait de la recevoir.
           */}
           <NearbySpots
             spots={summaries.map((summary) => ({
@@ -292,47 +371,6 @@ export default async function HomePage() {
               lng: summary.spot.lng,
             }))}
           />
-        </div>
-      </Section>
-
-      <Section
-        title="Ce soir, demain matin"
-        lead="Le meilleur créneau de chacune des deux fenêtres où l’on pêche réellement du bord — pas un classement du catalogue. Un créneau en conditions dangereuses n’y figure jamais, quel que soit son score."
-      >
-        <div className="space-y-8">
-          {parPays.map(({ pays, moments }) => (
-            <div key={pays.slug} data-pays={pays.slug}>
-              <h3 className="text-h3 font-semibold font-600" data-titre-pays="">
-                {pays.nom}
-              </h3>
-
-              {moments.length === 0 ? (
-                <p className="mt-3 max-w-prose text-body text-fg-muted">
-                  Aucun créneau praticable {pays.nom === 'France' ? 'en France' : `— ${pays.nom}`}{' '}
-                  sur ces deux fenêtres : soit elles sont passées, soit les conditions y sont
-                  dangereuses. Le calendrier complet reste sur chaque page de spot.
-                </p>
-              ) : (
-                <>
-                  <ul className="mt-3 grid gap-4 sm:grid-cols-2">
-                    {moments.map((moment) => (
-                      <li key={moment.cle}>
-                        <CarteMoment moment={moment} />
-                      </li>
-                    ))}
-                  </ul>
-
-                  <PourquoiCeScore moment={moments[0]!} />
-                </>
-              )}
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-8">
-          <ButtonLink href="/spots" variant="secondary">
-            Voir les {CATALOGUE.total} spots
-          </ButtonLink>
         </div>
       </Section>
 
@@ -355,9 +393,7 @@ export default async function HomePage() {
         lead={`${FACTOR_COUNT_WORD} facteurs, pondérés. Le poids compte autant que la note : un excellent score de lumière ne rattrape pas une mauvaise marée.`}
       >
         {/*
-          Une liste pondérée plutôt qu'une rangée de cartes identiques.
-          Quatre cartes côte à côte, c'est la mise en page générique par défaut —
-          et surtout elle rendait les poids indiscernables, alors que l'écart
+          Une liste pondérée plutôt qu'une rangée de cartes identiques : l'écart
           entre 30 % et 5 % est toute l'information de cette section.
 
           ─── Les poids viennent du MOTEUR, ils ne sont plus recopiés ──────
@@ -431,40 +467,5 @@ export default async function HomePage() {
         </div>
       </Section>
     </>
-  );
-}
-
-/**
- * Le détail du calcul du créneau mis en avant, dépliable.
- *
- * ─── Pourquoi ici, et pourquoi replié ─────────────────────────────────────
- *
- * « Faites-nous confiance, c'est 8,4 » est exactement ce que fait un site
- * concurrent. La page d'accueil peut montrer le calcul qui vient de produire
- * le chiffre au-dessus : c'est la démonstration de la promesse, sur une
- * donnée réelle, avant même d'ouvrir une page de spot.
- *
- * Replié dans un `<details>` : déployé, il ferait quarante lignes de tableau
- * à la place du contenu, et il n'a pas besoin de JavaScript pour s'ouvrir.
- */
-function PourquoiCeScore({ moment }: { moment: Moment }) {
-  return (
-    <details className="mt-4 rounded-card border border-edge bg-card px-4 py-2">
-      {/*
-        Le marqueur natif est CONSERVÉ : sans lui, rien n'indique que la ligne
-        s'ouvre, et une ligne cliquable qui ne se signale pas n'est pas
-        cliquée. D'où l'absence de `list-none` — et l'absence de `flex` :
-        donner à un `summary` un `display` autre que `list-item` fait
-        disparaître le triangle, ce qui revient au même. La hauteur de cible
-        vient donc du `py-3`, pas d'un `items-center`.
-      */}
-      <summary className="cursor-pointer py-3 text-body font-600 text-fg marker:text-fg-muted">
-        Pourquoi ce score ? Le détail du calcul pour {moment.spot.name}
-      </summary>
-
-      <div className="mt-4">
-        <ScoreBreakdown score={moment.slot.score} />
-      </div>
-    </details>
   );
 }

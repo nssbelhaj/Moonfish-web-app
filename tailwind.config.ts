@@ -61,6 +61,13 @@ const config: Config = {
         score: ['56px', { lineHeight: '0.95', letterSpacing: '-0.02em', fontWeight: '700' }],
         'score-md': ['34px', { lineHeight: '1', fontWeight: '700' }],
         'score-sm': ['26px', { lineHeight: '1', fontWeight: '700' }],
+        /*
+          Titre d'accueil et de page pays : la seule place où le titre est
+          l'élément le plus grand de l'écran. 30 px (`h1`) est une taille de
+          page intérieure ; sur un héros, elle se lit comme un sous-titre.
+        */
+        display: ['38px', { lineHeight: '1.06', letterSpacing: '-0.015em', fontWeight: '600' }],
+        'display-lg': ['50px', { lineHeight: '1.04', letterSpacing: '-0.02em', fontWeight: '600' }],
         h1: ['30px', { lineHeight: '1.12', fontWeight: '600' }],
         h2: ['21px', { lineHeight: '1.15', fontWeight: '600' }],
         h3: ['17px', { lineHeight: '1.25', fontWeight: '600' }],

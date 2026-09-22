@@ -260,7 +260,7 @@ export const CLIENT_STORAGE: readonly ClientStorageEntry[] = [
     key: 'luna-marea:pays',
     kind: 'localStorage',
     purpose:
-      'Retenir la façade que vous avez choisie sur la page d’accueil — France, Espagne ou Maroc — pour ne pas vous remontrer des spots à deux mille kilomètres à chaque visite. La valeur enregistrée est le nom du pays, et rien d’autre.',
+      'Retenir la façade que vous avez choisie — France, Maroc ou Espagne — pour que la page d’accueil vous montre en direct les spots de ce pays, et pas ceux à deux mille kilomètres. La valeur enregistrée est le nom du pays, et rien d’autre.',
     retention: 'Jusqu’à ce que vous effaciez les données du site dans votre navigateur.',
     consentRequired: false,
     scope: 'always',
@@ -324,10 +324,10 @@ export const CLIENT_STORAGE_WRITE_SITES: readonly StorageWriteSite[] = [
     why: 'Mémorise le dernier cadrage de la carte.',
   },
   {
-    file: 'src/components/accueil/ChoixPays.tsx',
+    file: 'src/lib/facade.ts',
     writes: 1,
     entry: 'luna-marea:pays',
-    why: 'Mémorise la façade choisie sur la page d’accueil.',
+    why: 'Mémorise la façade choisie — depuis le sélecteur de l’accueil ou le bouton d’une page pays, qui passent tous deux par ce fichier.',
   },
   {
     file: 'src/app/global-error.tsx',

@@ -1,5 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { LEGAL_UPDATED } from '@/data/legal';
+import { paysPath } from '@/data/pays';
+import { PAYS } from '@/data/spots';
 import { listGuides } from '@/lib/guides';
 import { spots as spotRepository } from '@/lib/providers';
 import { absoluteUrl, spotPath } from '@/lib/routes';
@@ -31,6 +33,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.2,
     },
   ];
+
+  // Une page par pays : c'est la porte d'entrée « pêche du bord en France »,
+  // et la seule qui dise ce qui change d'un pays à l'autre.
+  const paysPages: MetadataRoute.Sitemap = PAYS.map((pays) => ({
+    url: absoluteUrl(paysPath(pays.slug)),
+    lastModified: now,
+    changeFrequency: 'hourly' as const,
+    priority: 0.9,
+  }));
 
   // Chaque spot expose trois pages réelles, pas trois onglets commutés : elles
   // répondent à des recherches distinctes (« conditions à X », « prévision 7
@@ -74,5 +85,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  return [...staticPages, ...spotPages, ...regionPages, ...guidePages];
+  return [...staticPages, ...paysPages, ...spotPages, ...regionPages, ...guidePages];
 }
