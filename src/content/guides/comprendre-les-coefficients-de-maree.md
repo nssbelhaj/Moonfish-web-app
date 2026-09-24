@@ -45,6 +45,8 @@ Sur un estran plat comme Le Touquet ou Le Dossen, la montante avance plus vite q
 
 La règle pratique tient en une phrase : sur une marée semi-diurne de six heures, l'eau monte environ un douzième du marnage la première heure, deux la deuxième, trois la troisième et la quatrième, puis deux et un. Les deux heures centrales concentrent la moitié de la montée. C'est là qu'on se fait surprendre.
 
+[illustration: regle-des-douziemes]
+
 ## En résumé
 
 Le coefficient dit l'amplitude, pas la qualité. Cherchez la fenêtre autour de la pleine mer ou la descendante installée, visez 70 à 95 quand vous avez le choix, méfiez-vous des extrêmes, et calculez votre heure de repli avant de descendre. Le reste — le vent, la houle, la lumière — se lit par-dessus ce cadre, jamais à sa place.

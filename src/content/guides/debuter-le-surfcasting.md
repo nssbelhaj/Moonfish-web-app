@@ -36,6 +36,8 @@ Trois formes suffisent, en 100, 120 et 150 g :
 
 Le montage qui pêche presque partout est **la ligne à deux empiles** : un corps de 1,20 m de nylon de 50 centièmes, deux dérivations de 30 à 50 cm portant chacune un hameçon, le plomb en bas. Les empiles sont fixées par des émerillons à agrafe ou des perles et stop-float, pour qu'elles tournent librement sans vriller.
 
+[illustration: montage-deux-empiles]
+
 L'hameçon fait la moitié de la pêche. Un **n° 2 à 1/0** en forme *aberdeen* (fin de fer, long de hampe) couvre le bar, la sole, le marbré et la daurade ; un fer fin pique un ver sans le déchirer et pénètre sans effort. Les hameçons de gros diamètre des boîtes « spécial surfcasting » sont souvent trop épais pour ce qu'on pêche réellement.
 
 Un second montage, pour quand ça ne mord pas : **le coulissant à une empile longue** — le plomb coulisse sur le corps de ligne, l'appât se présente naturellement sur 1,50 m de fil fin. C'est le montage de la sole et de la daurade méfiante, par mer plate.

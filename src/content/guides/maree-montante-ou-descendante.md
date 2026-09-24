@@ -19,6 +19,8 @@ La fenêtre la plus productive est **la dernière partie de la montante et l'heu
 
 Sur un poste qui *concentre* l'eau — une baïne, une passe entre deux bancs, un chenal d'estuaire, l'entrée d'une lagune — la descendante est la meilleure phase. Toute l'eau du bassin sort par une ouverture de quelques dizaines de mètres, et avec elle tout ce qu'elle porte. Le poisson se poste en aval, dans le courant, et attend. Sur la côte landaise, l'ouverture d'une baïne à mi-descendante est un poste de premier ordre ; à Oualidia ou à Dakhla, la passe de la lagune à la descendante concentre tout le jeu.
 
+[illustration: baine-montante-descendante]
+
 La descendante est aussi la phase de la **pêche à soutenir depuis la roche** : l'eau qui se retire dégage les têtes de roche, et le sar, la vieille, le lieu viennent fouiller les algues et les crevasses que le courant nettoie.
 
 Ce qu'elle exige en retour : de la vigilance. Sur une plage à baïnes, la descendante est la phase où le courant de sortie emporte un adulte debout ; on ne pêche pas dans l'eau au-dessus du genou. Sur un platier, elle découvre le terrain — et le recouvrira plus vite qu'on ne pense, deux heures après avoir tourné.

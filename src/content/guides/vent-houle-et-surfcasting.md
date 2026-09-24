@@ -13,6 +13,8 @@ Un bulletin annonce « vent de secteur 270 à 20 nœuds ». Cette information, s
 
 Un vent d'ouest est un vent de mer à Lacanau, qui regarde plein ouest. Le même vent d'ouest est un vent de terre à Gatteville, qui regarde le nord-est. Deux spots, une seule direction de vent, deux situations opposées.
 
+[illustration: vent-de-mer-de-terre]
+
 C'est pourquoi Luna Marea calcule et affiche « vent de mer », « vent de travers » ou « vent de terre » plutôt que de vous laisser faire la conversion. Notez au passage la convention : en mer, on nomme un vent par la direction **d'où il vient**, jamais par celle où il va. L'aiguille du compas pointe donc vers l'origine.
 
 ## Ce que fait chaque secteur

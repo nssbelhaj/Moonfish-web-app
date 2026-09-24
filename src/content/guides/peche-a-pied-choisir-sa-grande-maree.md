@@ -22,6 +22,8 @@ Deux précisions que les calendriers oublient souvent :
 
 La règle des douzièmes commande tout : sur les six heures d'une descendante, l'eau baisse d'un douzième du marnage la première heure, deux la deuxième, trois les deux heures suivantes, puis deux et un. Les deux dernières heures avant la basse mer ne font descendre l'eau que d'un quart du marnage — et les deux premières heures après la basse mer ne la font remonter que d'autant.
 
+[illustration: regle-des-douziemes]
+
 Concrètement : descendez **deux heures avant la basse mer**, suivez l'eau en reculant, et pêchez les zones les plus basses **dans l'heure qui encadre l'étale**. C'est une fenêtre de deux à trois heures utiles, pas davantage. Arriver à la basse mer, c'est arriver quand la moitié du temps est passée.
 
 ## Quand remonter, et c'est le point qui compte

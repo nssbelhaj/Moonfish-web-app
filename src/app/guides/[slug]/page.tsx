@@ -4,7 +4,9 @@ import { CATALOGUE } from '@/data/spots';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { GuideCard } from '@/components/guides/GuideCard';
+import { Illustration } from '@/components/guides/illustrations/Illustrations';
 import { getGuide, listGuides } from '@/lib/guides';
+import { decouperIllustrations } from '@/lib/markdown';
 import { absoluteUrl } from '@/lib/routes';
 
 interface RouteParams {
@@ -104,10 +106,21 @@ export default async function GuidePage({ params }: { params: Promise<RouteParam
           `dangerouslySetInnerHTML` est sûr ici : le convertisseur maison échappe
           tout le HTML avant transformation, aucun balisage brut ne passe.
         */}
-        <div
-          className="guide-prose mt-8 max-w-prose font-serif text-[19px]"
-          dangerouslySetInnerHTML={{ __html: guide.html }}
-        />
+        <div className="guide-prose mt-8 max-w-prose font-serif text-[19px]">
+          {/*
+            Le HTML est découpé autour des repères d'illustration, et chaque
+            repère devient un schéma SVG aux couleurs du thème. Le texte
+            entre deux repères reste ce que le convertisseur a produit.
+          */}
+          {decouperIllustrations(guide.html).map((morceau, index) => (
+            <div key={index}>
+              {morceau.html.trim().length > 0 && (
+                <div dangerouslySetInnerHTML={{ __html: morceau.html }} />
+              )}
+              {morceau.illustration !== null && <Illustration nom={morceau.illustration} />}
+            </div>
+          ))}
+        </div>
 
         <footer className="mt-12 border-t border-edge pt-8">
           <p className="text-body text-fg-muted">

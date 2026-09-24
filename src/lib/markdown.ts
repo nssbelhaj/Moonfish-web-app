@@ -89,6 +89,20 @@ export function markdownToHtml(markdown: string): string {
       continue;
     }
 
+    /*
+      Une illustration : `[illustration: montage-deux-empiles]` seule sur sa
+      ligne. Le convertisseur ne sait pas la dessiner — il produit un repère
+      que la page remplace par le composant SVG du même nom, aux couleurs du
+      thème. Un nom inconnu reste un repère vide : la page le dit en dev, et
+      un test refuse tout nom sans dessin.
+    */
+    const illustration = /^\[illustration:\s*([a-z0-9-]+)\s*\]$/.exec(line.trim());
+    if (illustration) {
+      flushAll();
+      output.push(`<!--illustration:${illustration[1]}-->`);
+      continue;
+    }
+
     const heading = /^(#{2,4})\s+(.*)$/.exec(line);
     if (heading) {
       flushAll();
@@ -125,4 +139,28 @@ export function countWords(markdown: string): number {
     .replace(/[#>*`\-[\]()]/g, ' ')
     .split(/\s+/)
     .filter((word) => word.length > 0).length;
+}
+
+/**
+ * Découpe le HTML d'un guide autour de ses repères d'illustration.
+ *
+ * Rend une alternance : un morceau de HTML, un nom d'illustration, un
+ * morceau de HTML… La page rend les morceaux tels quels et remplace chaque
+ * nom par son composant. Sans repère, un seul morceau.
+ */
+export function decouperIllustrations(html: string): { html: string; illustration: string | null }[] {
+  const morceaux: { html: string; illustration: string | null }[] = [];
+  const motif = /<!--illustration:([a-z0-9-]+)-->/g;
+  let dernier = 0;
+  for (const match of html.matchAll(motif)) {
+    morceaux.push({ html: html.slice(dernier, match.index), illustration: match[1] ?? null });
+    dernier = (match.index ?? 0) + match[0].length;
+  }
+  morceaux.push({ html: html.slice(dernier), illustration: null });
+  return morceaux;
+}
+
+/** Les noms d'illustration cités par un markdown, pour les vérifier. */
+export function illustrationsCitees(markdown: string): string[] {
+  return [...markdown.matchAll(/^\[illustration:\s*([a-z0-9-]+)\s*\]$/gm)].map((m) => m[1] ?? '');
 }
