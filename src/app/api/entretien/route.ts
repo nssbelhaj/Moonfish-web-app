@@ -8,6 +8,7 @@ import { databaseEnabled } from '@/lib/db/mysql';
 import { refusExplique } from '@/lib/diagnostic/refus';
 import { RETENTION_MS } from '@/lib/limites';
 import { purgeRateLimits } from '@/lib/providers/mysql/rate-limit';
+import { rafraichirMarees } from '@/lib/providers';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -65,7 +66,23 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // le dit dans la réponse plutôt que de compter des échecs.
     const alerts = mailEnabled() ? await sendOutingAlerts() : null;
 
-    return NextResponse.json({ ok: true, state: 'entretenu', ...purged, limites, reinitialisations, alerts });
+    /*
+      Les tables de marée dont la couverture devient juste sont rafraîchies
+      ICI, à l'avance, dans le budget du jour : en régime établi c'est cette
+      tâche qui fait toutes les requêtes Stormglass, et les pages n'en font
+      aucune. `null` quand rien n'est conservé (pas de clé, ou mode simulé).
+    */
+    const marees = await rafraichirMarees();
+
+    return NextResponse.json({
+      ok: true,
+      state: 'entretenu',
+      ...purged,
+      limites,
+      reinitialisations,
+      alerts,
+      marees,
+    });
   } catch (error) {
     console.error('[entretien] purge impossible', error);
     return NextResponse.json(

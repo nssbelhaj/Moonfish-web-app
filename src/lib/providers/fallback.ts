@@ -1,4 +1,5 @@
 import type { MarinePoint, Spot, TideEvent } from '@/data/schemas';
+import { BudgetEpuise } from './marees/persistant';
 import type { DateRange, SourceMeta, Sourced, TideProvider, WeatherProvider } from './types';
 
 /**
@@ -70,12 +71,33 @@ export class TideProviderWithFallback implements TideProvider {
     try {
       return await this.primary.getTideEvents(spot, range);
     } catch (error) {
+      const degraded = await this.fallback.getTideEvents(spot, range);
+
+      /*
+        Budget du jour épuisé : ce n'est PAS une panne, c'est le remplissage
+        prévu des tables — huit points par jour, une semaine pour le
+        catalogue. Le spot est simulé et le dit, mais sans le voyant
+        « Interrompu », réservé aux vraies coupures : allumé sur trente-cinq
+        pages pendant une semaine, il cesserait d'être regardé le jour où il
+        compterait.
+      */
+      if (error instanceof BudgetEpuise) {
+        console.info(`[marées] ${spot.slug} : ${error.message}`);
+        return {
+          ...degraded,
+          source: {
+            name: `Marées — simulées en attendant la table réelle`,
+            kind: 'simulated',
+            precision:
+              'Le budget journalier de requêtes au fournisseur est épuisé ; la table réelle de ce spot sera demandée par la prochaine tâche d’entretien. D’ici là, les horaires affichés sont générés. Consultez maree.shom.fr.',
+          },
+        };
+      }
+
       console.error(
         `[marées] ${this.primary.source.name} indisponible pour ${spot.slug}, repli sur les marées simulées.`,
         error,
       );
-
-      const degraded = await this.fallback.getTideEvents(spot, range);
 
       return {
         ...degraded,

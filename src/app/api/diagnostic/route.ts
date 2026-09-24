@@ -7,6 +7,9 @@ import { estProprietaire } from '@/lib/auth/proprietaire';
 import { etatMigrations } from '@/lib/diagnostic/migrations';
 import { refusExplique } from '@/lib/diagnostic/refus';
 import { essaiBase } from '@/lib/diagnostic/essai-base';
+import { etatDesMareesConservees } from '@/lib/diagnostic/marees-conservees';
+import { databaseEnabled } from '@/lib/db/mysql';
+import { MysqlTideTableStore } from '@/lib/providers/mysql/marees';
 import { essaiPhotos } from '@/lib/diagnostic/essai-photos';
 import { emplacementsPossibles } from '@/lib/diagnostic/emplacements';
 import { auditPhotos } from '@/lib/diagnostic/audit-photos';
@@ -67,6 +70,23 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   */
   points.push(await essaiBase(process.env.DATABASE_URL));
   points.push(await etatMigrations());
+
+  /*
+    L'état des tables de marée conservées, quand elles le sont : c'est la
+    réponse à « pourquoi telle page affiche encore des marées simulées ».
+  */
+  if (
+    databaseEnabled() &&
+    process.env.STORMGLASS_API_KEY?.trim() &&
+    process.env.TIDE_PROVIDER !== 'mock'
+  ) {
+    points.push(
+      await etatDesMareesConservees(
+        new MysqlTideTableStore(),
+        SPOTS.map((spot) => spot.slug),
+      ),
+    );
+  }
 
   /*
     Un octet écrit, puis retiré. La configuration disait « les photos vont

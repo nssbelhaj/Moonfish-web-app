@@ -18,6 +18,9 @@ import type {
 } from './types';
 import { accountsEnabled } from '@/lib/auth/config';
 import { databaseEnabled } from '@/lib/db/mysql';
+import { budgetStormglassEnBase, REQUETES_PAR_JOUR } from './marees/budget';
+import { PersistentTideProvider, type BilanRafraichissement } from './marees/persistant';
+import { MysqlTideTableStore } from './mysql/marees';
 
 /**
  * ═══════════════════════════════════════════════════════════════════════
@@ -51,6 +54,9 @@ import { databaseEnabled } from '@/lib/db/mysql';
  * qui annonce des marées simulées qu'un site qui échoue à se construire faute
  * d'une variable d'environnement.
  */
+/** Le fournisseur persistant, s'il existe : l'entretien s'en sert pour rafraîchir à l'avance. */
+let persistant: PersistentTideProvider | null = null;
+
 function buildTideProvider(): TideProvider {
   const mock = new MockTideProvider();
   const apiKey = process.env.STORMGLASS_API_KEY?.trim();
@@ -64,9 +70,24 @@ function buildTideProvider(): TideProvider {
     ...(process.env.STORMGLASS_URL ? { baseUrl: process.env.STORMGLASS_URL } : {}),
   });
 
+  /*
+    ─── Avec une base, les marées sont CONSERVÉES ───────────────────────────
+
+    Le fournisseur persistant lit les tables en base et ne demande Stormglass
+    que lorsque la couverture manque, dans un budget journalier compté en
+    base lui aussi. C'est ce qui rend le palier gratuit suffisant pour tout le
+    catalogue : quarante-trois points, une fenêtre de deux semaines, six ou
+    sept requêtes par jour. Sans base, on garde le fournisseur direct et son
+    cache de `fetch` — et `TIDE_REAL_SPOTS` redevient nécessaire.
+  */
+  const primary: TideProvider = databaseEnabled()
+    ? new PersistentTideProvider(real, new MysqlTideTableStore(), budgetStormglassEnBase())
+    : real;
+  if (primary instanceof PersistentTideProvider) persistant = primary;
+
   // Un repli enveloppe TOUJOURS le fournisseur réel : une panne réseau ne doit
   // ni casser le build ni rendre douze pages en 500.
-  const withFallback = new TideProviderWithFallback(real, mock);
+  const withFallback = new TideProviderWithFallback(primary, mock);
 
   // `TIDE_REAL_SPOTS` borne la dépense quand le quota est petit. Vide = tous les
   // spots passent par le fournisseur réel, ce qui reste le comportement par
@@ -78,6 +99,16 @@ function buildTideProvider(): TideProvider {
 }
 
 export const tides: TideProvider = buildTideProvider();
+
+/**
+ * Rafraîchit à l'avance les tables de marée dont la couverture devient
+ * juste. Appelé par `/api/entretien`. `null` quand aucune table n'est
+ * conservée — pas de clé, mode simulé forcé, ou pas de base.
+ */
+export async function rafraichirMarees(limite = REQUETES_PAR_JOUR): Promise<BilanRafraichissement | null> {
+  if (persistant === null) return null;
+  return persistant.rafraichir(await spots.list(), limite);
+}
 
 /**
  * Météo marine : Open-Meteo est branché.

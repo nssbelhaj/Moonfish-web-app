@@ -218,6 +218,33 @@ normale :
 Les prévisions de marée sont de l'astronomie : elles ne se réactualisent pas
 d'heure en heure. Un cache long n'est pas un compromis, c'est une durée juste.
 
+**Avec une base, tout le catalogue tient dans le palier gratuit.** Depuis la
+migration 0008, les tables de marée sont *conservées* (`tide_tables`) par le
+fournisseur persistant (`src/lib/providers/marees/persistant.ts`) :
+
+- chaque point — les 42 spots et Brest — est demandé sur une **fenêtre de
+  quatorze jours**, et n'est redemandé que lorsque sa couverture ne suffit
+  plus aux sept jours affichés, soit tous les six ou sept jours ;
+- la **tâche d'entretien** rafraîchit à l'avance les points les moins
+  couverts, Brest d'abord, dans un **budget de huit requêtes par jour** compté
+  en base (`rate_limits`, seau `stormglass`) — en régime établi, ce sont les
+  seules requêtes qui partent, et les pages n'en font aucune ;
+- au rendu, une table qui couvre est servie sans requête ; une table qui
+  manque déclenche une requête si le budget le permet, sinon le repli simulé,
+  annoncé comme tel — **jamais** une marée réelle tronquée ;
+- les bornes enregistrées sont celles *observées* dans la réponse, pas celles
+  demandées : un fournisseur qui tronque se voit dans `/api/diagnostic`
+  (« Tables de marée conservées »).
+
+Un test simule soixante jours d'entretien quotidien sur les 42 spots et
+vérifie que la moyenne reste sous huit requêtes par jour. `TIDE_REAL_SPOTS`
+reste utile sans base, et devient inutile avec.
+
+Un détail de déploiement : le *build* précède le démarrage, donc les
+migrations. Sur une base neuve, le premier build ne trouve pas `tide_tables`
+et rend des marées simulées ; la régénération horaire les remplace dès que la
+table existe. Ce n'est pas une panne, et le journal le dit.
+
 **Sans `TIDE_REAL_SPOTS`, la panne est SILENCIEUSE** : les premiers appels
 passent, les suivants sont refusés pour dépassement, et le repli — qui existe
 pour qu'une coupure réseau ne casse pas le build — les rattrape tous. On voit

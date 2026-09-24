@@ -68,9 +68,13 @@ jour :
 curl -fsS -H "Authorization: Bearer VOTRE_CRON_SECRET" https://votre-domaine/api/entretien
 ```
 
-Elle purge les sessions et les liens de connexion périmés, puis envoie les
+Elle purge les sessions et les liens de connexion périmés, envoie les
 **alertes de sortie** des 36 prochaines heures — un courriel par sortie, jamais
-deux. Sans base configurée, la route répond `{"ok":true,"state":"sans-base"}`
+deux — puis **rafraîchit les tables de marée** dont la couverture devient
+juste, huit points par jour au plus (`"marees"` dans la réponse dit lesquels).
+C'est elle qui fait tenir les 42 spots dans le palier gratuit de Stormglass :
+sans passage quotidien, les tables expirent une à une et les spots repassent
+en marées simulées, annoncées comme telles. Sans base configurée, la route répond `{"ok":true,"state":"sans-base"}`
 et ne fait rien ; sans courriel configuré, `"alerts": null`.
 
 **Une fois par jour suffit, mais l'heure compte un peu** : une sortie prévue le

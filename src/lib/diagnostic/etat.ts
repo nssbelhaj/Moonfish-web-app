@@ -353,7 +353,7 @@ export function diagnostiquer({ env, buildStamp, spotCount, spotSlugs, uploadsDi
                 constat: `TIDE_REAL_SPOTS contient ${inconnus.length} nom(s) qui ne correspondent à aucun spot : ${inconnus.map((b) => `« ${b} »`).join(', ')}. Les ${bornes.length - inconnus.length} autre(s) reçoivent des marées réelles.`,
                 remede: `Corrigez ces noms : les slugs valides sont ceux des adresses de spot, par exemple ${spotSlugs.slice(0, 3).join(', ')}.`,
               }
-        : bornes.length === 0 && spotCount > 8
+        : bornes.length === 0 && spotCount > 8 && !presence(env, 'DATABASE_URL')
           ? {
               sujet: 'Marées',
               etat: 'attention',
@@ -366,7 +366,9 @@ export function diagnostiquer({ env, buildStamp, spotCount, spotSlugs, uploadsDi
               etat: 'ok',
               constat:
                 bornes.length === 0
-                  ? `Marées réelles pour les ${spotCount} spots.`
+                  ? presence(env, 'DATABASE_URL')
+                    ? `Marées réelles pour les ${spotCount} spots, conservées en base : chaque spot se rafraîchit tous les six ou sept jours, dans un budget de huit requêtes par jour. Les tables se remplissent au fil des tâches d’entretien — comptez une semaine pour couvrir tout le catalogue.`
+                    : `Marées réelles pour les ${spotCount} spots.`
                   : `Marées réelles pour ${bornes.length} spot(s) : ${bornes.join(', ')}. Les autres restent simulés et l’annoncent.`,
               remede: null,
             },

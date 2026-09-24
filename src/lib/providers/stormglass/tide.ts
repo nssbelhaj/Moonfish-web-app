@@ -43,6 +43,67 @@ export function canonicalRange(range: DateRange): DateRange {
   return { from, to };
 }
 
+/**
+ * Des extremums bruts aux `TideEvent` du site : le coefficient de chaque
+ * marée vient de la table de Brest, jamais du marnage local.
+ *
+ * Fonction PURE, partagée par le fournisseur direct et par le fournisseur
+ * persistant : la conversion ne doit exister qu'une fois, sinon deux chemins
+ * finiraient par calculer deux coefficients pour la même marée.
+ */
+export function toTideEvents(
+  spotExtremes: readonly TideExtreme[],
+  brestExtremes: readonly TideExtreme[],
+  range: DateRange,
+): TideEvent[] {
+  const table: CoefficientPoint[] = coefficientTable(brestExtremes);
+  if (table.length === 0) {
+    throw new StormglassError('Aucun coefficient calculable : extremums de Brest inexploitables.');
+  }
+
+  const events: TideEvent[] = [];
+
+  for (const extreme of spotExtremes) {
+    const time = new Date(extreme.time);
+    if (Number.isNaN(time.getTime())) continue;
+    if (time.getTime() < range.from.getTime() || time.getTime() >= range.to.getTime()) continue;
+
+    const coefficient = coefficientAt(time, table);
+    if (coefficient === null) continue;
+
+    const parsed = tideEventSchema.safeParse({
+      time: time.toISOString(),
+      type: extreme.type,
+      heightM: Math.round(extreme.heightM * 100) / 100,
+      coefficient,
+    });
+
+    if (parsed.success) events.push(parsed.data);
+  }
+
+  return events.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+}
+
+/**
+ * Une prévision tronquée afficherait des journées vides sans rien expliquer.
+ * On exige donc que la partie gratuite du produit soit entièrement couverte,
+ * quitte à basculer franchement sur le repli si elle ne l'est pas.
+ */
+export function assertCoverage(events: readonly TideEvent[], range: DateRange, label: string): void {
+  if (events.length < 4) {
+    throw new StormglassError(`Trop peu d'extremums renvoyés pour ${label}.`);
+  }
+
+  const required = range.from.getTime() + MIN_COVERAGE_DAYS * 86_400_000;
+  const last = events.reduce((max, event) => Math.max(max, new Date(event.time).getTime()), 0);
+
+  if (last < required) {
+    throw new StormglassError(
+      `Couverture insuffisante pour ${label} : ${MIN_COVERAGE_DAYS} jours attendus au minimum.`,
+    );
+  }
+}
+
 export interface StormglassOptions {
   fetchImpl?: typeof fetch;
   baseUrl?: string;
@@ -104,7 +165,7 @@ export class StormglassTideProvider implements TideProvider {
 
   async getTideEvents(spot: Spot, range: DateRange): Promise<Sourced<TideEvent[]>> {
     const [spotExtremes, brestExtremes] = await Promise.all([
-      this.fetchExtremes(spot.lat, spot.lng, range, spot.slug),
+      this.extremes(spot.lat, spot.lng, range, spot.slug),
       // Brest est demandé sur une fenêtre CANONIQUE, indépendante du spot.
       //
       // Elle était auparavant celle du spot, donc calée sur SON jour local :
@@ -113,72 +174,17 @@ export class StormglassTideProvider implements TideProvider {
       // surtout deux tables de coefficients pour un chiffre qui, par
       // définition, ne dépend que de l'instant. Une seule URL pour les douze
       // spots : le cache de `fetch` la sert une fois par jour, pas par fuseau.
-      this.fetchExtremes(
-        BREST_REFERENCE.lat,
-        BREST_REFERENCE.lng,
-        canonicalRange(range),
-        'brest',
-      ),
+      this.extremes(BREST_REFERENCE.lat, BREST_REFERENCE.lng, canonicalRange(range), 'brest'),
     ]);
 
-    const table: CoefficientPoint[] = coefficientTable(brestExtremes);
-    if (table.length === 0) {
-      throw new StormglassError('Aucun coefficient calculable : extremums de Brest inexploitables.');
-    }
+    const events = toTideEvents(spotExtremes, brestExtremes, range);
+    assertCoverage(events, range, spot.slug);
 
-    const events: TideEvent[] = [];
-
-    for (const extreme of spotExtremes) {
-      const time = new Date(extreme.time);
-      if (Number.isNaN(time.getTime())) continue;
-      if (time.getTime() < range.from.getTime() || time.getTime() >= range.to.getTime()) continue;
-
-      const coefficient = coefficientAt(time, table);
-      if (coefficient === null) continue;
-
-      const parsed = tideEventSchema.safeParse({
-        time: time.toISOString(),
-        type: extreme.type,
-        heightM: Math.round(extreme.heightM * 100) / 100,
-        coefficient,
-      });
-
-      if (parsed.success) events.push(parsed.data);
-    }
-
-    this.assertCoverage(events, range, spot.slug);
-
-    return {
-      data: events.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime()),
-      source: this.source,
-      refreshedAt: new Date().toISOString(),
-    };
+    return { data: events, source: this.source, refreshedAt: new Date().toISOString() };
   }
 
-  /**
-   * Une prévision tronquée afficherait des journées vides sans rien expliquer.
-   * On exige donc que la partie gratuite du produit soit entièrement couverte,
-   * quitte à basculer franchement sur le repli si elle ne l'est pas.
-   */
-  private assertCoverage(events: readonly TideEvent[], range: DateRange, label: string): void {
-    if (events.length < 4) {
-      throw new StormglassError(`Trop peu d'extremums renvoyés pour ${label}.`);
-    }
-
-    const required = range.from.getTime() + MIN_COVERAGE_DAYS * 86_400_000;
-    const last = events.reduce(
-      (max, event) => Math.max(max, new Date(event.time).getTime()),
-      0,
-    );
-
-    if (last < required) {
-      throw new StormglassError(
-        `Couverture insuffisante pour ${label} : ${MIN_COVERAGE_DAYS} jours attendus au minimum.`,
-      );
-    }
-  }
-
-  private async fetchExtremes(
+  /** Les extremums bruts d'un point, tels que le fournisseur les rend. Une requête. */
+  async extremes(
     lat: number,
     lng: number,
     range: DateRange,

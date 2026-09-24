@@ -112,6 +112,11 @@ export function tideSpotsWarning(
  *
  * Le seuil est volontairement bas : au-delà d'une poignée de spots, un palier
  * gratuit ne suit plus, quel que soit le fournisseur.
+ *
+ * Tout ceci ne vaut que SANS base. Avec une base, les tables de marée sont
+ * conservées (`marees/persistant.ts`) et la dépense est bornée par un budget
+ * journalier : le catalogue entier tient dans le palier gratuit, et cet
+ * avertissement se tait.
  */
 export const BUDGET_SANS_LIMITE_MAX_SPOTS = 8;
 
@@ -121,6 +126,9 @@ export function tideBudgetWarning(
 ): string | null {
   if (!env['STORMGLASS_API_KEY']?.trim()) return null;
   if (env['TIDE_PROVIDER'] === 'mock') return null;
+  // Avec une base, les tables de marée sont conservées et la dépense est
+  // bornée par un budget journalier : la liste n'est plus nécessaire.
+  if (env['DATABASE_URL']?.trim()) return null;
   if (parseAllowedSpots(env['TIDE_REAL_SPOTS']).length > 0) return null;
   if (spotCount <= BUDGET_SANS_LIMITE_MAX_SPOTS) return null;
 
