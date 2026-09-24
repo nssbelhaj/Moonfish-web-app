@@ -106,16 +106,21 @@ export default async function GuidePage({ params }: { params: Promise<RouteParam
           `dangerouslySetInnerHTML` est sûr ici : le convertisseur maison échappe
           tout le HTML avant transformation, aucun balisage brut ne passe.
         */}
-        <div className="guide-prose mt-8 max-w-prose font-serif text-[19px]">
+        <div className="mt-8 max-w-prose text-[19px]">
           {/*
             Le HTML est découpé autour des repères d'illustration, et chaque
-            repère devient un schéma SVG aux couleurs du thème. Le texte
-            entre deux repères reste ce que le convertisseur a produit.
+            repère devient une planche SVG aux couleurs du thème. Le texte
+            entre deux repères reste ce que le convertisseur a produit, et
+            chaque morceau porte lui-même les styles de prose : la planche,
+            entre deux morceaux, garde sa mise en page à elle.
           */}
           {decouperIllustrations(guide.html).map((morceau, index) => (
             <div key={index}>
               {morceau.html.trim().length > 0 && (
-                <div dangerouslySetInnerHTML={{ __html: morceau.html }} />
+                <div
+                  className="guide-prose font-serif text-[19px]"
+                  dangerouslySetInnerHTML={{ __html: morceau.html }}
+                />
               )}
               {morceau.illustration !== null && <Illustration nom={morceau.illustration} />}
             </div>
