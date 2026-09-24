@@ -25,9 +25,9 @@ export function VueDirect({ resume, now }: { resume: ResumePays; now: Date }) {
   if (meilleur === null || meilleur.current === null) {
     return (
       <div className="surface p-4">
-        <p className="text-body font-600">Aucun score calculable pour l’instant {pays.nom}.</p>
+        <p className="text-body font-600">Aucun score calculable pour l’instant — {pays.nom}.</p>
         <p className="mt-2 max-w-prose text-body text-fg-muted">
-          Soit tous les spots du pays sont en conditions dangereuses, soit les fournisseurs n’ont
+          Soit tous les spots sont en conditions dangereuses, soit les fournisseurs n’ont
           rien rendu. La page de chaque spot dit lequel des deux.
         </p>
       </div>

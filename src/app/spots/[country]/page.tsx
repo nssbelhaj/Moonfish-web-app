@@ -15,6 +15,7 @@ import { SpotCard } from '@/components/spot/SpotCard';
 import { ButtonLink } from '@/components/ui/Button';
 import { Section } from '@/components/ui/Section';
 import { especesPhares, ficheDe, paysDe, paysPath, prepositionDe } from '@/data/pays';
+import { regionPath } from '@/data/regions';
 import { PAYS } from '@/data/spots';
 import { collectSources, getSpotForecast, getSpotSummary, referenceNow } from '@/lib/forecast';
 import { prochainsCoefficients } from '@/lib/forecast/coefficients';
@@ -204,7 +205,12 @@ export default async function PaysPage({ params }: { params: Promise<RouteParams
           {parRegion.map(({ region, resumes }) => (
             <div key={region}>
               <h3 className="font-serif text-h2 font-semibold">
-                {region}{' '}
+                <Link
+                  href={regionPath(pays.slug, resumes[0]?.spot.regionSlug ?? '')}
+                  className="underline decoration-dotted underline-offset-4"
+                >
+                  {region}
+                </Link>{' '}
                 <span className="text-body font-400 text-fg-muted nums" data-numeric="">
                   · {resumes.length} spot{resumes.length > 1 ? 's' : ''}
                 </span>

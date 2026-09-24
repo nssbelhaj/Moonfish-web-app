@@ -6,6 +6,7 @@ import { FavoriteButton } from '@/components/account/FavoriteButton';
 import { NoteCompacte } from '@/components/contributions/NoteSpot';
 import { SafetyBanner } from '@/components/spot/SafetyBanner';
 import { ficheDe, paysPath } from '@/data/pays';
+import { regionPath } from '@/data/regions';
 import { BOTTOM_LABELS, EXPOSURE_LABELS, TECHNIQUE_LABELS } from '@/data/spots';
 import { shelteredNearby } from '@/lib/geo';
 import { contributions, spots as spotRepository } from '@/lib/providers';
@@ -149,7 +150,7 @@ export default async function SpotLayout({
           </Link>
           {' / '}
           <Link
-            href={`/spots?region=${spot.regionSlug}`}
+            href={regionPath(spot.countrySlug, spot.regionSlug)}
             className="underline decoration-dotted underline-offset-4"
           >
             {spot.regionName}

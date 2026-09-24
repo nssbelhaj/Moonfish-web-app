@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { LEGAL_UPDATED } from '@/data/legal';
 import { paysPath } from '@/data/pays';
+import { REGIONS, regionPath } from '@/data/regions';
 import { PAYS } from '@/data/spots';
 import { listGuides } from '@/lib/guides';
 import { spots as spotRepository } from '@/lib/providers';
@@ -68,15 +69,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ]);
 
-  // Les combinaisons de filtres réellement peuplées sont indexables : ce sont
-  // des pages de destination utiles (« spots de surfcasting en Bretagne »).
-  const regionPages: MetadataRoute.Sitemap = [
-    ...new Set(allSpots.map((spot) => spot.regionSlug)),
-  ].map((regionSlug) => ({
-    url: absoluteUrl(`/spots?region=${regionSlug}`),
+  // Une page par région : la porte d'entrée « pêche du bord en Bretagne »,
+  // avec sa fiche, ses spots en direct et ses moments. Elle remplace le
+  // filtre `/spots?region=` qui figurait ici — un filtre n'est pas une page.
+  const regionPages: MetadataRoute.Sitemap = REGIONS.map((region) => ({
+    url: absoluteUrl(regionPath(region.pays.slug, region.slug)),
     lastModified: now,
-    changeFrequency: 'weekly',
-    priority: 0.6,
+    changeFrequency: 'hourly' as const,
+    priority: 0.8,
   }));
 
   const guidePages: MetadataRoute.Sitemap = guides.map((guide) => ({
