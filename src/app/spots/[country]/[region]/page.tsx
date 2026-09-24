@@ -7,7 +7,7 @@ import { PourquoiCeScore } from '@/components/accueil/PourquoiCeScore';
 import { DemoDataNotice } from '@/components/data/DemoDataNotice';
 import { TideCoverageDetail } from '@/components/data/TideCoverageDetail';
 import { VueDirect } from '@/components/direct/VueDirect';
-import { ConstellationPays } from '@/components/pays/ConstellationPays';
+import { CarteStatique } from '@/components/carte/CarteStatique';
 import { SpotCard } from '@/components/spot/SpotCard';
 import { ButtonLink } from '@/components/ui/Button';
 import { Section } from '@/components/ui/Section';
@@ -163,14 +163,13 @@ export default async function RegionPage({ params }: { params: Promise<RoutePara
             </div>
           </div>
 
-          <figure className="surface p-4">
-            <div className="mx-auto max-w-[360px]">
-              <ConstellationPays points={points} label={`Les spots de la région ${region.nom}, cliquables`} />
-            </div>
-            <figcaption className="card-source mt-3">
-              Chaque point est un spot, à ses vraies coordonnées, teinté par son score du moment.
-            </figcaption>
-          </figure>
+          <div className="surface p-3">
+            <CarteStatique points={points} label={`Les spots de la région ${region.nom}, cliquables`} tuilesMax={9} ratio={1.1} />
+            <p className="card-source mt-3">
+              Chaque point est un spot, teinté par son score du moment : cliquez-en un. Carte de
+              repérage — elle ne remplace pas une carte marine.
+            </p>
+          </div>
         </div>
 
         <div className="mt-6">

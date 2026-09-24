@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { paysPath } from '@/data/pays';
 import { formatScore } from '@/lib/score-display';
 
-import { MiniCarte, type PointCarte } from './MiniCarte';
+import { CarteStatique, type PointCarte } from '@/components/carte/CarteStatique';
 
 export interface CartePays {
   slug: string;
@@ -26,8 +26,9 @@ export interface CartePays {
  * l'accueil est devenu un sélecteur à part, plus haut. Une carte qui a l'air
  * d'un lien et qui ne fait que masquer du contenu trompe deux fois.
  *
- * La vignette n'est pas une illustration : ce sont les spots du pays, à leurs
- * vraies coordonnées, et le littoral apparaît tout seul.
+ * La vignette est une vraie carte — deux tuiles OpenStreetMap par notre
+ * proxy — avec les spots dessus. La constellation sans fond qui la précédait
+ * demandait au lecteur de deviner la côte.
  */
 export function CartesPays({ cartes }: { cartes: readonly CartePays[] }) {
   return (
@@ -39,8 +40,15 @@ export function CartesPays({ cartes }: { cartes: readonly CartePays[] }) {
             className="surface tappable relative flex h-full flex-col gap-4 p-5 hover:bg-surface-2"
           >
             <div className="flex items-start gap-4">
-              <span className="h-24 w-24 shrink-0 rounded-inner bg-surface-2 p-1.5">
-                <MiniCarte points={pays.points} label={`Les spots ${pays.nom}`} />
+              <span className="h-24 w-24 shrink-0 overflow-hidden rounded-inner ring-1 ring-edge">
+                <CarteStatique
+                  points={pays.points}
+                  label={`Les spots ${pays.nom}`}
+                  tuilesMax={2}
+                  ratio={1}
+                  rayon={0.03}
+                  attribution={false}
+                />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block font-serif text-h2 font-semibold text-fg">{pays.nom}</span>

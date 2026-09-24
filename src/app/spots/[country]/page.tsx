@@ -8,7 +8,7 @@ import { PourquoiCeScore } from '@/components/accueil/PourquoiCeScore';
 import { DemoDataNotice } from '@/components/data/DemoDataNotice';
 import { TideCoverageDetail } from '@/components/data/TideCoverageDetail';
 import { VueDirect } from '@/components/direct/VueDirect';
-import { ConstellationPays } from '@/components/pays/ConstellationPays';
+import { CarteStatique } from '@/components/carte/CarteStatique';
 import { FichePaysBloc } from '@/components/pays/FichePaysBloc';
 import { RetenirPays } from '@/components/pays/RetenirPays';
 import { SpotCard } from '@/components/spot/SpotCard';
@@ -88,7 +88,8 @@ export default async function PaysPage({ params }: { params: Promise<RouteParams
     danger: summary.current?.score.safety.level === 'danger',
   }));
 
-  const facades = fiche.facades.map((facade) => facade.nom).join(' et ');
+  // « · » plutôt que « et » : les noms de façades en contiennent déjà un.
+  const facades = fiche.facades.map((facade) => facade.nom).join(' · ');
 
   return (
     <>
@@ -138,15 +139,13 @@ export default async function PaysPage({ params }: { params: Promise<RouteParams
             </div>
           </div>
 
-          <figure className="surface p-4">
-            <div className="mx-auto max-w-[420px]">
-              <ConstellationPays points={points} label={`Les spots ${prepositionDe(pays)}, cliquables`} />
-            </div>
-            <figcaption className="card-source mt-3">
-              Chaque point est un spot, à ses vraies coordonnées, teinté par son score du moment.
-              Cliquez-en un. Le littoral n’est pas dessiné : ce sont les spots qui le tracent.
-            </figcaption>
-          </figure>
+          <div className="surface p-3">
+            <CarteStatique points={points} label={`Les spots ${prepositionDe(pays)}, cliquables`} tuilesMax={9} ratio={1.1} />
+            <p className="card-source mt-3">
+              Chaque point est un spot, teinté par son score du moment : cliquez-en un. Carte de
+              repérage — elle ne remplace pas une carte marine.
+            </p>
+          </div>
         </div>
 
         <div className="mt-6">
