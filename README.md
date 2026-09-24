@@ -1052,6 +1052,22 @@ sous le seuil AA sur les deux pages légales, dans les deux thèmes, à 390 et
 `npm run build`, `npm run typecheck` et `npm run lint` passent sans erreur ni
 avertissement. 407 tests, dont 17 d'intégration contre une vraie base. Aucun débordement horizontal à 375 px.
 
+## Le compteur de pages vues
+
+Pas de Google Analytics, et ce n'est pas une frilosité : le site promet
+« aucune requête vers un tiers depuis votre navigateur », n'a pas de bandeau
+de consentement, et un test le fait respecter. Une mesure tierce exigerait les
+trois contraires.
+
+Le compteur est le nôtre (`src/lib/visites/compter.ts`, migration 0010) : une
+ligne par **jour et par chemin**, incrémentée par un `sendBeacon` du navigateur
+vers `/api/visite`. La route ne lit ni adresse IP, ni agent utilisateur, ni
+cookie — un test refuse qu'elle le fasse — et respecte Global Privacy Control
+et Do Not Track. On ne peut donc pas distinguer dix visites d'une personne de
+dix personnes, et c'est le prix accepté d'une mesure qui ne concerne personne.
+Les sept derniers jours se lisent dans `/api/diagnostic` ; treize mois sont
+conservés, puis purgés par l'entretien.
+
 ## Pages légales
 
 `/mentions-legales` et `/confidentialite` existent et sont liées depuis le pied

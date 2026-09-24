@@ -10,6 +10,7 @@ import { refusExplique } from '@/lib/diagnostic/refus';
 import { RETENTION_MS } from '@/lib/limites';
 import { purgeRateLimits } from '@/lib/providers/mysql/rate-limit';
 import { rafraichirMarees } from '@/lib/providers';
+import { purgerVisites } from '@/lib/visites/compter';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -78,6 +79,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     */
     const marees = await rafraichirMarees();
 
+    // Le compteur de pages vues garde treize mois, puis oublie.
+    const visites = await purgerVisites();
+
     return NextResponse.json({
       ok: true,
       state: 'entretenu',
@@ -87,6 +91,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       alerts,
       favoris,
       marees,
+      visites,
     });
   } catch (error) {
     console.error('[entretien] purge impossible', error);

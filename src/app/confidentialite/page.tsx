@@ -77,10 +77,10 @@ const ACCOUNT_TREATMENTS = [
     keep: 'Jusqu’à ce que vous les supprimiez, ou jusqu’à la suppression de votre compte, photos comprises.',
   },
   {
-    what: 'Spots favoris',
-    data: 'La liste des spots que vous suivez, et la date d’ajout.',
-    why: 'Les retrouver en tête de votre compte, avec leur score du moment. Personne d’autre ne voit cette liste.',
-    basis: 'L’exécution du service : une liste que vous constituez pour vous.',
+    what: 'Spots favoris et alertes de favoris',
+    data: 'La liste des spots que vous suivez, la date d’ajout, et — si vous le réglez — un seuil de score avec le début du dernier créneau annoncé.',
+    why: 'Les retrouver en tête de votre compte, avec leur score du moment ; et, si vous avez fixé un seuil, vous écrire quand le meilleur créneau des 36 heures à venir l’atteint — une fois par créneau, jamais quand la mer est dangereuse. Personne d’autre ne voit cette liste.',
+    basis: 'L’exécution du service : une liste que vous constituez pour vous, et un courriel que vous demandez en fixant le seuil. Remettre le seuil à « jamais » arrête tout envoi.',
     keep: 'Jusqu’à ce que vous retiriez le spot, ou jusqu’à la suppression de votre compte.',
   },
   {
@@ -127,8 +127,9 @@ export default function ConfidentialitePage() {
             En une phrase
           </h2>
           <p className="mt-3 text-read text-fg-muted">
-            Luna Marea ne collecte rien tant que vous ne saisissez rien. Il n’y a ni mesure
-            d’audience, ni publicité, ni traceur, ni géolocalisation à notre profit.{' '}
+            Luna Marea ne collecte rien tant que vous ne saisissez rien. Il n’y a ni publicité,
+            ni traceur, ni géolocalisation à notre profit — et pour seule mesure d’audience un
+            compteur de pages vues par jour, sans cookie, sans identifiant et sans adresse.{' '}
             {accounts
               ? 'Un compte est facultatif : il ne sert qu’à publier des avis et des prises, et se supprime en une minute, avec tout ce qu’il contient.'
               : 'Il n’y a même pas de compte : rien à créer, aucun cookie déposé.'}
@@ -210,8 +211,9 @@ export default function ConfidentialitePage() {
                 Il n’y a <strong className="font-600 text-fg">pas de bandeau de consentement</strong>,
                 et ce n’est pas un oubli : le seul cookie du site vous garde connecté, à votre
                 demande. Un cookie strictement nécessaire au service demandé est dispensé de
-                consentement — celui d’une mesure d’audience ne l’aurait pas été, et nous n’en
-                avons pas. Voici tout ce que le site écrit dans votre navigateur, sans exception.
+                consentement — celui d’une mesure d’audience ne l’aurait pas été, et notre
+                compteur n’en pose aucun. Voici tout ce que le site écrit dans votre navigateur,
+                sans exception.
               </>
             ) : (
               <>
@@ -291,7 +293,7 @@ export default function ConfidentialitePage() {
               ...(accounts
                 ? ['Aucun mot de passe lisible : il est haché avant d’être enregistré, et nous ne pouvons pas le retrouver — seulement le remplacer.']
                 : ['Aucun compte utilisateur : il n’y a rien à créer, rien à connecter.']),
-              'Aucune mesure d’audience, aucun outil d’analyse, aucun pixel de suivi.',
+              'Aucun outil d’analyse tiers, aucun pixel de suivi. Le seul compteur est le nôtre : une ligne par jour et par page, sans cookie, sans identifiant, sans adresse IP — nous ne pouvons pas savoir si dix vues sont dix personnes ou une, et c’est voulu. Le signal Global Privacy Control de votre navigateur est respecté : avec lui, rien n’est compté.',
               'Aucune publicité, aucun lien rémunéré, aucun revendeur de données.',
               'Aucune position enregistrée : la recherche de spots proches calcule tout dans votre navigateur, et aucun de nos points d’accès ne sait recevoir une position.',
               'Aucune coordonnée GPS dans les photos : les métadonnées sont retirées sur votre appareil, avant l’envoi.',
@@ -329,7 +331,7 @@ export default function ConfidentialitePage() {
               accounts
                 ? 'Les photos de prises sont débarrassées de leurs métadonnées sur votre appareil, avant l’envoi. Une photo de téléphone porte les coordonnées GPS de la prise — donc, parfois, celles d’un spot que vous vouliez garder, ou de votre domicile.'
                 : 'Les photos de prises seront débarrassées de leurs métadonnées avant enregistrement.',
-              'Toute mesure d’audience, si elle arrive, sera soit sans cookie et sans identifiant, soit soumise à votre consentement préalable et explicite. Pas de bandeau qui pré-coche.',
+              'La mesure d’audience reste ce qu’elle est : un compteur sans cookie ni identifiant. Si elle devait un jour en demander un, ce serait avec votre consentement préalable et explicite. Pas de bandeau qui pré-coche.',
             ].map((line) => (
               <li key={line} className="text-read text-fg-muted">
                 {line}

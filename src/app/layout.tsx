@@ -6,6 +6,7 @@ import { MobileNav, SiteHeader } from '@/components/layout/SiteHeader';
 import { SITE_URL } from '@/lib/routes';
 import { BROWSER_THEME_COLOR, THEME_INIT_SCRIPT } from '@/lib/theme';
 import './globals.css';
+import { Compteur } from '@/components/layout/Compteur';
 
 // Les trois familles du handoff §1. `next/font` les auto-héberge : aucune
 // requête vers un tiers, aucun décalage de mise en page au chargement.
@@ -87,6 +88,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             au-dessus, sinon ses derniers liens sont inatteignables. */}
         <div className="h-tap-lg md:hidden" aria-hidden="true" />
         <MobileNav />
+        <Compteur />
       </body>
     </html>
   );

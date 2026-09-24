@@ -8,6 +8,7 @@ import { etatMigrations } from '@/lib/diagnostic/migrations';
 import { refusExplique } from '@/lib/diagnostic/refus';
 import { essaiBase } from '@/lib/diagnostic/essai-base';
 import { etatDesMareesConservees } from '@/lib/diagnostic/marees-conservees';
+import { etatDesVisites } from '@/lib/diagnostic/visites';
 import { databaseEnabled } from '@/lib/db/mysql';
 import { MysqlTideTableStore } from '@/lib/providers/mysql/marees';
 import { essaiPhotos } from '@/lib/diagnostic/essai-photos';
@@ -70,6 +71,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   */
   points.push(await essaiBase(process.env.DATABASE_URL));
   points.push(await etatMigrations());
+  if (databaseEnabled()) points.push(await etatDesVisites());
 
   /*
     L'état des tables de marée conservées, quand elles le sont : c'est la
