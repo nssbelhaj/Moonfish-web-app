@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { purgeExpired } from '@/lib/auth/mysql-adapter';
 import { purgerReinitialisations } from '@/lib/providers/mysql/comptes';
 import { sendOutingAlerts } from '@/lib/contributions/alerts';
+import { sendFavoriteAlerts } from '@/lib/contributions/alertes-favoris';
 import { mailEnabled } from '@/lib/auth/config';
 import { databaseEnabled } from '@/lib/db/mysql';
 import { refusExplique } from '@/lib/diagnostic/refus';
@@ -65,6 +66,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // Sans courriel configuré, les alertes n'ont nulle part où partir : on
     // le dit dans la réponse plutôt que de compter des échecs.
     const alerts = mailEnabled() ? await sendOutingAlerts() : null;
+    // Puis les spots favoris qui passent leur seuil — même règle : sans
+    // courriel, rien ne part, et la réponse le dit.
+    const favoris = mailEnabled() ? await sendFavoriteAlerts() : null;
 
     /*
       Les tables de marée dont la couverture devient juste sont rafraîchies
@@ -81,6 +85,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       limites,
       reinitialisations,
       alerts,
+      favoris,
       marees,
     });
   } catch (error) {

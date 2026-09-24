@@ -109,6 +109,20 @@ export class ClosedContributionsRepository implements ContributionsRepository {
     return closed();
   }
 
+  async setFavoriteAlert(
+    _userId: string,
+    _spotSlug: string,
+    _minScore: number | null,
+  ): Promise<ContributionResult<null>> {
+    return closed();
+  }
+
+  async favoritesToAlert(): Promise<[]> {
+    return [];
+  }
+
+  async markFavoriteAlerted(_userId: string, _spotSlug: string, _slotStart: Date): Promise<void> {}
+
   async listOutings(_userId: string): Promise<[]> {
     return [];
   }

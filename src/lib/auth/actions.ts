@@ -8,8 +8,8 @@ import { profilInitialSchema } from '@/data/schemas-compte';
 import { redirect } from 'next/navigation';
 
 import { signIn, signOut as authSignOut } from '@/auth';
-import { accountsEnabled } from '@/lib/auth/config';
-import { catchInputSchema, outingInputSchema, spotReviewInputSchema } from '@/data/schemas';
+import { accountsEnabled, mailEnabled } from '@/lib/auth/config';
+import { catchInputSchema, favoriteAlertSchema, outingInputSchema, spotReviewInputSchema } from '@/data/schemas';
 import { localDateTimeToIso } from '@/lib/auth/local-time';
 import { currentUser } from '@/lib/auth/session';
 import { BUDGETS, consommer, delaiLisible, ipAppelante, rembourser } from '@/lib/limites';
@@ -542,6 +542,47 @@ export async function toggleFavorite(
   return {
     ok: true,
     message: wanted ? 'Ajouté à vos favoris.' : 'Retiré de vos favoris.',
+  };
+}
+
+/**
+ * Le seuil d'alerte d'un favori. Même raison qu'au-dessus de ne pas le
+ * compter dans un budget : une ligne par spot et par personne, rien ne
+ * grossit. Il exige un courriel configuré — sans lui, l'alerte ne partirait
+ * jamais et promettre le contraire serait pire que refuser.
+ */
+export async function setFavoriteAlert(
+  _previous: ActionState | null,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await currentUser();
+  if (!user) return NOT_SIGNED_IN;
+
+  const parsed = favoriteAlertSchema.safeParse({
+    spotSlug: formData.get('spot_slug'),
+    minScore: formData.get('seuil'),
+  });
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.issues[0]?.message ?? 'Seuil invalide.' };
+  }
+
+  if (parsed.data.minScore !== null && !mailEnabled()) {
+    return {
+      ok: false,
+      message: 'Les alertes par courriel ne sont pas configurées sur ce site : le seuil ne servirait à rien.',
+    };
+  }
+
+  const result = await contributions.setFavoriteAlert(user.id, parsed.data.spotSlug, parsed.data.minScore);
+  if (!result.ok) return { ok: false, message: result.message };
+
+  revalidatePath('/compte');
+  return {
+    ok: true,
+    message:
+      parsed.data.minScore === null
+        ? 'Alerte retirée.'
+        : `Vous serez prévenu dès que ce spot atteint ${parsed.data.minScore} sur 10.`,
   };
 }
 

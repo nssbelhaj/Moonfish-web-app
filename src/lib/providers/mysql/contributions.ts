@@ -30,6 +30,7 @@ import type {
   Author,
   ContributionResult,
   ContributionsRepository,
+  FavoriteAlert,
   PendingAlert,
   RecentContributions,
   SpotContributions,
@@ -96,6 +97,8 @@ interface CatchRow {
 interface FavoriteRow {
   spot_slug: string;
   created_at: string;
+  alert_min_score: number | null;
+  alerted_slot: string | null;
 }
 
 interface OutingRow {
@@ -183,7 +186,12 @@ function toCatch(row: CatchRow): Catch {
 }
 
 function toFavorite(row: FavoriteRow): Favorite {
-  return favoriteSchema.parse({ spotSlug: row.spot_slug, createdAt: toIso(row.created_at) });
+  return favoriteSchema.parse({
+    spotSlug: row.spot_slug,
+    createdAt: toIso(row.created_at),
+    alertMinScore: row.alert_min_score === null ? null : Number(row.alert_min_score),
+    alertedSlot: toIso(row.alerted_slot),
+  });
 }
 
 function toOuting(row: OutingRow): Outing {
@@ -599,7 +607,7 @@ export class MysqlContributionsRepository implements ContributionsRepository {
   async listFavorites(userId: string): Promise<Favorite[]> {
     try {
       const rows = await query<FavoriteRow>(
-        'select spot_slug, created_at from favorites where user_id = ? order by created_at desc',
+        'select spot_slug, created_at, alert_min_score, alerted_slot from favorites where user_id = ? order by created_at desc',
         [userId],
       );
       return rows.map(toFavorite);
@@ -650,6 +658,63 @@ export class MysqlContributionsRepository implements ContributionsRepository {
       return { ok: true, data: null };
     } catch (error) {
       return storageFailure('retrait d’un favori', error);
+    }
+  }
+
+  async setFavoriteAlert(
+    userId: string,
+    spotSlug: string,
+    minScore: number | null,
+  ): Promise<ContributionResult<null>> {
+    try {
+      /*
+        Changer le seuil remet `alerted_slot` à zéro : un créneau déjà annoncé
+        à 7 mérite de l'être à nouveau si la personne demande 8 — ou de ne
+        plus l'être. Le compteur repart avec la règle.
+      */
+      const touched = await execute(
+        'update favorites set alert_min_score = ?, alerted_slot = null where user_id = ? and spot_slug = ?',
+        [minScore, userId, spotSlug],
+      );
+      return touched === 0
+        ? failure('invalid', 'Ce spot n’est pas dans vos favoris.')
+        : { ok: true, data: null };
+    } catch (error) {
+      return storageFailure('réglage d’une alerte de favori', error);
+    }
+  }
+
+  async favoritesToAlert(): Promise<FavoriteAlert[]> {
+    try {
+      // Même règle que `pendingAlerts` : la jointure sur `users` ne sert qu'à
+      // l'adresse, pour écrire à la personne qui a demandé à l'être.
+      const rows = await query<FavoriteRow & { user_id: string; email: string | null }>(
+        `select f.user_id, f.spot_slug, f.created_at, f.alert_min_score, f.alerted_slot, u.email
+           from favorites f
+           join users u on u.id = f.user_id
+          where f.alert_min_score is not null
+          order by f.created_at asc
+          limit 500`,
+      );
+      return rows
+        .filter((row): row is typeof row & { email: string } => row.email !== null)
+        .map((row) => ({ userId: row.user_id, email: row.email, favorite: toFavorite(row) }));
+    } catch (error) {
+      console.error('[contributions] lecture des alertes de favoris', error);
+      return [];
+    }
+  }
+
+  async markFavoriteAlerted(userId: string, spotSlug: string, slotStart: Date): Promise<void> {
+    try {
+      await execute('update favorites set alerted_slot = ? where user_id = ? and spot_slug = ?', [
+        toMysqlDateTime(slotStart),
+        userId,
+        spotSlug,
+      ]);
+    } catch (error) {
+      // Journalisé, pas levé : au pire un second courriel au prochain passage.
+      console.error('[contributions] marquage d’une alerte de favori', error);
     }
   }
 

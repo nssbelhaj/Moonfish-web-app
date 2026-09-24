@@ -698,6 +698,7 @@ que la version PostgreSQL ne permettait pas, faute de serveur joignable.
 | **Spots favoris** | bouton en haut de chaque spot, liste sur `/compte` avec le score du moment | vous seul |
 | **Sorties programmées** | onglet Espèces ; liste sur `/compte` avec le score prévu à l'heure dite | vous seul |
 | **Alerte de la veille** | case à cocher sur la sortie | courriel, à vous seul |
+| **Alerte sur un favori** | seuil « me prévenir dès 8 » sur `/compte` ; la tâche quotidienne écrit quand le meilleur créneau des 36 h à venir l'atteint, une fois par créneau, jamais en danger | courriel, à vous seul |
 
 Le carnet ne lit rien de nouveau : `src/lib/contributions/catch-log.ts`
 relit les prises déjà déclarées et en tire le recul qui manquait — par espèce

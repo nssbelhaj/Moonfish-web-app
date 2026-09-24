@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { outingAlertEmail, type OutingAlertContent } from '../email-template';
+import { favoriteAlertEmail, outingAlertEmail, type OutingAlertContent } from '../email-template';
 
 /*
   Le courriel de la veille a trois visages, et l'ordre entre eux n'est pas
@@ -72,5 +72,34 @@ describe('outingAlertEmail', () => {
   it('la note personnelle est reprise telle quelle', () => {
     const m = outingAlertEmail({ ...base, note: 'prendre les leurres souples' });
     expect(m.text).toContain('Votre note : prendre les leurres souples');
+  });
+});
+
+describe('favoriteAlertEmail', () => {
+  const m = favoriteAlertEmail({
+    spotName: 'Le Crotoy',
+    spotUrl: 'https://lunamarea.fr/spots/france/hauts-de-france/le-crotoy/prevision',
+    when: 'jeudi 25 septembre, 06:00 – 08:00',
+    score: 8.4,
+    tierLabel: 'Excellent',
+    minScore: 8,
+    facts: [{ label: 'Marée', value: 'montante, coefficient 96' }],
+    accountUrl: 'https://lunamarea.fr/compte#espace-sorties',
+    host: 'lunamarea.fr',
+  });
+
+  it('dit tout dans le sujet : spot, score, créneau', () => {
+    expect(m.subject).toBe('Le Crotoy passe à 8,4 / 10 · Excellent — jeudi 25 septembre, 06:00 – 08:00');
+  });
+
+  it('rappelle le seuil, l’unicité par créneau, et le chemin pour arrêter', () => {
+    expect(m.text).toContain('votre seuil de 8');
+    expect(m.text).toContain('n’est annoncé qu’une fois');
+    expect(m.text).toContain('https://lunamarea.fr/compte#espace-sorties');
+    expect(m.html).toContain('Changer le seuil ou arrêter');
+  });
+
+  it('ne promet aucune prise', () => {
+    expect(m.text.toLowerCase()).not.toMatch(/garanti|assur|ça va mordre/);
   });
 });

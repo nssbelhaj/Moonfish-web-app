@@ -225,6 +225,13 @@ export interface PendingAlert {
   email: string;
 }
 
+/** Un favori qui porte un seuil, avec l'adresse à laquelle écrire. */
+export interface FavoriteAlert {
+  userId: string;
+  email: string;
+  favorite: Favorite;
+}
+
 export interface ContributionsRepository {
   /** `false` quand les comptes ne sont pas configurés : l'interface le DIT au lieu d'échouer. */
   readonly available: boolean;
@@ -277,6 +284,12 @@ export interface ContributionsRepository {
   /** Idempotent : ajouter un favori déjà présent ne fait rien et ne se plaint pas. */
   addFavorite(userId: string, spotSlug: string): Promise<ContributionResult<null>>;
   removeFavorite(userId: string, spotSlug: string): Promise<ContributionResult<null>>;
+  /** Pose ou retire (`null`) le seuil d'alerte d'un favori. */
+  setFavoriteAlert(userId: string, spotSlug: string, minScore: number | null): Promise<ContributionResult<null>>;
+  /** Tous les favoris qui portent un seuil, avec l'adresse de leur propriétaire. */
+  favoritesToAlert(): Promise<FavoriteAlert[]>;
+  /** Retient le créneau annoncé, pour ne pas l'annoncer deux fois. */
+  markFavoriteAlerted(userId: string, spotSlug: string, slotStart: Date): Promise<void>;
 
   /* ── Sorties programmées ─────────────────────────────────────────────── */
 

@@ -1,7 +1,8 @@
 import Link from 'next/link';
 
-import type { Outing } from '@/data/schemas';
-import { deleteOuting } from '@/lib/auth/actions';
+import type { Favorite, Outing } from '@/data/schemas';
+import { ActionForm } from '@/components/forms/ActionForm';
+import { deleteOuting, setFavoriteAlert } from '@/lib/auth/actions';
 import type { ForecastSlot, SpotSummary } from '@/lib/forecast';
 import { Vide } from '@/components/account/Vide';
 import { spotPath } from '@/lib/routes';
@@ -15,6 +16,8 @@ export function PanneauSorties({
   upcoming,
   outingSlots,
   favoriteSummaries,
+  favorites,
+  alertesPossibles,
   nameOf,
   pathOf,
   scoreOf,
@@ -22,6 +25,10 @@ export function PanneauSorties({
   upcoming: readonly Outing[];
   outingSlots: Map<string, ForecastSlot | null>;
   favoriteSummaries: readonly SpotSummary[];
+  /** Les favoris eux-mêmes, pour le seuil d'alerte de chacun. */
+  favorites: readonly Favorite[];
+  /** `false` sans courriel configuré : le réglage n'est alors pas proposé. */
+  alertesPossibles: boolean;
   nameOf: (slug: string) => string;
   pathOf: (slug: string) => string | null;
   scoreOf: (slot: ForecastSlot | null) => Score;
@@ -152,11 +159,12 @@ export function PanneauSorties({
           <ul className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {favoriteSummaries.map(({ spot, current, nextGood }) => {
               const score = scoreOf(current);
+              const seuil = favorites.find((f) => f.spotSlug === spot.slug)?.alertMinScore ?? null;
               return (
-                <li key={spot.slug}>
+                <li key={spot.slug} className="fiche !p-3 flex flex-col gap-3">
                   <Link
                     href={spotPath(spot)}
-                    className="fiche !p-3 flex min-h-tap items-center justify-between gap-3 tappable"
+                    className="flex min-h-tap items-center justify-between gap-3 tappable"
                   >
                     <span>
                       <span className="block text-body font-600 text-fg">{spot.name}</span>
@@ -175,6 +183,46 @@ export function PanneauSorties({
                       </span>
                     </span>
                   </Link>
+
+                  {/*
+                    « Prévenez-moi dès 8 » : le seuil vit sur le favori, et
+                    la tâche quotidienne écrit quand le meilleur créneau des
+                    36 prochaines heures l'atteint — une fois par créneau.
+                    Sans courriel configuré, rien n'est proposé plutôt qu'un
+                    réglage qui ne servirait à rien.
+                  */}
+                  {alertesPossibles && (
+                    <ActionForm
+                      action={setFavoriteAlert}
+                      submitLabel="Régler"
+                      pendingLabel="…"
+                      variant="secondary"
+                      className="flex flex-wrap items-end gap-2"
+                    >
+                      <input type="hidden" name="spot_slug" value={spot.slug} />
+                      <label className="flex flex-col gap-1 text-meta text-fg-muted">
+                        Me prévenir dès
+                        <select
+                          name="seuil"
+                          defaultValue={seuil === null ? '' : String(seuil)}
+                          className="min-h-[44px] rounded-ctl border border-edge bg-card px-2 text-body text-fg"
+                        >
+                          <option value="">jamais</option>
+                          {[6, 7, 8, 9].map((n) => (
+                            <option key={n} value={n}>
+                              {n} / 10
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </ActionForm>
+                  )}
+                  {seuil !== null && (
+                    <p className="text-src text-fg-muted">
+                      Alerte active : courriel dès que le meilleur créneau des 36 h à venir atteint{' '}
+                      {seuil}.
+                    </p>
+                  )}
                 </li>
               );
             })}

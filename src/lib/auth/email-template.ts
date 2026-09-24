@@ -186,3 +186,75 @@ export function outingAlertEmail(c: OutingAlertContent): { subject: string; text
 
   return { subject, text, html };
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Le courriel d'alerte sur un spot favori.
+
+   Il n'existe que lorsque le seuil est atteint : pas de « rien à signaler »,
+   pas de récapitulatif hebdomadaire. Le sujet porte le spot, le créneau et
+   le score — tout ce qu'il faut pour décider sans ouvrir le message.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+export interface FavoriteAlertContent {
+  spotName: string;
+  spotUrl: string;
+  /** Le créneau, déjà formaté : « jeudi 25 septembre, 06:00 – 08:00 ». */
+  when: string;
+  score: number;
+  tierLabel: string;
+  minScore: number;
+  facts: readonly { label: string; value: string }[];
+  accountUrl: string;
+  host: string;
+}
+
+export function favoriteAlertEmail(c: FavoriteAlertContent): { subject: string; text: string; html: string } {
+  const scoreText = `${c.score.toFixed(1).replace('.', ',')} / 10 · ${c.tierLabel}`;
+  const subject = `${c.spotName} passe à ${scoreText} — ${c.when}`;
+
+  const factsText = c.facts.map((f) => `  ${f.label} : ${f.value}`).join('\n');
+
+  const text = [
+    `${c.spotName}, que vous suivez, atteint votre seuil de ${c.minScore}.`,
+    '',
+    `Créneau : ${c.when}`,
+    `Score prévu : ${scoreText}`,
+    '',
+    factsText,
+    '',
+    `Prévision à jour : ${c.spotUrl}`,
+    '',
+    'Vous recevez ce message parce que vous avez demandé à être prévenu quand ce',
+    'spot favori dépasse un seuil. Un même créneau n’est annoncé qu’une fois. Pour',
+    `changer le seuil ou ne plus recevoir d’alerte : ${c.accountUrl}`,
+    '',
+    c.host,
+  ].join('\n');
+
+  const factsHtml = c.facts
+    .map(
+      (f) =>
+        `<tr><td style="padding: 4px 12px 4px 0; color: ${MUET};">${f.label}</td><td style="padding: 4px 0;">${f.value}</td></tr>`,
+    )
+    .join('');
+
+  const html = `
+    <div style="font-family: system-ui, -apple-system, Segoe UI, sans-serif; font-size: 15px; line-height: 1.6; color: ${ENCRE}; max-width: 520px;">
+      <p><strong>${c.spotName}</strong>, que vous suivez, atteint votre seuil de ${c.minScore}.</p>
+      <p>Créneau : ${c.when}</p>
+      <p style="font-size: 20px; font-weight: 700; color: ${BON};">${scoreText}</p>
+      <table style="border-collapse: collapse; font-size: 14px;">${factsHtml}</table>
+      <p style="margin: 24px 0;">
+        <a href="${c.spotUrl}" style="display: inline-block; padding: 14px 22px; background: ${SONDE}; color: ${BLANC}; text-decoration: none; border-radius: 9px;">Voir la prévision</a>
+      </p>
+      <p style="font-size: 13px; color: ${MUET};">
+        Vous recevez ce message parce que vous avez demandé à être prévenu quand ce spot
+        favori dépasse un seuil. Un même créneau n’est annoncé qu’une fois.
+        <a href="${c.accountUrl}" style="color: ${MUET};">Changer le seuil ou arrêter</a>.
+      </p>
+      <p style="font-size: 12px; color: ${MUET}; margin-top: 28px;">${c.host}</p>
+    </div>
+  `;
+
+  return { subject, text, html };
+}

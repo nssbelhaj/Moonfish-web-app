@@ -1,3 +1,4 @@
+import { mailEnabled } from '@/lib/auth/config';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
@@ -369,6 +370,8 @@ export default async function ComptePage({
                       upcoming={upcoming}
                       outingSlots={outingSlots}
                       favoriteSummaries={favoriteSummaries}
+                      favorites={favorites}
+                      alertesPossibles={mailEnabled()}
                       nameOf={nameOf}
                       pathOf={pathOf}
                       scoreOf={scoreOf}

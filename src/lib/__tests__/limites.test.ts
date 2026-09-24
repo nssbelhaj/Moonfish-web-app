@@ -31,6 +31,14 @@ const EXEMPTES: Record<string, string> = {
   toggleFavorite: 'bornée par la clé primaire composée',
 
   /*
+    Même ligne que le favori : le seuil est une colonne de cette ligne, et
+    la régler cent fois ne fait rien grossir. Le courriel qu'elle déclenche
+    ne part que par la tâche quotidienne, une fois par créneau — c'est là
+    qu'est la borne, pas ici.
+  */
+  setFavoriteAlert: 'une colonne du favori, déjà borné par sa clé primaire',
+
+  /*
     Une suppression de compte n'est possible qu'une fois, et la seconde
     tentative ne trouve plus de session. Le limiter reviendrait à retarder
     quelqu'un qui veut partir — l'inverse de ce que promet la page « Vos

@@ -45,6 +45,59 @@ describeDb('favoris et sorties dans MySQL', () => {
 
   const inTwoHours = () => new Date(Date.now() + 2 * 3_600_000).toISOString();
 
+  describe('alertes de favoris', () => {
+    it('pose un seuil sur un favori existant, et le refuse sur un spot non suivi', async () => {
+      await repository.addFavorite(alice, 'pen-hat');
+      expect((await repository.setFavoriteAlert(alice, 'pen-hat', 8)).ok).toBe(true);
+      expect((await repository.setFavoriteAlert(alice, 'la-torche', 8)).ok).toBe(false);
+
+      const [favori] = await repository.listFavorites(alice);
+      expect(favori).toMatchObject({ spotSlug: 'pen-hat', alertMinScore: 8, alertedSlot: null });
+    });
+
+    it('ne liste que les favoris qui portent un seuil, avec l’adresse de leur propriétaire', async () => {
+      await repository.addFavorite(alice, 'pen-hat');
+      await repository.addFavorite(alice, 'la-torche');
+      await repository.addFavorite(bob, 'pen-hat');
+      await repository.setFavoriteAlert(alice, 'pen-hat', 7);
+      await repository.setFavoriteAlert(bob, 'pen-hat', 9);
+
+      const aAlerter = await repository.favoritesToAlert();
+      expect(aAlerter.map((a) => [a.email, a.favorite.spotSlug, a.favorite.alertMinScore])).toStrictEqual([
+        ['alice@exemple.fr', 'pen-hat', 7],
+        ['bob@exemple.fr', 'pen-hat', 9],
+      ]);
+    });
+
+    it('retient le créneau annoncé, et l’oublie quand le seuil change', async () => {
+      await repository.addFavorite(alice, 'pen-hat');
+      await repository.setFavoriteAlert(alice, 'pen-hat', 7);
+      const debut = new Date('2026-09-25T06:00:00.000Z');
+      await repository.markFavoriteAlerted(alice, 'pen-hat', debut);
+      expect((await repository.listFavorites(alice))[0]?.alertedSlot).toBe(debut.toISOString());
+
+      // Changer le seuil repart de zéro : un créneau annoncé à 7 mérite
+      // de l'être à nouveau — ou plus — à 8.
+      await repository.setFavoriteAlert(alice, 'pen-hat', 8);
+      expect((await repository.listFavorites(alice))[0]?.alertedSlot).toBeNull();
+    });
+
+    it('retire l’alerte avec null, et retire la ligne de la liste à alerter', async () => {
+      await repository.addFavorite(alice, 'pen-hat');
+      await repository.setFavoriteAlert(alice, 'pen-hat', 7);
+      await repository.setFavoriteAlert(alice, 'pen-hat', null);
+      expect(await repository.favoritesToAlert()).toStrictEqual([]);
+      // Le favori, lui, reste.
+      expect(await repository.isFavorite(alice, 'pen-hat')).toBe(true);
+    });
+
+    it('n’écrit jamais au nom d’autrui', async () => {
+      await repository.addFavorite(alice, 'pen-hat');
+      expect((await repository.setFavoriteAlert(bob, 'pen-hat', 8)).ok).toBe(false);
+      expect((await repository.listFavorites(alice))[0]?.alertMinScore).toBeNull();
+    });
+  });
+
   describe('favoris', () => {
     it('ajoute, liste, et n’empile pas les doublons', async () => {
       expect((await repository.addFavorite(alice, 'pen-hat')).ok).toBe(true);

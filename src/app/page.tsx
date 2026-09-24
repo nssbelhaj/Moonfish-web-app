@@ -379,6 +379,14 @@ export default async function HomePage() {
         lead="Trente jours d’avance, pour poser un jour de congé au bon moment plutôt que pour décider ce soir. Les vives-eaux tombent deux fois par mois et se calculent un an à l’avance."
       >
         <FriseCoefficients jours={coefficients} />
+        <p className="mt-4">
+          <Link
+            href="/marees/coefficients"
+            className="inline-flex min-h-[44px] items-center text-body text-fg underline decoration-dotted underline-offset-4"
+          >
+            Les soixante prochains jours, mois par mois
+          </Link>
+        </p>
       </Section>
 
       <Section

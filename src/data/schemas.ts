@@ -365,6 +365,22 @@ export type CatchInput = z.infer<typeof catchInputSchema>;
 export const favoriteSchema = z.object({
   spotSlug: z.string(),
   createdAt: isoDateTime,
+  /** Seuil d'alerte, `null` = pas d'alerte. Le défaut, pour tout favori. */
+  alertMinScore: z.number().int().min(1).max(10).nullable(),
+  /** Début du créneau déjà annoncé, pour ne pas l'annoncer deux fois. */
+  alertedSlot: isoDateTime.nullable(),
+});
+
+/** Ce que le formulaire de seuil accepte : 6 à 9, ou rien. */
+export const favoriteAlertSchema = z.object({
+  spotSlug: z.string().min(1),
+  minScore: z
+    .union([z.literal(''), z.null(), z.coerce.number()])
+    .optional()
+    .transform((v) => (v === '' || v === undefined || v === null ? null : Number(v)))
+    .refine((v) => v === null || (Number.isInteger(v) && v >= 5 && v <= 9), {
+      message: 'Le seuil va de 5 à 9.',
+    }),
 });
 
 export type Favorite = z.infer<typeof favoriteSchema>;
